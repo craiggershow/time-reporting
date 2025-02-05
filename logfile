@@ -1,0 +1,4 @@
+2025-02-04 04:44:54.985 AST [59406] LOG:  starting PostgreSQL 16.6 (Ubuntu 16.6-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.2.0-23ubuntu4) 13.2.0, 64-bit
+2025-02-04 04:44:54.986 AST [59406] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2025-02-04 04:44:55.011 AST [59406] FATAL:  could not create lock file "/var/run/postgresql/.s.PGSQL.5432.lock": Permission denied
+2025-02-04 04:44:55.014 AST [59406] LOG:  database system is shut down

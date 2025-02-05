@@ -1,0 +1,37 @@
+{
+  "name": "time-reporting-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "ts-node-dev src/server.ts",
+    "dev": "nodemon --exec ts-node src/server.ts",
+    "build": "tsc",
+    "serve": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "db:seed": "ts-node prisma/seed.ts",
+    "prisma:studio": "prisma studio"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "cors": "^2.8.5",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.0.3",
+    "@prisma/client": "^5.0.0",
+    "bcrypt": "^5.1.0",
+    "jsonwebtoken": "^9.0.0",
+    "date-fns": "^4.1.0",
+    "zod": "^3.21.4"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.13",
+    "@types/bcrypt": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.2",
+    "@types/node": "^20.11.0",
+    "prisma": "^5.0.0",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^5.0.0"
+  }
+}

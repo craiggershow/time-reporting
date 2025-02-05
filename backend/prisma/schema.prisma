@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String      @id @default(uuid())
+  email       String      @unique
+  password    String
+  firstName   String
+  lastName    String
+  role        UserRole
+  timesheets  Timesheet[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+}
+
+model PayPeriod {
+  id          String      @id @default(uuid())
+  startDate   DateTime
+  endDate     DateTime
+  timesheets  Timesheet[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Timesheet {
+  id            String        @id @default(uuid())
+  userId        String
+  payPeriodId   String
+  status        TimesheetStatus
+  vacationHours Float         @default(0)
+  weeks         Week[]
+  submittedAt   DateTime?
+  user          User          @relation(fields: [userId], references: [id])
+  payPeriod     PayPeriod     @relation(fields: [payPeriodId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([userId, payPeriodId])
+}
+
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model Week {
+  id          String    @id @default(uuid())
+  timesheetId String
+  weekNumber  Int       // 1 or 2
+  extraHours  Float     @default(0)
+  days        Day[]
+  timesheet   Timesheet @relation(fields: [timesheetId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([timesheetId, weekNumber])
+}
+
+model Day {
+  id            String    @id @default(uuid())
+  weekId        String
+  dayOfWeek     String    // MONDAY, TUESDAY, etc.
+  dayType       DayType
+  startTime     String?
+  endTime       String?
+  lunchStartTime String?
+  lunchEndTime  String?
+  totalHours    Float
+  week          Week      @relation(fields: [weekId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum DayType {
+  REGULAR
+  VACATION
+  SICK
+  HOLIDAY
+} 

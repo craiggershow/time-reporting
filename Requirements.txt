@@ -1,0 +1,154 @@
+Build a realistic webpage mock-up for employees to report their time worked and time taken for lunch.
+
+Ask
+1) Provide a list of the steps to create the project, install all required software packages and libraries
+2) Create the code for the front end web pages
+3) Create the code for the backend software
+4) Create the code and instructions for the database
+5) Create the code and instrctions for the web version of the app
+5) Create the code and instructions for the android apk
+6) Create the code and instructions for the ios app
+7) The web version is the priority followed by android and then ios
+8) Instructions to use github to store and manage the code for the project
+
+General design rules
+The web and mobile applications will be written in react native and will use Expo
+All versions of the app include a home screen with a login page
+Field names and logos should be configurable via the database
+Database must be password protected following up to date security principles
+The database must store the exact hours inputted by the employee
+    This includes the start time, end time, lunch start time and the lunch end time
+The mobile application should be similar to the web application but adjust to the screen size of the mobile device or tablet
+Each pay period is 2 weeks starting on a Monday and ending on a Sunday
+The employees don’t work on weekends and therefore the system should not allow employees to enter time for saturday and sunday
+The hours per day must be calculated by the hours worked minus the hours for lunch
+The total hours for the pay period must be include any vacation pay hours the employee would like to take
+The code must be professionally written, well structured with multiple files and folders
+Common functions should be in a separate file and imported into the main file
+The extra hours and vacation pay must be able to be entered into an input field with up to 2 decimal places
+The backend code base should run in 1 or more docker containers
+All apis should be configurable from a file so the code doesn't need to be modified to change a url
+Use configuration files for other variables that may need to be configured by the project owner
+Use github to manage and store the code for the project
+The app frontend and backend must support managing the time reporting for multiple companies
+Employees and the employer/admin should be linked to a specific company
+An employee and employer must be able to only access the time reporting for a specific company
+
+
+UI Design Features common across all pages
+Professional layout
+The webpage has a modern, responsive design with a blue, white, and gray color scheme, styled to appear as part of a live web application.
+The employee portal and admin portal should have a similar look and feel
+Total page should be modern and clean with nice blue, grey and white colors
+The total of the page should include the company logo and the company name as shown on www.kvdental.ca
+    The page header image is included in the assets/images folder and called KV-Dental-Sign-logo-and-Name-500x86.gif
+The company name and logos should be configurable from the admin portal
+When entering the time, the application should enable the employee to enter the time in the following format:
+Added support for formats like:
+"12pm" -> "12:00 PM"
+"1130am" -> "11:30 AM"
+"9PM" -> "9:00 PM"
+"230p" -> "2:30 PM"
+
+
+Home Screen
+The home screen must indicate it is a time sheet app
+Prompt the user to enter a username and password
+The user must have the option to remember the username
+The username and password must be verified based on the credentials stored in the database
+The username should be an email address
+For the development version the username is admin@kvdental.ca and the password is password
+
+
+
+
+Employee Portal
+UI Design Features for Employee Portal
+The web application should like this https://v0.dev/chat/time-reporting-tool-mock-up-potTVux7pnO?b=b_MjQgQ41yY02&p=0
+The date for the first day of the pay period should be determined from the pay period start date in the database
+Web Application
+    Below the header portion of the page, there should exist a table for week 1 and a table for week 2.
+    The top table is for the first week and the bottom table is for the 2nd week
+        Each table lists the days across as columns
+        Row 1 is the start time
+        Row 2 is the end time
+        Row 3 is the start of lunch
+        Row 4 is the end of lunch
+        Row 5 is the total hours per day
+        Row 6 should give the option to pick if the day is a vacation or holiday day
+            The employee must have the ability to specify whether the day is a holiday, vacation, sick day or regular work day
+            The type of day must be stored in the database
+            The option to pick the type of day should be a dropdown menu
+            The default should be regular work day
+        The columns are from Monday to Friday
+        The last column is a total hours worked for the week
+        There is also a column to enter extra hours worked.
+            The extra hours should be in the top right of the table with a proper label for the colum
+        Each table should be the same but identify as week 1 and week 2
+    It should also list the date for the Monday of week 1 and the date for the Monday of week 2
+    The date for week 2 would be auto populated
+    There should be a button to copy the hours from the previous day to the next day
+        The button should just be a copy next symbol with no text
+        When the user hovers over the button it should indicate it is to copy the hours to the next day 
+    At the bottom of the page should contain the following action buttons to
+        Submit Times
+        Recall Previous Submission
+            The employee must only be view the hours for the previous pay period but can not modify them and resubmit them
+            When recalling the previous submission, the employee must be able to switch to the current pay period
+            once back at the current pay period, the employee should be able to adjust the hours for the current pay period and Submit
+    If the current pay period has not ended, the timesheet should automatically recall any hours already entered for the current pay period
+Include the ability to copy hours from week 1 to week 2.
+The Android and iOS apps must have support the same functionality, enable the employee to enter the same information and see the same summary information
+The page must contain a summary section which contains
+    The total number of hours for each week
+    The total number of hours for the pay period (2 weeks added together)
+    If the employee gets vacation pay they need to be able to enter the number of vacation pay hours for the whole pay period
+        The vacation pay hours need to be included in the total pay period hours but not the weekly hours
+A blue 'Admin Portal' button is displayed in the upper right corner
+Enable the ability of the administrator to reset their password for the Admin portal
+
+Admin Portal
+
+General Overview of the Admin portal
+Admin portal must enable the administrator to manage the list of employees, view and modify the hours entered by employees and provide the ability to generate reports on the number of hours worked.
+
+Business Rules for the Admin Portal
+The system should be able to automatically calculate when the next pay period is
+Admin portal must be secured via username and password following up to date security principles
+
+
+UI Design Features for the Admin Portal
+Enable the ability to reset a password if it is forgotten
+Specify and adjust the start and end date of a pay period
+Pay Period Selection: Date picker for the start of the pay period.
+The admin portal will have the ability to add, edit and delete employees
+The admin portal must enable the ability of the admin to create a username and password for each user.
+    The username is the employees email address
+The admin portal will have the ability to add, edit and delete pay periods
+The admin portal will have the ability to add, edit and delete time entries
+The admin portal must have the ability to view, add, edit and delete the exact hours inputted by the employee
+    This includes the start time, end time, lunch start time and the lunch end time
+The admin must have the ability to view all time entries for all employees for all pay periods
+The admin must have the ability to view all time entries for a specific employee for a specific pay period
+The admin must have the ability to view all time entries for a specific pay period for all employees
+The admin must have the ability to view all time entries for a specific employee for all pay periods
+The admin must have the ability to view all time entries for all employees for a specific pay period
+The admin must have the ability to view all time entries for all employees for all pay periods
+The admin portal must have the ability for the administrator to change their password
+The admin portal must enable the ability to add and change the numbers of hours that are worked for a holiday, vacation, and sick day by employee per day
+    A vacation, holiday, and sick day may have a different number of hours on a tuesday compared to wednesday
+    Employee A may have a different number of hours they get paid for a holiday, vacation or sick day
+The admin portal must have the ability to specify if an employee is eligible for vacation pay
+The admin portal must have the ability to specify if an employee is eligible for sick pay
+The admin portal must have the ability to specify if an employee is eligible for holiday pay
+If the employee is not eligible for either vacation, sick days, holiday pay or vacation pay then the app should not allow the employee to enter the hours and pick those types of days
+
+Backend Component
+Must be docker based for easy portability
+Database must include:
+    Parameters to control the look and feel of the app
+    Contain the required information for the employees and admin login credentials
+    Information about each employee as indicated in the requirements above
+
+
+
