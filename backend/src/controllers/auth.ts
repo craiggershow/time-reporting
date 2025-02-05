@@ -15,24 +15,30 @@ export async function login(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
 
+    // Debug log
+    console.log('Login attempt:', { email });
+
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
+      console.log('User not found:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
+      console.log('Invalid password for user:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
+      console.error('JWT_SECRET not configured');
       throw new Error('JWT_SECRET is not configured');
     }
 
@@ -44,11 +50,9 @@ export async function login(req: Request, res: Response) {
       role: user.role,
     };
 
-    const signOptions: SignOptions = {
+    const token = jwt.sign(payload, jwtSecret, {
       expiresIn: parseInt(process.env.JWT_EXPIRES_IN || '86400'), // 24 hours in seconds
-    };
-
-    const token = jwt.sign(payload, jwtSecret, signOptions);
+    });
 
     // Set cookie
     res.cookie('auth_token', token, {
@@ -57,6 +61,9 @@ export async function login(req: Request, res: Response) {
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
+
+    // Debug log
+    console.log('Login successful:', { email, userId: user.id });
 
     res.json({
       user: {

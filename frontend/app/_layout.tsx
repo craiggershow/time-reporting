@@ -5,6 +5,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { TimesheetProvider } from '@/context/TimesheetContext';
+import { AuthProvider } from '@/context/AuthContext';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -27,18 +28,20 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider>
-      <TimesheetProvider>
-        <QueryClientProvider client={queryClient}>
-          <Stack screenOptions={{
-            headerShown: false,
-          }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(app)" options={{ headerShown: false }} />
-          </Stack>
-        </QueryClientProvider>
-      </TimesheetProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <TimesheetProvider>
+          <QueryClientProvider client={queryClient}>
+            <Stack screenOptions={{
+              headerShown: false,
+            }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(app)" options={{ headerShown: false }} />
+            </Stack>
+          </QueryClientProvider>
+        </TimesheetProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
