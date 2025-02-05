@@ -238,13 +238,14 @@ export async function updateTimesheet(req: AuthRequest, res: ExpressResponse) {
 
 export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
   try {
-    if (!req.user?.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    const { id } = req.params;
+    const { userId } = req.user!;
 
+    // Find timesheet
     const timesheet = await prisma.timesheet.findUnique({
-      where: {
-        id: req.params.id,
+      where: { id },
+      include: {
+        payPeriod: true,
       },
     });
 
@@ -252,26 +253,40 @@ export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
       return res.status(404).json({ error: 'Timesheet not found' });
     }
 
-    if (timesheet.userId !== req.user.userId) {
+    // Verify ownership
+    if (timesheet.userId !== userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // Verify timesheet is in DRAFT status
     if (timesheet.status !== 'DRAFT') {
-      return res.status(400).json({ error: 'Only draft timesheets can be submitted' });
+      return res.status(400).json({ 
+        error: 'Only draft timesheets can be submitted' 
+      });
     }
 
+    // Update timesheet status
     const updatedTimesheet = await prisma.timesheet.update({
-      where: {
-        id: req.params.id,
-      },
+      where: { id },
       data: {
         status: 'SUBMITTED',
         submittedAt: new Date(),
       },
+      include: {
+        payPeriod: true,
+        weeks: {
+          include: {
+            days: true,
+          },
+        },
+      },
     });
 
-    res.status(200).json(updatedTimesheet);
+    // TODO: Send notification to admin
+
+    res.json(updatedTimesheet);
   } catch (error) {
+    console.error('Error submitting timesheet:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }

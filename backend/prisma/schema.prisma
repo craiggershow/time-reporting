@@ -18,6 +18,7 @@ model User {
   lastName   String
   role       UserRole    @default(EMPLOYEE)
   timesheets Timesheet[]
+  notifications Notification[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 }
@@ -32,6 +33,7 @@ model Timesheet {
   weeks         Week[]
   vacationHours Float           @default(0)
   submittedAt   DateTime?
+  notifications Notification[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -75,6 +77,20 @@ model Day {
   updatedAt      DateTime  @updatedAt
 
   @@unique([weekId, dayOfWeek])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  userId      String
+  timesheetId String
+  type        String
+  read        Boolean  @default(false)
+  user        User     @relation(fields: [userId], references: [id])
+  timesheet   Timesheet @relation(fields: [timesheetId], references: [id])
+
+  @@index([userId])
+  @@index([timesheetId])
 }
 
 enum UserRole {

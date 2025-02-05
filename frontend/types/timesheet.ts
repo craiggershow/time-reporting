@@ -1,4 +1,4 @@
-export type DayType = 'regular' | 'vacation' | 'holiday' | 'sick';
+export type DayType = 'regular' | 'vacation' | 'sick' | 'holiday';
 
 export interface TimeEntry {
   startTime: string | null;
@@ -19,10 +19,25 @@ export interface WeekData {
   totalHours: number;
 }
 
-export interface PayPeriod {
+export interface TimesheetData {
   startDate: Date;
   week1: WeekData;
   week2: WeekData;
+  vacationHours: number;
+  totalHours: number;
+}
+
+export interface TimesheetResponse {
+  id: string;
+  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+  payPeriod: {
+    startDate: string;
+    endDate: string;
+  };
+  weeks: {
+    weekNumber: number;
+    data: WeekData;
+  }[];
   vacationHours: number;
   totalHours: number;
 } 
