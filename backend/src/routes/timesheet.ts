@@ -8,6 +8,7 @@ import {
   getTimesheet,
   updateTimesheet,
   submitTimesheet,
+  recallTimesheet,
 } from '../controllers/timesheet';
 import { validateTimesheet } from '../middleware/validation';
 
@@ -42,5 +43,12 @@ router.get('/previous', getPreviousTimesheet);
 router.get('/:id', getTimesheet);
 router.post('/', validateTimesheet, updateTimesheet);
 router.post('/:id/submit', submitTimesheet);
+router.post('/:id/recall', authenticate, async (req: Request, res: Response) => {
+  try {
+    await recallTimesheet(req, res);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to recall timesheet' });
+  }
+});
 
 export { router as timesheetRouter }; 

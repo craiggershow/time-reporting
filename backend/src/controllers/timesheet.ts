@@ -276,4 +276,45 @@ export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
   }
 }
 
+export async function recallTimesheet(req: AuthRequest, res: ExpressResponse) {
+  try {
+    const { id } = req.params;
+
+    // Find timesheet
+    const timesheet = await prisma.timesheet.findUnique({
+      where: { id },
+    });
+
+    if (!timesheet) {
+      return res.status(404).json({ error: 'Timesheet not found' });
+    }
+
+    // Verify ownership
+    if (timesheet.userId !== req.user?.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Can only recall SUBMITTED timesheets
+    if (timesheet.status !== 'SUBMITTED') {
+      return res.status(400).json({ 
+        error: 'Only submitted timesheets can be recalled' 
+      });
+    }
+
+    // Update status back to DRAFT
+    const updatedTimesheet = await prisma.timesheet.update({
+      where: { id },
+      data: {
+        status: 'DRAFT',
+        submittedAt: null,
+      },
+    });
+
+    res.json(updatedTimesheet);
+  } catch (error) {
+    console.error('Error recalling timesheet:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 // ... implement other timesheet controller functions ... 

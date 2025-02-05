@@ -7,6 +7,7 @@ import { authRouter } from './routes/auth';
 import { errorHandler } from './middleware/error';
 import { prisma } from './lib/prisma';
 import dotenv from 'dotenv';
+import { payPeriodRouter } from './routes/payPeriod';
 
 // Load environment variables
 dotenv.config();
@@ -44,6 +45,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // Routes
 app.use('/api/auth', authRouter);
 app.use('/api/timesheets', timesheetRouter);
+app.use('/api/pay-periods', payPeriodRouter);
 
 // Error handling
 app.use(errorHandler);

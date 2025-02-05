@@ -11,45 +11,75 @@ datasource db {
 }
 
 model User {
-  id          String      @id @default(uuid())
-  email       String      @unique
-  password    String
-  firstName   String
-  lastName    String
-  role        UserRole
-  timesheets  Timesheet[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id         String      @id @default(uuid())
+  email      String      @unique
+  password   String
+  firstName  String
+  lastName   String
+  role       UserRole    @default(EMPLOYEE)
+  timesheets Timesheet[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Timesheet {
+  id            String          @id @default(uuid())
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  payPeriodId   String
+  payPeriod     PayPeriod       @relation(fields: [payPeriodId], references: [id])
+  status        TimesheetStatus @default(DRAFT)
+  weeks         Week[]
+  vacationHours Float           @default(0)
+  submittedAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@unique([userId, payPeriodId])
+}
+
+model PayPeriod {
+  id         String      @id @default(uuid())
+  startDate  DateTime
+  endDate    DateTime
+  timesheets Timesheet[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Week {
+  id          String    @id @default(uuid())
+  weekNumber  Int
+  timesheetId String
+  timesheet   Timesheet @relation(fields: [timesheetId], references: [id])
+  days        Day[]
+  extraHours  Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([timesheetId, weekNumber])
+}
+
+model Day {
+  id             String    @id @default(uuid())
+  weekId         String
+  week           Week      @relation(fields: [weekId], references: [id])
+  dayOfWeek      DayOfWeek
+  dayType        DayType   @default(REGULAR)
+  startTime      DateTime?
+  endTime        DateTime?
+  lunchStartTime DateTime?
+  lunchEndTime   DateTime?
+  totalHours     Float     @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([weekId, dayOfWeek])
 }
 
 enum UserRole {
   ADMIN
   EMPLOYEE
-}
-
-model PayPeriod {
-  id          String      @id @default(uuid())
-  startDate   DateTime
-  endDate     DateTime
-  timesheets  Timesheet[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-}
-
-model Timesheet {
-  id            String        @id @default(uuid())
-  userId        String
-  payPeriodId   String
-  status        TimesheetStatus
-  vacationHours Float         @default(0)
-  weeks         Week[]
-  submittedAt   DateTime?
-  user          User          @relation(fields: [userId], references: [id])
-  payPeriod     PayPeriod     @relation(fields: [payPeriodId], references: [id])
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  @@unique([userId, payPeriodId])
 }
 
 enum TimesheetStatus {
@@ -59,37 +89,17 @@ enum TimesheetStatus {
   REJECTED
 }
 
-model Week {
-  id          String    @id @default(uuid())
-  timesheetId String
-  weekNumber  Int       // 1 or 2
-  extraHours  Float     @default(0)
-  days        Day[]
-  timesheet   Timesheet @relation(fields: [timesheetId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@unique([timesheetId, weekNumber])
-}
-
-model Day {
-  id            String    @id @default(uuid())
-  weekId        String
-  dayOfWeek     String    // MONDAY, TUESDAY, etc.
-  dayType       DayType
-  startTime     String?
-  endTime       String?
-  lunchStartTime String?
-  lunchEndTime  String?
-  totalHours    Float
-  week          Week      @relation(fields: [weekId], references: [id])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-}
-
 enum DayType {
   REGULAR
   VACATION
   SICK
   HOLIDAY
-} 
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}

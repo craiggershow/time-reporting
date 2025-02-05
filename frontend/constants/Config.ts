@@ -16,6 +16,8 @@ export const API_ENDPOINTS = {
   CURRENT_TIMESHEET: 'api/timesheets/current',
   SUBMIT_TIMESHEET: 'api/timesheets/submit',
   RECALL_TIMESHEET: 'api/timesheets/recall',
+  PAY_PERIODS: 'api/pay-periods',
+  EMPLOYEES: 'api/employees',
 } as const;
 
 // Helper function to build API URLs
