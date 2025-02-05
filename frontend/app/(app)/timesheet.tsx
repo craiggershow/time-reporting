@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
 import { startOfWeek, addWeeks } from 'date-fns';
 import { ThemedText } from '@/components/ThemedText';
@@ -6,18 +6,24 @@ import { WeekTable } from '@/components/timesheet/WeekTable';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useTimesheet } from '@/context/TimesheetContext';
-import { WeekData, TimeEntry, DayType } from '@/types/timesheet';
+import { WeekData, TimeEntry, DayType, TimesheetData } from '@/types/timesheet';
 import { calculateTotalHours } from '../../utils/timeCalculations';
 import { createEmptyWeekData } from '@/context/TimesheetContext';
 import { Header } from '@/components/layout/Header';
 import { useTheme } from '@/context/ThemeContext';
 import { API_BASE_URL, buildApiUrl, API_ENDPOINTS } from '@/constants/Config';
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
+import { TimesheetForm } from '@/components/TimesheetForm';
 
 export default function TimesheetScreen() {
   const { state, dispatch } = useTimesheet();
   const { colors } = useTheme();
   const [vacationHours, setVacationHours] = useState('0');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchCurrentTimesheet = async () => {
@@ -136,9 +142,43 @@ export default function TimesheetScreen() {
     });
   };
 
-  const handleSubmit = async () => {
-    // TODO: Implement submission logic
-  };
+  async function handleSubmit(data: TimesheetData) {
+    try {
+      setIsSubmitting(true);
+
+      const response = await fetch(buildApiUrl('SUBMIT_TIMESHEET'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to submit timesheet');
+      }
+
+      Alert.alert(
+        'Success',
+        'Timesheet submitted successfully',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/(app)'),
+          },
+        ]
+      );
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to submit timesheet'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   const handleCopyWeek = () => {
     if (!state.currentPayPeriod?.week1) return;
@@ -280,7 +320,7 @@ export default function TimesheetScreen() {
         </View>
 
         <View style={styles.actions}>
-          <Button onPress={handleSubmit}>
+          <Button onPress={() => handleSubmit(state.currentPayPeriod as TimesheetData)}>
             Submit Timesheet
           </Button>
           <Button 
