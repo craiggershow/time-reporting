@@ -128,6 +128,7 @@ Add a row below the total hours per day that indicates if there is an error with
     If the lunch start time is entered and the lunch end time is not then there should be a red X in the status row
     Do not allow the user to submit the timesheet if any status rows have a red X
 Do not allow the user to submit the timesheet if any status rows have a red X
+    the user should see a popup when trying to submit and there is any type of validation error
 
 
 Admin Portal

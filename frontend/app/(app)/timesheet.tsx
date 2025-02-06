@@ -17,6 +17,8 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { TimesheetForm } from '@/components/TimesheetForm';
 import { convertTo24Hour, convertTo12Hour } from '../../utils/time';
+import { validateTimeEntry, validateWeeklyHours } from '@/utils/timeValidation';
+import { SubmitButton } from '@/components/ui/SubmitButton';
 
 interface DayData {
   startTime: string | null;
@@ -36,6 +38,8 @@ interface WeekData {
   thursday: DayData;
   friday: DayData;
 }
+
+const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
 
 export default function TimesheetScreen() {
   const { state, dispatch } = useTimesheet();
@@ -216,11 +220,86 @@ export default function TimesheetScreen() {
     };
   }
 
+  // Add a function to check if the timesheet is valid
+  const hasValidationErrors = () => {
+    if (!state.currentPayPeriod) return true;
+
+    // Check each day in both weeks
+    const weeks = ['week1', 'week2'] as const;
+    for (const week of weeks) {
+      for (const day of DAYS) {
+        const entry = state.currentPayPeriod[week][day];
+        const validation = validateTimeEntry(entry);
+        if (!validation.isValid) return true;
+      }
+
+      // Check weekly total
+      const weekTotal = DAYS.reduce(
+        (sum, day) => sum + state.currentPayPeriod![week][day].totalHours,
+        state.currentPayPeriod[week].extraHours || 0
+      );
+      const weekValidation = validateWeeklyHours(weekTotal);
+      if (!weekValidation.isValid) return true;
+    }
+
+    return false;
+  };
+
+  // Add a function to collect all validation errors
+  const getValidationErrors = () => {
+    if (!state.currentPayPeriod) return ['No timesheet data available'];
+    
+    const errors: string[] = [];
+    const weeks = ['week1', 'week2'] as const;
+    
+    weeks.forEach((week, weekIndex) => {
+      // Check each day in the week
+      DAYS.forEach(day => {
+        const entry = state.currentPayPeriod![week][day];
+        const validation = validateTimeEntry(entry);
+        if (!validation.isValid && validation.message) {
+          errors.push(`Week ${weekIndex + 1} - ${day.charAt(0).toUpperCase() + day.slice(1)}: ${validation.message}`);
+        }
+      });
+
+      // Check weekly total
+      const weekTotal = DAYS.reduce(
+        (sum, day) => sum + state.currentPayPeriod![week][day].totalHours,
+        state.currentPayPeriod[week].extraHours || 0
+      );
+      const weekValidation = validateWeeklyHours(weekTotal);
+      if (!weekValidation.isValid && weekValidation.message) {
+        errors.push(`Week ${weekIndex + 1}: ${weekValidation.message}`);
+      }
+    });
+
+    return errors;
+  };
+
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
 
+      // Check for validation errors first
+      const validationErrors = getValidationErrors();
+      console.log('Validation errors:', validationErrors);
+
+      if (validationErrors.length > 0) {
+        console.log('Found validation errors, showing alert');
+        setIsSubmitting(false);
+        Alert.alert(
+          'Validation Errors',
+          'Please fix the following errors before submitting:\n\n' + 
+          validationErrors.join('\n'),
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      console.log('No validation errors, proceeding with submit');
+
       if (!state.currentPayPeriod) {
+        setIsSubmitting(false);
         Alert.alert('Error', 'No timesheet data available');
         return;
       }
@@ -515,9 +594,11 @@ export default function TimesheetScreen() {
         </View>
 
         <View style={styles.actions}>
-          <Button onPress={handleSubmit}>
-            Submit Timesheet
-          </Button>
+          <SubmitButton
+            onPress={handleSubmit}
+            isSubmitting={isSubmitting}
+            validationErrors={getValidationErrors()}
+          />
           <Button 
             variant="secondary" 
             onPress={handleRecall}
