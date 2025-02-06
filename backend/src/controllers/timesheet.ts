@@ -1,6 +1,7 @@
 import { Request as ExpressRequest, Response as ExpressResponse } from 'express-serve-static-core';
 import { prisma } from '../lib/prisma';
 import { startOfWeek, addWeeks } from 'date-fns';
+import { DayOfWeek, DayType } from '@prisma/client';
 
 // Define the AuthRequest type
 interface AuthRequest extends ExpressRequest {
@@ -28,49 +29,153 @@ interface TimesheetWithPayPeriod {
   };
 }
 
-export async function getCurrentTimesheet(req: ExpressRequest, res: ExpressResponse) {
-  try {
-    // Get current pay period
-    const today = new Date();
-    const periodStart = startOfWeek(today, { weekStartsOn: 1 }); // Start on Monday
+interface DayData {
+  startTime: string | null;
+  endTime: string | null;
+  lunchStartTime: string | null;
+  lunchEndTime: string | null;
+  dayType: DayType;
+  totalHours: number;
+}
 
-    // For development, create a mock timesheet
-    const mockTimesheet = {
-      payPeriod: {
-        startDate: periodStart,
-        endDate: addWeeks(periodStart, 2),
+interface WeekData {
+  weekNumber: number;
+  extraHours: number;
+  monday: DayData;
+  tuesday: DayData;
+  wednesday: DayData;
+  thursday: DayData;
+  friday: DayData;
+}
+
+interface TimesheetSubmitData {
+  payPeriodId: string;
+  vacationHours: number;
+  weeks: WeekData[];
+}
+
+export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse) {
+  try {
+    if (!req.user?.userId) {
+      console.log('No user ID in request');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    console.log('Looking for user with ID:', req.user.userId);
+
+    // First verify the user exists
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId }
+    });
+
+    if (!user) {
+      console.log('User not found in database:', req.user.userId);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    console.log('Found user:', user.id);
+
+    const today = new Date();
+    const periodStart = startOfWeek(today, { weekStartsOn: 1 });
+    const periodEnd = addWeeks(periodStart, 2);
+
+    // Then find or create the pay period
+    const payPeriod = await prisma.payPeriod.upsert({
+      where: {
+        id: await prisma.payPeriod.findFirst({
+          where: { startDate: periodStart, endDate: periodEnd },
+          select: { id: true },
+        }).then(pp => pp?.id ?? 'new'),
       },
-      weeks: [
-        {
-          weekNumber: 1,
-          data: {
-            monday: createEmptyDay(),
-            tuesday: createEmptyDay(),
-            wednesday: createEmptyDay(),
-            thursday: createEmptyDay(),
-            friday: createEmptyDay(),
-            extraHours: 0,
-            totalHours: 0,
+      create: {
+        startDate: periodStart,
+        endDate: periodEnd,
+      },
+      update: {},
+    });
+
+    // Then find or create the timesheet with weeks and days
+    const timesheet = await prisma.timesheet.upsert({
+      where: {
+        userId_payPeriodId: {
+          userId: user.id,
+          payPeriodId: payPeriod.id,
+        }
+      },
+      create: {
+        userId: user.id,
+        payPeriodId: payPeriod.id,
+        status: 'DRAFT',
+        vacationHours: 0,
+        weeks: {
+          create: [
+            {
+              weekNumber: 1,
+              extraHours: 0,
+              days: {
+                create: [
+                  { dayOfWeek: 'MONDAY', dayType: 'REGULAR', totalHours: 0 },
+                  { dayOfWeek: 'TUESDAY', dayType: 'REGULAR', totalHours: 0 },
+                  { dayOfWeek: 'WEDNESDAY', dayType: 'REGULAR', totalHours: 0 },
+                  { dayOfWeek: 'THURSDAY', dayType: 'REGULAR', totalHours: 0 },
+                  { dayOfWeek: 'FRIDAY', dayType: 'REGULAR', totalHours: 0 },
+                ],
+              },
+            },
+            {
+              weekNumber: 2,
+              extraHours: 0,
+              days: {
+                create: [
+                  { dayOfWeek: 'MONDAY', dayType: 'REGULAR', totalHours: 0 },
+                  { dayOfWeek: 'TUESDAY', dayType: 'REGULAR', totalHours: 0 },
+                  { dayOfWeek: 'WEDNESDAY', dayType: 'REGULAR', totalHours: 0 },
+                  { dayOfWeek: 'THURSDAY', dayType: 'REGULAR', totalHours: 0 },
+                  { dayOfWeek: 'FRIDAY', dayType: 'REGULAR', totalHours: 0 },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      update: {},
+      include: {
+        payPeriod: true,
+        weeks: {
+          include: {
+            days: {
+              orderBy: {
+                dayOfWeek: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            weekNumber: 'asc',
           },
         },
-        {
-          weekNumber: 2,
-          data: {
-            monday: createEmptyDay(),
-            tuesday: createEmptyDay(),
-            wednesday: createEmptyDay(),
-            thursday: createEmptyDay(),
-            friday: createEmptyDay(),
-            extraHours: 0,
-            totalHours: 0,
-          },
-        },
-      ],
-      vacationHours: 0,
-      totalHours: 0,
+      },
+    });
+
+    // Format the response to match frontend expectations
+    const formattedResponse = {
+      id: timesheet.id,
+      userId: timesheet.userId,
+      payPeriod: timesheet.payPeriod,
+      status: timesheet.status,
+      vacationHours: timesheet.vacationHours,
+      submittedAt: timesheet.submittedAt,
+      weeks: timesheet.weeks.map(week => ({
+        weekNumber: week.weekNumber,
+        extraHours: week.extraHours,
+        monday: week.days.find(d => d.dayOfWeek === 'MONDAY') || createEmptyDay(),
+        tuesday: week.days.find(d => d.dayOfWeek === 'TUESDAY') || createEmptyDay(),
+        wednesday: week.days.find(d => d.dayOfWeek === 'WEDNESDAY') || createEmptyDay(),
+        thursday: week.days.find(d => d.dayOfWeek === 'THURSDAY') || createEmptyDay(),
+        friday: week.days.find(d => d.dayOfWeek === 'FRIDAY') || createEmptyDay(),
+      })),
     };
 
-    res.status(200).json(mockTimesheet);
+    res.status(200).json(formattedResponse);
   } catch (error) {
     console.error('Error getting current timesheet:', error);
     res.status(500).json({ error: 'Failed to get current timesheet' });
@@ -79,11 +184,11 @@ export async function getCurrentTimesheet(req: ExpressRequest, res: ExpressRespo
 
 function createEmptyDay() {
   return {
-    startTime: null,
-    endTime: null,
-    lunchStartTime: null,
-    lunchEndTime: null,
-    dayType: 'regular' as const,
+    startTime: "00:00",
+    endTime: "00:00",
+    lunchStartTime: "00:00",
+    lunchEndTime: "00:00",
+    dayType: 'REGULAR',
     totalHours: 0,
   };
 }
@@ -158,6 +263,10 @@ export async function getTimesheet(req: AuthRequest, res: ExpressResponse) {
   }
 }
 
+function formatTimeForStorage(time: string | null): string {
+  return time || "00:00";
+}
+
 export async function updateTimesheet(req: AuthRequest, res: ExpressResponse) {
   try {
     const { weeks, vacationHours } = req.body;
@@ -200,22 +309,24 @@ export async function updateTimesheet(req: AuthRequest, res: ExpressResponse) {
       data: {
         vacationHours,
         weeks: {
-          update: weeks.map((week: any, index: number) => ({
+          update: weeks.map((week: WeekData, index: number) => ({
             where: { timesheetId_weekNumber: { timesheetId: timesheet.id, weekNumber: index + 1 } },
             data: {
               extraHours: week.extraHours,
               days: {
-                updateMany: Object.entries(week).map(([day, data]: [string, any]) => ({
-                  where: { dayOfWeek: day.toUpperCase() },
-                  data: {
-                    dayType: data.dayType,
-                    startTime: data.startTime,
-                    endTime: data.endTime,
-                    lunchStartTime: data.lunchStartTime,
-                    lunchEndTime: data.lunchEndTime,
-                    totalHours: data.totalHours,
-                  },
-                })),
+                updateMany: Object.entries(week)
+                  .filter(([key]) => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].includes(key))
+                  .map(([day, data]: [string, DayData]) => ({
+                    where: { dayOfWeek: day.toUpperCase() },
+                    data: {
+                      dayType: data.dayType,
+                      startTime: formatTimeForStorage(data.startTime),
+                      endTime: formatTimeForStorage(data.endTime),
+                      lunchStartTime: formatTimeForStorage(data.lunchStartTime),
+                      lunchEndTime: formatTimeForStorage(data.lunchEndTime),
+                      totalHours: data.totalHours,
+                    },
+                  })),
               },
             },
           })),
@@ -232,57 +343,148 @@ export async function updateTimesheet(req: AuthRequest, res: ExpressResponse) {
 
     res.status(200).json(updatedTimesheet);
   } catch (error) {
+    console.error('Error updating timesheet:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }
 
+function parseTimeString(timeStr: string): Date {
+  try {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  } catch (error) {
+    console.error('Error parsing time:', error);
+    return new Date(0); // midnight as fallback
+  }
+}
+
+function formatDateToTimeString(date: Date | null): string | null {
+  if (!date) return null;
+  return date.toISOString();
+}
+
 export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
   try {
-    const { id } = req.params;
+    const { payPeriodId, weeks, vacationHours } = req.body as TimesheetSubmitData;
     const { userId } = req.user!;
 
-    // Find timesheet
+    // First find the timesheet
     const timesheet = await prisma.timesheet.findUnique({
-      where: { id },
-      include: {
-        payPeriod: true,
-      },
+      where: { 
+        userId_payPeriodId: {
+          userId,
+          payPeriodId,
+        }
+      }
     });
 
     if (!timesheet) {
       return res.status(404).json({ error: 'Timesheet not found' });
     }
 
-    // Verify ownership
-    if (timesheet.userId !== userId) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    // Verify timesheet is in DRAFT status
-    if (timesheet.status !== 'DRAFT') {
-      return res.status(400).json({ 
-        error: 'Only draft timesheets can be submitted' 
-      });
-    }
-
-    // Update timesheet status
+    // Then update with all data
     const updatedTimesheet = await prisma.timesheet.update({
-      where: { id },
+      where: { 
+        userId_payPeriodId: {
+          userId,
+          payPeriodId,
+        }
+      },
       data: {
         status: 'SUBMITTED',
         submittedAt: new Date(),
+        vacationHours,
+        weeks: {
+          update: weeks.map((week) => ({
+            where: { 
+              timesheetId_weekNumber: {
+                timesheetId: timesheet.id,
+                weekNumber: week.weekNumber,
+              }
+            },
+            data: {
+              extraHours: week.extraHours || 0,
+              days: {
+                updateMany: [
+                  {
+                    where: { dayOfWeek: 'MONDAY' },
+                    data: {
+                      dayType: week.monday.dayType,
+                      startTime: formatTimeForStorage(week.monday.startTime),
+                      endTime: formatTimeForStorage(week.monday.endTime),
+                      lunchStartTime: formatTimeForStorage(week.monday.lunchStartTime),
+                      lunchEndTime: formatTimeForStorage(week.monday.lunchEndTime),
+                      totalHours: week.monday.totalHours,
+                    },
+                  },
+                  {
+                    where: { dayOfWeek: 'TUESDAY' },
+                    data: {
+                      dayType: week.tuesday.dayType,
+                      startTime: formatTimeForStorage(week.tuesday.startTime),
+                      endTime: formatTimeForStorage(week.tuesday.endTime),
+                      lunchStartTime: formatTimeForStorage(week.tuesday.lunchStartTime),
+                      lunchEndTime: formatTimeForStorage(week.tuesday.lunchEndTime),
+                      totalHours: week.tuesday.totalHours,
+                    },
+                  },
+                  {
+                    where: { dayOfWeek: 'WEDNESDAY' },
+                    data: {
+                      dayType: week.wednesday.dayType,
+                      startTime: formatTimeForStorage(week.wednesday.startTime),
+                      endTime: formatTimeForStorage(week.wednesday.endTime),
+                      lunchStartTime: formatTimeForStorage(week.wednesday.lunchStartTime),
+                      lunchEndTime: formatTimeForStorage(week.wednesday.lunchEndTime),
+                      totalHours: week.wednesday.totalHours,
+                    },
+                  },
+                  {
+                    where: { dayOfWeek: 'THURSDAY' },
+                    data: {
+                      dayType: week.thursday.dayType,
+                      startTime: formatTimeForStorage(week.thursday.startTime),
+                      endTime: formatTimeForStorage(week.thursday.endTime),
+                      lunchStartTime: formatTimeForStorage(week.thursday.lunchStartTime),
+                      lunchEndTime: formatTimeForStorage(week.thursday.lunchEndTime),
+                      totalHours: week.thursday.totalHours,
+                    },
+                  },
+                  {
+                    where: { dayOfWeek: 'FRIDAY' },
+                    data: {
+                      dayType: week.friday.dayType,
+                      startTime: formatTimeForStorage(week.friday.startTime),
+                      endTime: formatTimeForStorage(week.friday.endTime),
+                      lunchStartTime: formatTimeForStorage(week.friday.lunchStartTime),
+                      lunchEndTime: formatTimeForStorage(week.friday.lunchEndTime),
+                      totalHours: week.friday.totalHours,
+                    },
+                  },
+                ],
+              },
+            },
+          })),
+        },
       },
       include: {
         payPeriod: true,
         weeks: {
           include: {
-            days: true,
+            days: {
+              orderBy: {
+                dayOfWeek: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            weekNumber: 'asc',
           },
         },
       },
     });
-
-    // TODO: Send notification to admin
 
     res.json(updatedTimesheet);
   } catch (error) {

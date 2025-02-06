@@ -1,5 +1,9 @@
+const express = require('express');
 import { Request, Response, NextFunction } from 'express-serve-static-core';
+
+//import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../lib/prisma';
 
 interface JwtPayload {
   userId: string;
@@ -7,30 +11,59 @@ interface JwtPayload {
   role: 'ADMIN' | 'EMPLOYEE';
 }
 
-export function authenticate(req: Request, res: Response, next: NextFunction) {
+interface AuthRequest extends Request {
+  user?: {
+    userId: string;
+    email: string;
+    role: 'ADMIN' | 'EMPLOYEE';
+  };
+}
+
+export const authenticate = authMiddleware;
+
+export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const token = req.cookies.auth_token;
+    // Debug logging
+    console.log('Auth Headers:', req.headers.authorization);
+    console.log('Cookies:', req.cookies);
+    
+    // Check both cookie and Authorization header
+    const authHeader = req.headers.authorization;
+    const token = req.cookies.auth_token || (authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : authHeader);
+    
+    console.log('Extracted token:', token?.substring(0, 20) + '...');
 
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    
-    // Add user info to request
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    console.log('Decoded token:', decoded);
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId }
+    });
+
+    if (!user) {
+      console.log('User not found for token:', decoded);
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
     req.user = {
-      userId: decoded.userId,
-      email: decoded.email,
-      role: decoded.role,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
     };
 
+    console.log('Auth successful for user:', user.id);
     next();
   } catch (error) {
-    res.status(401).json({ error: 'Invalid or expired token' });
+    console.error('Auth error:', error);
+    res.status(401).json({ error: 'Invalid token' });
   }
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction) {
   if (req.user?.role !== 'ADMIN') {
     return res.status(403).json({ error: 'Admin access required' });
   }

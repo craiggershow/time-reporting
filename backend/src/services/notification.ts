@@ -29,14 +29,16 @@ export async function createNotification(data: NotificationData) {
       where: { role: 'ADMIN' },
     });
 
+
+
     // Create notification records
-    await prisma.notification.createMany({
+    await prisma.Notification.createMany({
       data: admins.map(admin => ({
         userId: admin.id,
         timesheetId,
         type,
         read: false,
-      })),
+      }))
     });
 
     // Send email notifications

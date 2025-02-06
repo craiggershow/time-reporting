@@ -28,13 +28,19 @@ app.use(cors({
     'http://192.168.2.241:19000', // Expo Go app
     'http://192.168.2.241:19006', // Expo web
     'exp://192.168.2.241:19000',  // Expo Go app (exp protocol)
+    'http://localhost:19006', // Add localhost
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'], // Add Cookie to allowed headers
 }));
+
+// Configure cookie parser with secure settings
+app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(express.json());
-app.use(cookieParser());
+
+// Set secure cookie settings
+app.set('trust proxy', 1); // trust first proxy
 
 // Debug middleware
 app.use((req: Request, res: Response, next: NextFunction) => {

@@ -16,6 +16,26 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { TimesheetForm } from '@/components/TimesheetForm';
+import { convertTo24Hour, convertTo12Hour } from '../../utils/time';
+
+interface DayData {
+  startTime: string | null;
+  endTime: string | null;
+  lunchStartTime: string | null;
+  lunchEndTime: string | null;
+  dayType: DayType;
+  totalHours: number;
+}
+
+interface WeekData {
+  weekNumber: number;
+  extraHours: number;
+  monday: DayData;
+  tuesday: DayData;
+  wednesday: DayData;
+  thursday: DayData;
+  friday: DayData;
+}
 
 export default function TimesheetScreen() {
   const { state, dispatch } = useTimesheet();
@@ -95,6 +115,8 @@ export default function TimesheetScreen() {
     const weekKey = `week${week}` as const;
     const currentEntry = state.currentPayPeriod[weekKey][day];
     
+    console.log('Updating time entry:', { week, day, field, value, currentEntry });
+    
     const updatedEntry: TimeEntry = {
       ...currentEntry,
       [field]: value,
@@ -142,35 +164,190 @@ export default function TimesheetScreen() {
     });
   };
 
-  async function handleSubmit(data: TimesheetData) {
+  function formatTime(time: string | null): string | null {
+    if (!time) return null;
+    return time.substring(0, 5); // Get just HH:mm part
+  }
+
+  function formatTimeForSubmit(time: string | null): string | null {
+    if (!time) return null;
+    // Ensure time is in HH:mm format
+    const [hours, minutes] = time.split(':');
+    return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+  }
+
+  function formatTimeEntry(entry: any) {
+    return {
+      startTime: convertTo24Hour(entry.startTime),
+      endTime: convertTo24Hour(entry.endTime),
+      lunchStartTime: convertTo24Hour(entry.lunchStartTime),
+      lunchEndTime: convertTo24Hour(entry.lunchEndTime),
+      dayType: entry.dayType,
+      totalHours: entry.totalHours || 0,
+    };
+  }
+
+  function displayTimeEntry(entry: any) {
+    return {
+      startTime: convertTo12Hour(entry.startTime),
+      endTime: convertTo12Hour(entry.endTime),
+      lunchStartTime: convertTo12Hour(entry.lunchStartTime),
+      lunchEndTime: convertTo12Hour(entry.lunchEndTime),
+      dayType: entry.dayType,
+      totalHours: entry.totalHours,
+    };
+  }
+
+  const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
+
+      if (!state.currentPayPeriod) {
+        Alert.alert('Error', 'No timesheet data available');
+        return;
+      }
+
+      // Get current timesheet for payPeriodId
+      const currentResponse = await fetch(buildApiUrl('CURRENT_TIMESHEET'), {
+        credentials: 'include',
+      });
+
+      if (!currentResponse.ok) {
+        const errorData = await currentResponse.json();
+        console.error('Error getting current timesheet:', errorData);
+        throw new Error(errorData.error || 'Failed to get current timesheet');
+      }
+
+      const currentTimesheet = await currentResponse.json();
+      console.log('Current timesheet:', currentTimesheet);
+
+      if (!currentTimesheet.payPeriod?.id) {
+        throw new Error('No payPeriodId found');
+      }
+
+      // Format data to match current timesheet structure
+      const submitData = {
+        payPeriodId: currentTimesheet.payPeriod.id,
+        vacationHours: state.currentPayPeriod.vacationHours,
+        weeks: [
+          {
+            weekNumber: 1,
+            extraHours: state.currentPayPeriod.week1.extraHours || 0,
+            monday: {
+              startTime: convertTo24Hour(state.currentPayPeriod.week1.monday.startTime),
+              endTime: convertTo24Hour(state.currentPayPeriod.week1.monday.endTime),
+              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week1.monday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week1.monday.lunchEndTime),
+              dayType: state.currentPayPeriod.week1.monday.dayType.toUpperCase(),
+              totalHours: state.currentPayPeriod.week1.monday.totalHours,
+            },
+            tuesday: {
+              startTime: convertTo24Hour(state.currentPayPeriod.week1.tuesday.startTime),
+              endTime: convertTo24Hour(state.currentPayPeriod.week1.tuesday.endTime),
+              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week1.tuesday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week1.tuesday.lunchEndTime),
+              dayType: state.currentPayPeriod.week1.tuesday.dayType.toUpperCase(),
+              totalHours: state.currentPayPeriod.week1.tuesday.totalHours,
+            },
+            wednesday: {
+              startTime: convertTo24Hour(state.currentPayPeriod.week1.wednesday.startTime),
+              endTime: convertTo24Hour(state.currentPayPeriod.week1.wednesday.endTime),
+              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week1.wednesday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week1.wednesday.lunchEndTime),
+              dayType: state.currentPayPeriod.week1.wednesday.dayType.toUpperCase(),
+              totalHours: state.currentPayPeriod.week1.wednesday.totalHours,
+            },
+            thursday: {
+              startTime: convertTo24Hour(state.currentPayPeriod.week1.thursday.startTime),
+              endTime: convertTo24Hour(state.currentPayPeriod.week1.thursday.endTime),
+              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week1.thursday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week1.thursday.lunchEndTime),
+              dayType: state.currentPayPeriod.week1.thursday.dayType.toUpperCase(),
+              totalHours: state.currentPayPeriod.week1.thursday.totalHours,
+            },
+            friday: {
+              startTime: convertTo24Hour(state.currentPayPeriod.week1.friday.startTime),
+              endTime: convertTo24Hour(state.currentPayPeriod.week1.friday.endTime),
+              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week1.friday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week1.friday.lunchEndTime),
+              dayType: state.currentPayPeriod.week1.friday.dayType.toUpperCase(),
+              totalHours: state.currentPayPeriod.week1.friday.totalHours,
+            },
+          },
+          {
+            weekNumber: 2,
+            extraHours: state.currentPayPeriod.week2.extraHours || 0,
+            monday: {
+              startTime: convertTo24Hour(state.currentPayPeriod.week2.monday.startTime),
+              endTime: convertTo24Hour(state.currentPayPeriod.week2.monday.endTime),
+              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week2.monday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week2.monday.lunchEndTime),
+              dayType: state.currentPayPeriod.week2.monday.dayType.toUpperCase(),
+              totalHours: state.currentPayPeriod.week2.monday.totalHours,
+            },
+            tuesday: {
+              startTime: convertTo24Hour(state.currentPayPeriod.week2.tuesday.startTime),
+              endTime: convertTo24Hour(state.currentPayPeriod.week2.tuesday.endTime),
+              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week2.tuesday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week2.tuesday.lunchEndTime),
+              dayType: state.currentPayPeriod.week2.tuesday.dayType.toUpperCase(),
+              totalHours: state.currentPayPeriod.week2.tuesday.totalHours,
+            },
+            wednesday: {
+              startTime: convertTo24Hour(state.currentPayPeriod.week2.wednesday.startTime),
+              endTime: convertTo24Hour(state.currentPayPeriod.week2.wednesday.endTime),
+              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week2.wednesday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week2.wednesday.lunchEndTime),
+              dayType: state.currentPayPeriod.week2.wednesday.dayType.toUpperCase(),
+              totalHours: state.currentPayPeriod.week2.wednesday.totalHours,
+            },
+            thursday: {
+              startTime: convertTo24Hour(state.currentPayPeriod.week2.thursday.startTime),
+              endTime: convertTo24Hour(state.currentPayPeriod.week2.thursday.endTime),
+              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week2.thursday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week2.thursday.lunchEndTime),
+              dayType: state.currentPayPeriod.week2.thursday.dayType.toUpperCase(),
+              totalHours: state.currentPayPeriod.week2.thursday.totalHours,
+            },
+            friday: {
+              startTime: convertTo24Hour(state.currentPayPeriod.week2.friday.startTime),
+              endTime: convertTo24Hour(state.currentPayPeriod.week2.friday.endTime),
+              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week2.friday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week2.friday.lunchEndTime),
+              dayType: state.currentPayPeriod.week2.friday.dayType.toUpperCase(),
+              totalHours: state.currentPayPeriod.week2.friday.totalHours,
+            },
+          },
+        ],
+      };
+
+      console.log('Timesheet submission payload:', JSON.stringify(submitData, null, 2));
 
       const response = await fetch(buildApiUrl('SUBMIT_TIMESHEET'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
         credentials: 'include',
+        body: JSON.stringify(submitData),
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to submit timesheet');
+        const errorData = await response.json();
+        console.error('Error submitting timesheet:', errorData);
+        throw new Error(errorData.error || 'Failed to submit timesheet');
       }
+
+      const result = await response.json();
+      console.log('Submit response:', result);
 
       Alert.alert(
         'Success',
         'Timesheet submitted successfully',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/(app)'),
-          },
-        ]
+        [{ text: 'OK', onPress: () => router.replace('/(app)') }]
       );
     } catch (error) {
+      console.error('Submit error:', error);
       Alert.alert(
         'Error',
         error instanceof Error ? error.message : 'Failed to submit timesheet'
@@ -178,7 +355,7 @@ export default function TimesheetScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
 
   const handleCopyWeek = () => {
     if (!state.currentPayPeriod?.week1) return;
@@ -320,7 +497,7 @@ export default function TimesheetScreen() {
         </View>
 
         <View style={styles.actions}>
-          <Button onPress={() => handleSubmit(state.currentPayPeriod as TimesheetData)}>
+          <Button onPress={handleSubmit}>
             Submit Timesheet
           </Button>
           <Button 

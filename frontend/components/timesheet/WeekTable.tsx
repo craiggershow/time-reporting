@@ -89,11 +89,19 @@ export function WeekTable({
                 const dayDate = addDays(startDate, DAYS.indexOf(day));
                 const disabled = isFutureDate(dayDate);
                 
+                // Fix the field name mapping
+                const fieldMap = {
+                  'Start': 'startTime',
+                  'End': 'endTime',
+                  'Lunch Start': 'lunchStartTime',  // Fixed casing
+                  'Lunch End': 'lunchEndTime',      // Fixed casing
+                };
+                
                 return (
                   <View key={day} style={styles.cell}>
                     <TimeInput
-                      value={data[day][`${label.toLowerCase().replace(' ', '')}Time` as keyof TimeEntry]}
-                      onChange={(value) => onUpdate(day, `${label.toLowerCase().replace(' ', '')}Time` as keyof TimeEntry, value)}
+                      value={data[day][fieldMap[label] as keyof TimeEntry]}
+                      onChange={(value) => onUpdate(day, fieldMap[label] as keyof TimeEntry, value)}
                       disabled={disabled}
                     />
                   </View>

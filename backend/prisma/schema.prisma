@@ -26,13 +26,13 @@ model User {
 model Timesheet {
   id            String          @id @default(uuid())
   userId        String
-  user          User            @relation(fields: [userId], references: [id])
   payPeriodId   String
-  payPeriod     PayPeriod       @relation(fields: [payPeriodId], references: [id])
   status        TimesheetStatus @default(DRAFT)
   weeks         Week[]
   vacationHours Float           @default(0)
   submittedAt   DateTime?
+  user          User            @relation(fields: [userId], references: [id])
+  payPeriod     PayPeriod       @relation(fields: [payPeriodId], references: [id])
   notifications Notification[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -47,6 +47,8 @@ model PayPeriod {
   timesheets Timesheet[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
+
+  @@unique([startDate, endDate])
 }
 
 model Week {
@@ -63,30 +65,31 @@ model Week {
 }
 
 model Day {
-  id             String    @id @default(uuid())
-  weekId         String
-  week           Week      @relation(fields: [weekId], references: [id])
-  dayOfWeek      DayOfWeek
-  dayType        DayType   @default(REGULAR)
-  startTime      DateTime?
-  endTime        DateTime?
-  lunchStartTime DateTime?
-  lunchEndTime   DateTime?
-  totalHours     Float     @default(0)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id              String      @id @default(uuid())
+  weekId          String
+  dayOfWeek       DayOfWeek
+  dayType         DayType     @default(REGULAR)
+  // Time fields as strings
+  startTime       String      @default("00:00")
+  endTime         String      @default("00:00")
+  lunchStartTime  String      @default("00:00")
+  lunchEndTime    String      @default("00:00")
+  totalHours      Float       @default(0)
+  week            Week        @relation(fields: [weekId], references: [id])
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@unique([weekId, dayOfWeek])
 }
 
 model Notification {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
   userId      String
   timesheetId String
   type        String
-  read        Boolean  @default(false)
-  user        User     @relation(fields: [userId], references: [id])
+  read        Boolean   @default(false)
+  user        User      @relation(fields: [userId], references: [id])
   timesheet   Timesheet @relation(fields: [timesheetId], references: [id])
 
   @@index([userId])

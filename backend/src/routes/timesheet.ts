@@ -14,8 +14,8 @@ import { validateTimesheet } from '../middleware/validation';
 
 const router = express.Router();
 
-// Temporarily disable authentication for testing
-// router.use(authenticate);
+// Protect all timesheet routes
+router.use(authenticate);
 
 router.get('/', async (req: Request & { user: { id: string } }, res: Response) => {
   const timesheets = await prisma.timesheet.findMany({
@@ -38,17 +38,14 @@ router.get('/test', (req: Request, res: Response) => {
   res.json({ message: 'Timesheet router is working' });
 });
 
+// Base routes
 router.get('/current', getCurrentTimesheet);
 router.get('/previous', getPreviousTimesheet);
 router.get('/:id', getTimesheet);
 router.post('/', validateTimesheet, updateTimesheet);
-router.post('/:id/submit', submitTimesheet);
-router.post('/:id/recall', authenticate, async (req: Request, res: Response) => {
-  try {
-    await recallTimesheet(req, res);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to recall timesheet' });
-  }
-});
+
+// Action routes
+router.post('/submit', submitTimesheet);
+router.post('/recall', recallTimesheet);
 
 export { router as timesheetRouter }; 

@@ -33,6 +33,10 @@ Use github to manage and store the code for the project
 The app frontend and backend must support managing the time reporting for multiple companies
 Employees and the employer/admin should be linked to a specific company
 An employee and employer must be able to only access the time reporting for a specific company
+The UI will use a 12 hour format for the time input fields
+The database will store the time in 24 hour format
+Therefore when passing data from the UI to the backend, the data must be converted to 24 hour format
+When displaying the data to the user, the data must be converted to 12 hour format
 
 
 UI Design Features common across all pages
