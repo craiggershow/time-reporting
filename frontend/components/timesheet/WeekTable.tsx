@@ -10,7 +10,7 @@ import { Input } from '../ui/Input';
 import { validateTimeEntry, validateWeeklyHours } from '@/utils/timeValidation';
 import { Ionicons } from '@expo/vector-icons';
 import { Tooltip } from '../ui/Tooltip';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface WeekTableProps {
   data: WeekData;
@@ -54,17 +54,13 @@ export function WeekTable({
   // Calculate validation for a day
   const validateDay = (day: keyof WeekData) => {
     const entry = data[day];
-    const validation = validateTimeEntry(entry);
-    
-    // Check weekly hours
+    return validateTimeEntry(entry);
+  };
+
+  // Separate weekly validation
+  const validateWeeklyTotal = () => {
     const weekTotal = DAYS.reduce((sum, d) => sum + data[d].totalHours, 0) + (data.extraHours || 0);
-    const weeklyValidation = validateWeeklyHours(weekTotal);
-    
-    if (!weeklyValidation.isValid) {
-      return weeklyValidation;
-    }
-    
-    return validation;
+    return validateWeeklyHours(weekTotal);
   };
 
   // Add validation status row after total hours
@@ -94,7 +90,20 @@ export function WeekTable({
           </View>
         );
       })}
-      <View style={styles.cell} />
+      <View style={styles.cell}>
+        {weeklyTotal > 0 && (
+          <>
+            {validateWeeklyTotal().isValid ? (
+              <Ionicons name="checkmark-circle" size={20} color="#22c55e" />
+            ) : (
+              <View style={styles.tooltipContainer}>
+                <Ionicons name="warning" size={20} color="#ef4444" />
+                <Tooltip message={validateWeeklyTotal().message || ''} />
+              </View>
+            )}
+          </>
+        )}
+      </View>
     </View>
   );
 
@@ -110,6 +119,22 @@ export function WeekTable({
       [day]: true
     }));
   };
+
+  useEffect(() => {
+    DAYS.forEach(day => {
+      if (data[day].startTime || data[day].endTime) {
+        const validation = validateDay(day);
+        setValidationState(prev => ({
+          ...prev,
+          [day]: validation
+        }));
+        setShowValidation(prev => ({
+          ...prev,
+          [day]: true
+        }));
+      }
+    });
+  }, [data]);
 
   return (
     <View style={styles.container}>
