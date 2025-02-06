@@ -11,6 +11,7 @@ import { validateTimeEntry, validateWeeklyHours } from '@/utils/timeValidation';
 import { Ionicons } from '@expo/vector-icons';
 import { Tooltip } from '../ui/Tooltip';
 import { useState, useEffect } from 'react';
+import { timeToMinutes } from '@/utils/timeCalculations';
 
 interface WeekTableProps {
   data: WeekData;
@@ -136,6 +137,25 @@ export function WeekTable({
     });
   }, [data]);
 
+  // Add a function to check if a field has an error
+  const hasFieldError = (day: keyof WeekData, field: keyof TimeEntry) => {
+    if (!validationState[day] || validationState[day].isValid) return false;
+    
+    const entry = data[day];
+    const validation = validateTimeEntry(entry);
+    
+    // Check specific conditions for each field
+    switch (field) {
+      case 'endTime':
+        return timeToMinutes(entry.endTime || '') < timeToMinutes(entry.startTime || '');
+      case 'lunchEndTime':
+        if (!entry.lunchStartTime || !entry.lunchEndTime) return false;
+        return timeToMinutes(entry.lunchEndTime) <= timeToMinutes(entry.lunchStartTime);
+      default:
+        return false;
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
@@ -195,13 +215,20 @@ export function WeekTable({
                   'Lunch End': 'lunchEndTime',      // Fixed casing
                 };
                 
+                const fieldName = fieldMap[label] as keyof TimeEntry;
+                const hasError = hasFieldError(day, fieldName);
+                
                 return (
-                  <View key={day} style={styles.cell}>
+                  <View key={day} style={[
+                    styles.cell,
+                    hasError && styles.errorCell
+                  ]}>
                     <TimeInput
-                      value={data[day][fieldMap[label] as keyof TimeEntry]}
-                      onChange={(value) => onUpdate(day, fieldMap[label] as keyof TimeEntry, value)}
+                      value={data[day][fieldName]}
+                      onChange={(value) => onUpdate(day, fieldName, value)}
                       disabled={disabled}
                       onBlur={() => handleBlur(day)}
+                      hasError={hasError}
                     />
                   </View>
                 );
@@ -241,13 +268,21 @@ export function WeekTable({
               <ThemedText>Total Hours</ThemedText>
             </View>
             {DAYS.map((day) => (
-              <View key={day} style={[styles.cell, { backgroundColor: colors.background }]}>
+              <View key={day} style={[
+                styles.cell, 
+                { backgroundColor: colors.background },
+                validationState[day] && !validationState[day].isValid && styles.errorCell
+              ]}>
                 <ThemedText style={styles.totalHours}>
                   {data[day].totalHours.toFixed(2)}
                 </ThemedText>
               </View>
             ))}
-            <View style={[styles.cell, { backgroundColor: colors.background }]}>
+            <View style={[
+              styles.cell, 
+              { backgroundColor: colors.background },
+              !validateWeeklyTotal().isValid && styles.errorCell
+            ]}>
               <ThemedText style={[styles.totalHours, styles.weeklyTotal]}>
                 {weeklyTotal.toFixed(2)}
               </ThemedText>
@@ -269,7 +304,8 @@ const styles = StyleSheet.create({
   table: {
     marginTop: 16,
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: 'visible',
+    position: 'relative',
   },
   row: {
     flexDirection: 'row',
@@ -334,5 +370,14 @@ const styles = StyleSheet.create({
   },
   tooltipContainer: {
     position: 'relative',
+  },
+  errorCell: {
+    borderWidth: 2,
+    borderColor: '#ef4444',
+    borderRadius: 4,
+  },
+  errorInput: {
+    borderColor: '#ef4444',
+    borderWidth: 2,
   },
 }); 

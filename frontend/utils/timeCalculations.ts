@@ -1,9 +1,12 @@
 import { TimeEntry } from '../types/timesheet';
 
-function convertTo24Hour(time: string): number {
+export function timeToMinutes(time: string): number {
+  if (!time) return 0;
+  
   const [timeStr, period] = time.split(' ');
   let [hours, minutes] = timeStr.split(':').map(Number);
   
+  // Convert to 24-hour format
   if (period === 'PM' && hours !== 12) {
     hours += 12;
   } else if (period === 'AM' && hours === 12) {
@@ -16,24 +19,28 @@ function convertTo24Hour(time: string): number {
 export function calculateTotalHours(entry: TimeEntry): number {
   if (!entry.startTime || !entry.endTime) return 0;
 
-  const startMinutes = convertTo24Hour(entry.startTime);
-  const endMinutes = convertTo24Hour(entry.endTime);
+  const startMinutes = timeToMinutes(entry.startTime);
+  const endMinutes = timeToMinutes(entry.endTime);
   
   let totalMinutes = endMinutes - startMinutes;
   
-  // Handle crossing midnight
+  // Don't wrap around midnight - if end is before start, return negative hours
   if (totalMinutes < 0) {
-    totalMinutes += 24 * 60;
+    // Keep the negative value instead of adding 24 hours
+    if (entry.lunchStartTime && entry.lunchEndTime) {
+      const lunchStartMinutes = timeToMinutes(entry.lunchStartTime);
+      const lunchEndMinutes = timeToMinutes(entry.lunchEndTime);
+      totalMinutes -= (lunchEndMinutes - lunchStartMinutes);
+    }
+    return totalMinutes / 60;
   }
 
   // Subtract lunch time if present
   if (entry.lunchStartTime && entry.lunchEndTime) {
-    const lunchStartMinutes = convertTo24Hour(entry.lunchStartTime);
-    const lunchEndMinutes = convertTo24Hour(entry.lunchEndTime);
-    
-    const lunchMinutes = lunchEndMinutes - lunchStartMinutes;
-    totalMinutes -= lunchMinutes;
+    const lunchStartMinutes = timeToMinutes(entry.lunchStartTime);
+    const lunchEndMinutes = timeToMinutes(entry.lunchEndTime);
+    totalMinutes -= (lunchEndMinutes - lunchStartMinutes);
   }
 
-  return Math.max(0, totalMinutes / 60);
+  return totalMinutes / 60;
 } 

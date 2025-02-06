@@ -19,7 +19,7 @@ export function Tooltip({ message }: TooltipProps) {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: -60,
+    top: -120,
     left: '50%',
     transform: [{ translateX: -100 }],
     width: 200,
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1e293b',
     padding: 8,
     borderRadius: 4,
-    marginBottom: 4,
+    marginBottom: 12,
   },
   arrow: {
     position: 'absolute',

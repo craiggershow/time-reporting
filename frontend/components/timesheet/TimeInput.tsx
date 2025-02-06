@@ -8,6 +8,7 @@ interface TimeInputProps {
   onBlur?: () => void;
   placeholder?: string;
   disabled?: boolean;
+  hasError?: boolean;
 }
 
 const parseTimeInput = (input: string): string | null => {
@@ -74,7 +75,8 @@ export function TimeInput({
   onChange, 
   onBlur,
   placeholder = "9:00 AM",
-  disabled 
+  disabled,
+  hasError 
 }: TimeInputProps) {
   const [localValue, setLocalValue] = useState(value || '');
   
@@ -113,7 +115,7 @@ export function TimeInput({
       onChangeText={handleChange}
       onBlur={handleInputBlur}
       placeholder={placeholder}
-      style={styles.input}
+      style={[styles.input, hasError && styles.errorInput]}
       editable={!disabled}
       maxLength={8} // "12:45 PM" is 8 characters
       autoCapitalize="characters"
@@ -125,5 +127,10 @@ const styles = StyleSheet.create({
   input: {
     width: 100,
     textAlign: 'center',
-  }
+  },
+  errorInput: {
+    borderColor: '#ef4444',
+    borderWidth: 2,
+    borderRadius: 4,
+  },
 }); 
