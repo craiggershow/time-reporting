@@ -44,6 +44,7 @@ export function WeekTable({
   const { colors } = useTheme();
   const [validationState, setValidationState] = useState<ValidationState>({});
   const [showValidation, setShowValidation] = useState<{ [key: string]: boolean }>({});
+  const [hoveredDay, setHoveredDay] = useState<string | null>(null);
 
   // Calculate weekly total
   const weeklyTotal = DAYS.reduce((sum, day) => sum + data[day].totalHours, 0) + (data.extraHours || 0);
@@ -73,6 +74,11 @@ export function WeekTable({
       {DAYS.map((day) => {
         const validation = validationState[day];
         const shouldShow = showValidation[day];
+        const entry = data[day];
+        const isMissingEndTime = entry.startTime && !entry.endTime;
+        const isMissingLunchEndTime = entry.lunchStartTime && !entry.lunchEndTime;
+        const showWarning = !validation?.isValid && !(isMissingEndTime || isMissingLunchEndTime);
+        const isHovered = hoveredDay === day;
 
         return (
           <View key={day} style={styles.cell}>
@@ -81,8 +87,13 @@ export function WeekTable({
                 <Ionicons name="checkmark-circle" size={20} color="#22c55e" />
               ) : (
                 <View style={styles.tooltipContainer}>
-                  <Ionicons name="warning" size={20} color="#ef4444" />
-                  {validation?.message && (
+                  <View
+                    onMouseEnter={() => setHoveredDay(day)}
+                    onMouseLeave={() => setHoveredDay(null)}
+                  >
+                    <Ionicons name="warning" size={20} color="#ef4444" />
+                  </View>
+                  {(showWarning || isHovered) && validation?.message && (
                     <Tooltip message={validation.message} />
                   )}
                 </View>
@@ -142,25 +153,36 @@ export function WeekTable({
     if (!validationState[day] || validationState[day].isValid) return false;
     
     const entry = data[day];
+
+    // Only highlight end time fields for incomplete pairs
+    switch (field) {
+      case 'endTime':
+        if (!entry.startTime && entry.endTime) return true;  // Missing start time
+        if (entry.startTime && !entry.endTime) return false; // Don't highlight missing end time
+        break;
+      case 'lunchEndTime':
+        if (!entry.lunchStartTime && entry.lunchEndTime) return true;  // Missing lunch start time
+        if (entry.lunchStartTime && !entry.lunchEndTime) return false; // Don't highlight missing lunch end time
+        break;
+    }
+
+    // If we have both times in a pair, check their values
     if (!entry.startTime || !entry.endTime) return false;
 
     const startMinutes = timeToMinutes(entry.startTime);
     const endMinutes = timeToMinutes(entry.endTime);
     
-    // Check specific conditions for each field
     switch (field) {
       case 'endTime':
         return endMinutes < startMinutes;
       case 'lunchStartTime':
         if (!entry.lunchStartTime) return false;
         const lunchStartMin = timeToMinutes(entry.lunchStartTime);
-        // Check both constraints for lunch start
         return lunchStartMin < startMinutes || lunchStartMin > endMinutes;
       case 'lunchEndTime':
         if (!entry.lunchEndTime || !entry.lunchStartTime) return false;
         const lunchStartMinutes = timeToMinutes(entry.lunchStartTime);
         const lunchEndMinutes = timeToMinutes(entry.lunchEndTime);
-        // Check all constraints for lunch end
         return lunchEndMinutes < startMinutes || 
                lunchEndMinutes > endMinutes || 
                lunchEndMinutes <= lunchStartMinutes;

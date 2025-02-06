@@ -124,6 +124,11 @@ Add a row below the total hours per day that indicates if there is an error with
     Don't show the errors until the user clicks away from the active cell
     If the total hours per week exceeds the validation limit, only show the tooltip error on the week total.  Don't display that error at the bottom of each day
         Show checkmark or warning for weekly total independently of daily validations
+    The check mark per day should not be green if a start time is entered but no end time.
+    If the lunch start time is entered and the lunch end time is not then there should be a red X in the status row
+    Do not allow the user to submit the timesheet if any status rows have a red X
+Do not allow the user to submit the timesheet if any status rows have a red X
+
 
 Admin Portal
 

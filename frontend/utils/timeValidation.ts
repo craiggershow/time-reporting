@@ -23,7 +23,39 @@ function timeToMinutes(timeStr: string): number {
 }
 
 export function validateTimeEntry(entry: TimeEntry): ValidationResult {
-  if (!entry.startTime || !entry.endTime) return { isValid: true };
+  // Check for incomplete pairs
+  if (entry.startTime && !entry.endTime) {
+    return {
+      isValid: false,
+      message: 'End time is required when start time is entered'
+    };
+  }
+
+  if (!entry.startTime && entry.endTime) {
+    return {
+      isValid: false,
+      message: 'Start time is required when end time is entered'
+    };
+  }
+
+  if (entry.lunchStartTime && !entry.lunchEndTime) {
+    return {
+      isValid: false,
+      message: 'Lunch end time is required when lunch start time is entered'
+    };
+  }
+
+  if (!entry.lunchStartTime && entry.lunchEndTime) {
+    return {
+      isValid: false,
+      message: 'Lunch start time is required when lunch end time is entered'
+    };
+  }
+
+  // If no times are entered at all, consider it valid
+  if (!entry.startTime && !entry.endTime && !entry.lunchStartTime && !entry.lunchEndTime) {
+    return { isValid: true };
+  }
 
   const startMinutes = timeToMinutes(entry.startTime);
   const endMinutes = timeToMinutes(entry.endTime);
