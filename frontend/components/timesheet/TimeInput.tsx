@@ -5,6 +5,7 @@ import { useState } from 'react';
 interface TimeInputProps {
   value: string | null;
   onChange: (value: string | null) => void;
+  onBlur?: () => void;
   placeholder?: string;
   disabled?: boolean;
 }
@@ -55,7 +56,13 @@ const parseTimeInput = (input: string): string | null => {
   return input;
 };
 
-export function TimeInput({ value, onChange, placeholder = "9:00 AM", disabled }: TimeInputProps) {
+export function TimeInput({ 
+  value, 
+  onChange, 
+  onBlur,
+  placeholder = "9:00 AM",
+  disabled 
+}: TimeInputProps) {
   const [localValue, setLocalValue] = useState(value || '');
   
   const handleChange = (text: string) => {
@@ -72,11 +79,12 @@ export function TimeInput({ value, onChange, placeholder = "9:00 AM", disabled }
     }
   };
 
-  const handleBlur = () => {
+  const handleInputBlur = () => {
     if (localValue) {
       const parsedTime = parseTimeInput(localValue);
       setLocalValue(parsedTime || localValue);
     }
+    onBlur?.();
   };
 
   return (
@@ -84,7 +92,7 @@ export function TimeInput({ value, onChange, placeholder = "9:00 AM", disabled }
       label=""
       value={localValue}
       onChangeText={handleChange}
-      onBlur={handleBlur}
+      onBlur={handleInputBlur}
       placeholder={placeholder}
       style={styles.input}
       editable={!disabled}

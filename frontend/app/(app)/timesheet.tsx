@@ -115,7 +115,15 @@ export default function TimesheetScreen() {
     const weekKey = `week${week}` as const;
     const currentEntry = state.currentPayPeriod[weekKey][day];
     
-    console.log('Updating time entry:', { week, day, field, value, currentEntry });
+    console.log('Updating time entry:', { 
+      week, 
+      day, 
+      field, 
+      value, 
+      currentEntry,
+      weekKey,
+      currentState: state.currentPayPeriod[weekKey]
+    });
     
     const updatedEntry: TimeEntry = {
       ...currentEntry,
@@ -128,7 +136,17 @@ export default function TimesheetScreen() {
 
     dispatch({
       type: 'UPDATE_TIME_ENTRY',
-      payload: { week, day, entry: updatedEntry },
+      payload: { 
+        week, 
+        day, 
+        entry: updatedEntry 
+      },
+    });
+
+    // Verify state update
+    console.log('After dispatch:', {
+      updatedEntry,
+      currentState: state.currentPayPeriod[weekKey][day]
     });
   };
 

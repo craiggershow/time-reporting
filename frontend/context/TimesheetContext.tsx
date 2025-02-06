@@ -52,19 +52,31 @@ function timesheetReducer(state: TimesheetState, action: TimesheetAction): Times
         currentPayPeriod: action.payload,
         error: null,
       };
-    case 'UPDATE_TIME_ENTRY':
+    case 'UPDATE_TIME_ENTRY': {
+      const { week, day, entry } = action.payload;
       if (!state.currentPayPeriod) return state;
-      const weekKey = `week${action.payload.week}` as keyof PayPeriod;
+
+      const weekKey = `week${week}` as const;
+      
+      console.log('Reducer Update:', {
+        week,
+        weekKey,
+        day,
+        entry,
+        currentState: state.currentPayPeriod[weekKey]
+      });
+
       return {
         ...state,
         currentPayPeriod: {
           ...state.currentPayPeriod,
           [weekKey]: {
             ...state.currentPayPeriod[weekKey],
-            [action.payload.day]: action.payload.entry,
+            [day]: entry,
           },
         },
       };
+    }
     case 'SET_EXTRA_HOURS':
       if (!state.currentPayPeriod) return state;
       const week = `week${action.payload.week}` as keyof PayPeriod;

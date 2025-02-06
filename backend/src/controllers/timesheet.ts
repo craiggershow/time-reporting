@@ -1,7 +1,7 @@
 import { Request as ExpressRequest, Response as ExpressResponse } from 'express-serve-static-core';
 import { prisma } from '../lib/prisma';
-import { startOfWeek, addWeeks } from 'date-fns';
-import { DayOfWeek, DayType } from '@prisma/client';
+import { startOfWeek, addWeeks, addDays } from 'date-fns';
+import { DayOfWeek, DayType, PayPeriod } from '@prisma/client';
 
 // Define the AuthRequest type
 interface AuthRequest extends ExpressRequest {
@@ -54,14 +54,37 @@ interface TimesheetSubmitData {
   weeks: WeekData[];
 }
 
+// Function that creates or gets the current pay period
+async function getCurrentPayPeriod(): Promise<PayPeriod> {
+  const today = new Date();
+  const periodStart = startOfWeek(today, { weekStartsOn: 1 }); // Start on Monday
+  const periodEnd = addDays(periodStart, 13); // 2 weeks from start (ends on Sunday)
+  
+  const payPeriod = await prisma.payPeriod.findFirst({
+    where: {
+      startDate: periodStart,
+    },
+  });
+
+  if (payPeriod) {
+    return payPeriod;
+  }
+
+  // Create new pay period if none exists
+  return await prisma.payPeriod.create({
+    data: {
+      startDate: periodStart,
+      endDate: periodEnd,
+    },
+  });
+}
+
 export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse) {
   try {
     if (!req.user?.userId) {
       console.log('No user ID in request');
       return res.status(401).json({ error: 'Unauthorized' });
     }
-
-    console.log('Looking for user with ID:', req.user.userId);
 
     // First verify the user exists
     const user = await prisma.user.findUnique({
@@ -73,26 +96,8 @@ export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse
       return res.status(404).json({ error: 'User not found' });
     }
 
-    console.log('Found user:', user.id);
-
-    const today = new Date();
-    const periodStart = startOfWeek(today, { weekStartsOn: 1 });
-    const periodEnd = addWeeks(periodStart, 2);
-
-    // Then find or create the pay period
-    const payPeriod = await prisma.payPeriod.upsert({
-      where: {
-        id: await prisma.payPeriod.findFirst({
-          where: { startDate: periodStart, endDate: periodEnd },
-          select: { id: true },
-        }).then(pp => pp?.id ?? 'new'),
-      },
-      create: {
-        startDate: periodStart,
-        endDate: periodEnd,
-      },
-      update: {},
-    });
+    // Get or create the pay period with fixed date
+    const payPeriod = await getCurrentPayPeriod();
 
     // Then find or create the timesheet with weeks and days
     const timesheet = await prisma.timesheet.upsert({

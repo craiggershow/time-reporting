@@ -110,6 +110,15 @@ The page must contain a summary section which contains
         The vacation pay hours need to be included in the total pay period hours but not the weekly hours
 A blue 'Admin Portal' button is displayed in the upper right corner
 Enable the ability of the administrator to reset their password for the Admin portal
+Add validation to the time inputted for a specific day. Check for the following errors:
+    The start time is before 7am
+    The end time is after 8pm
+    The lunch start time is after the lunch end time
+    The total hours is greater than 15 hours
+    Total hours per week is greater than 50 hours
+Add a row below the total hours per day that indicates if there is an error with the time inputted for a specific day.  If everything is okay show a checkmark in the cell.  If not okay show an error with a tooltip
+    Don't show the errors until the user clicks away from the active cell
+
 
 Admin Portal
 

@@ -7,6 +7,10 @@ import { DayTypeSelect } from './DayTypeSelect';
 import { format, addDays } from 'date-fns';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { validateTimeEntry, validateWeeklyHours } from '@/utils/timeValidation';
+import { Ionicons } from '@expo/vector-icons';
+import { Tooltip } from '../ui/Tooltip';
+import { useState } from 'react';
 
 interface WeekTableProps {
   data: WeekData;
@@ -20,6 +24,13 @@ interface WeekTableProps {
 
 const DAYS: (keyof WeekData)[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
+interface ValidationState {
+  [key: string]: {
+    isValid: boolean;
+    message?: string;
+  };
+}
+
 export function WeekTable({
   data,
   weekNumber,
@@ -30,6 +41,8 @@ export function WeekTable({
   onCopyPrevious,
 }: WeekTableProps) {
   const { colors } = useTheme();
+  const [validationState, setValidationState] = useState<ValidationState>({});
+  const [showValidation, setShowValidation] = useState<{ [key: string]: boolean }>({});
 
   // Calculate weekly total
   const weeklyTotal = DAYS.reduce((sum, day) => sum + data[day].totalHours, 0) + (data.extraHours || 0);
@@ -37,6 +50,66 @@ export function WeekTable({
   // Calculate if any day in this week is in the future
   const today = new Date();
   const isFutureDate = (date: Date) => date > today;
+
+  // Calculate validation for a day
+  const validateDay = (day: keyof WeekData) => {
+    const entry = data[day];
+    const validation = validateTimeEntry(entry);
+    
+    // Check weekly hours
+    const weekTotal = DAYS.reduce((sum, d) => sum + data[d].totalHours, 0) + (data.extraHours || 0);
+    const weeklyValidation = validateWeeklyHours(weekTotal);
+    
+    if (!weeklyValidation.isValid) {
+      return weeklyValidation;
+    }
+    
+    return validation;
+  };
+
+  // Add validation status row after total hours
+  const renderValidationRow = () => (
+    <View style={styles.row}>
+      <View style={[styles.labelCell, { backgroundColor: colors.inputBackground }]}>
+        <ThemedText>Status</ThemedText>
+      </View>
+      {DAYS.map((day) => {
+        const validation = validationState[day];
+        const shouldShow = showValidation[day];
+
+        return (
+          <View key={day} style={styles.cell}>
+            {shouldShow && (
+              validation?.isValid ? (
+                <Ionicons name="checkmark-circle" size={20} color="#22c55e" />
+              ) : (
+                <View style={styles.tooltipContainer}>
+                  <Ionicons name="warning" size={20} color="#ef4444" />
+                  {validation?.message && (
+                    <Tooltip message={validation.message} />
+                  )}
+                </View>
+              )
+            )}
+          </View>
+        );
+      })}
+      <View style={styles.cell} />
+    </View>
+  );
+
+  // Update validation when input loses focus
+  const handleBlur = (day: keyof WeekData) => {
+    const validation = validateDay(day);
+    setValidationState(prev => ({
+      ...prev,
+      [day]: validation
+    }));
+    setShowValidation(prev => ({
+      ...prev,
+      [day]: true
+    }));
+  };
 
   return (
     <View style={styles.container}>
@@ -103,6 +176,7 @@ export function WeekTable({
                       value={data[day][fieldMap[label] as keyof TimeEntry]}
                       onChange={(value) => onUpdate(day, fieldMap[label] as keyof TimeEntry, value)}
                       disabled={disabled}
+                      onBlur={() => handleBlur(day)}
                     />
                   </View>
                 );
@@ -154,6 +228,9 @@ export function WeekTable({
               </ThemedText>
             </View>
           </View>
+
+          {/* Validation Row */}
+          {renderValidationRow()}
         </View>
       </ScrollView>
     </View>
@@ -229,5 +306,8 @@ const styles = StyleSheet.create({
   weeklyTotal: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  tooltipContainer: {
+    position: 'relative',
   },
 }); 
