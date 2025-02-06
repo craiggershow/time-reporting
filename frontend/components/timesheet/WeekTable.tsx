@@ -142,15 +142,28 @@ export function WeekTable({
     if (!validationState[day] || validationState[day].isValid) return false;
     
     const entry = data[day];
-    const validation = validateTimeEntry(entry);
+    if (!entry.startTime || !entry.endTime) return false;
+
+    const startMinutes = timeToMinutes(entry.startTime);
+    const endMinutes = timeToMinutes(entry.endTime);
     
     // Check specific conditions for each field
     switch (field) {
       case 'endTime':
-        return timeToMinutes(entry.endTime || '') < timeToMinutes(entry.startTime || '');
+        return endMinutes < startMinutes;
+      case 'lunchStartTime':
+        if (!entry.lunchStartTime) return false;
+        const lunchStartMin = timeToMinutes(entry.lunchStartTime);
+        // Check both constraints for lunch start
+        return lunchStartMin < startMinutes || lunchStartMin > endMinutes;
       case 'lunchEndTime':
-        if (!entry.lunchStartTime || !entry.lunchEndTime) return false;
-        return timeToMinutes(entry.lunchEndTime) <= timeToMinutes(entry.lunchStartTime);
+        if (!entry.lunchEndTime || !entry.lunchStartTime) return false;
+        const lunchStartMinutes = timeToMinutes(entry.lunchStartTime);
+        const lunchEndMinutes = timeToMinutes(entry.lunchEndTime);
+        // Check all constraints for lunch end
+        return lunchEndMinutes < startMinutes || 
+               lunchEndMinutes > endMinutes || 
+               lunchEndMinutes <= lunchStartMinutes;
       default:
         return false;
     }

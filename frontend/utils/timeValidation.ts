@@ -25,20 +25,10 @@ function timeToMinutes(timeStr: string): number {
 export function validateTimeEntry(entry: TimeEntry): ValidationResult {
   if (!entry.startTime || !entry.endTime) return { isValid: true };
 
-  // Convert times to minutes for easier comparison
   const startMinutes = timeToMinutes(entry.startTime);
   const endMinutes = timeToMinutes(entry.endTime);
   const sevenAM = 7 * 60;  // 420 minutes
   const eightPM = 20 * 60; // 1200 minutes
-
-  console.log('Time validation:', {
-    startTime: entry.startTime,
-    endTime: entry.endTime,
-    startMinutes,
-    endMinutes,
-    sevenAM,
-    eightPM
-  });
 
   // First check if end time is before start time
   if (endMinutes < startMinutes) {
@@ -69,6 +59,37 @@ export function validateTimeEntry(entry: TimeEntry): ValidationResult {
     const lunchStartMinutes = timeToMinutes(entry.lunchStartTime);
     const lunchEndMinutes = timeToMinutes(entry.lunchEndTime);
 
+    // Check lunch start time constraints
+    if (lunchStartMinutes < startMinutes) {
+      return {
+        isValid: false,
+        message: 'Lunch start time must be after start time'
+      };
+    }
+
+    if (lunchStartMinutes > endMinutes) {
+      return {
+        isValid: false,
+        message: 'Lunch start time must be before end time'
+      };
+    }
+
+    // Check lunch end time constraints
+    if (lunchEndMinutes < startMinutes) {
+      return {
+        isValid: false,
+        message: 'Lunch end time must be after start time'
+      };
+    }
+
+    if (lunchEndMinutes > endMinutes) {
+      return {
+        isValid: false,
+        message: 'Lunch end time must be before end time'
+      };
+    }
+
+    // Check lunch end is after lunch start
     if (lunchEndMinutes <= lunchStartMinutes) {
       return {
         isValid: false,

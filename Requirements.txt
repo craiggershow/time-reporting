@@ -114,6 +114,10 @@ Add validation to the time inputted for a specific day. Check for the following 
     The start time is before 7am
     The end time is after 8pm
     The lunch start time is after the lunch end time
+    The lunch end time is after the end time
+    The lunch start time is before the start time
+    The lunch end time is before the start time
+    The lunch start time is after the end time
     The total hours is greater than 15 hours
     Total hours per week is greater than 50 hours
 Add a row below the total hours per day that indicates if there is an error with the time inputted for a specific day.  If everything is okay show a checkmark in the cell.  If not okay show an error with a tooltip
