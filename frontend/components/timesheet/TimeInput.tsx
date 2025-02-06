@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { Input } from '../ui/Input';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface TimeInputProps {
   value: string | null;
@@ -64,6 +64,11 @@ export function TimeInput({
   disabled 
 }: TimeInputProps) {
   const [localValue, setLocalValue] = useState(value || '');
+  
+  // Add useEffect to update local state when prop changes
+  useEffect(() => {
+    setLocalValue(value || '');
+  }, [value]);
   
   const handleChange = (text: string) => {
     setLocalValue(text);
