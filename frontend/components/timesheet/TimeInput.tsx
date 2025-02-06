@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { Input } from '../ui/Input';
+import { useState } from 'react';
 
 interface TimeInputProps {
   value: string | null;
@@ -14,45 +15,76 @@ const parseTimeInput = (input: string): string | null => {
   // Remove spaces and convert to uppercase
   input = input.replace(/\s/g, '').toUpperCase();
   
-  // Handle formats like "12PM", "1130AM", "230P"
-  const match = input.match(/^(\d{1,2})(?:(\d{2}))?(AM|PM|A|P)?$/i);
-  if (!match) return null;
+  // Handle various formats
+  const formats = [
+    // 1p, 1pm, 1:00p, 1:00pm
+    /^(\d{1,2})(?::?(\d{2}))?(P|PM|A|AM)?$/,
+    // 100p, 100pm, 1300, etc
+    /^(\d{3,4})(P|PM|A|AM)?$/
+  ];
   
-  let [_, hours, minutes, period] = match;
-  
-  // Convert hours to number
-  let hoursNum = parseInt(hours, 10);
-  
-  // Handle period (AM/PM)
-  if (period) {
-    period = period.length === 1 ? period + 'M' : period;
-    if (period === 'PM' && hoursNum < 12) hoursNum += 12;
-    if (period === 'AM' && hoursNum === 12) hoursNum = 0;
+  for (const format of formats) {
+    const match = input.match(format);
+    if (match) {
+      let hours, minutes, period;
+      
+      if (match[1].length > 2) {
+        // Handle military-style input (e.g., "1300")
+        const timeStr = match[1].padStart(4, '0');
+        hours = parseInt(timeStr.slice(0, 2), 10);
+        minutes = timeStr.slice(2);
+      } else {
+        hours = parseInt(match[1], 10);
+        minutes = match[2] || '00';
+      }
+      
+      period = match[match.length - 1] || '';
+      
+      // Default to AM if no period specified
+      if (!period && hours < 12) period = 'AM';
+      if (!period && hours >= 12) period = 'PM';
+      
+      // Normalize period
+      period = period.length === 1 ? period + 'M' : period;
+      
+      // Format the final time
+      return `${hours}:${minutes.padStart(2, '0')} ${period}`;
+    }
   }
   
-  // Format minutes
-  const mins = minutes ? minutes : '00';
-  
-  // Format the final time
-  return `${hoursNum.toString().padStart(2, '0')}:${mins} ${period || 'AM'}`;
+  return input;
 };
 
 export function TimeInput({ value, onChange, placeholder = "9:00 AM", disabled }: TimeInputProps) {
+  const [localValue, setLocalValue] = useState(value || '');
+  
   const handleChange = (text: string) => {
+    setLocalValue(text);
+    
     if (!text) {
       onChange(null);
       return;
     }
     
     const parsedTime = parseTimeInput(text);
-    onChange(parsedTime);
+    if (parsedTime) {
+      onChange(parsedTime);
+    }
+  };
+
+  const handleBlur = () => {
+    if (localValue) {
+      const parsedTime = parseTimeInput(localValue);
+      setLocalValue(parsedTime || localValue);
+    }
   };
 
   return (
     <Input
       label=""
-      value={value || ''}
+      value={localValue}
       onChangeText={handleChange}
+      onBlur={handleBlur}
       placeholder={placeholder}
       style={styles.input}
       editable={!disabled}
@@ -66,5 +98,5 @@ const styles = StyleSheet.create({
   input: {
     width: 100,
     textAlign: 'center',
-  },
+  }
 }); 

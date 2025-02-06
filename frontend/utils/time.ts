@@ -1,16 +1,38 @@
 export function convertTo24Hour(time12h: string | null): string {
   if (!time12h) return "00:00";
   
-  const [time, modifier] = time12h.split(' ');
-  let [hours, minutes] = time.split(':');
+  // Normalize input by removing spaces and converting to lowercase
+  const input = time12h.toLowerCase().replace(/\s+/g, '');
   
-  if (hours === '12') {
-    hours = modifier === 'PM' ? '12' : '00';
-  } else {
-    hours = modifier === 'PM' ? String(parseInt(hours, 10) + 12) : hours;
+  // Extract hours, minutes, and period using regex
+  const timeRegex = /^(\d{1,2})(?::?(\d{2}))?(a|am|p|pm)?$/;
+  const match = input.match(timeRegex);
+  
+  if (!match) return "00:00";
+  
+  let [_, hours, minutes, period] = match;
+  
+  // Convert hours to number
+  let hoursNum = parseInt(hours, 10);
+  
+  // Default minutes to "00" if not provided
+  minutes = minutes || "00";
+  
+  // Default period to "am" if not provided
+  period = period || "a";
+  
+  // Normalize period to "am" or "pm"
+  period = period === "a" || period === "am" ? "am" : "pm";
+  
+  // Handle 12-hour cases
+  if (hoursNum === 12) {
+    hoursNum = period === "am" ? 0 : 12;
+  } else if (period === "pm") {
+    hoursNum += 12;
   }
   
-  return `${hours.padStart(2, '0')}:${minutes}`;
+  // Format output
+  return `${hoursNum.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
 }
 
 export function convertTo12Hour(time24h: string): string {
