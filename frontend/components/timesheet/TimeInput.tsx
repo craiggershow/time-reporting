@@ -16,6 +16,9 @@ const parseTimeInput = (input: string): string | null => {
   // Remove spaces and convert to uppercase
   input = input.replace(/\s/g, '').toUpperCase();
   
+  // Clean up any invalid characters first
+  input = input.replace(/[^0-9APM:]/g, '');
+  
   // Handle various formats
   const formats = [
     // 1p, 1pm, 1:00p, 1:00pm
@@ -39,11 +42,21 @@ const parseTimeInput = (input: string): string | null => {
         minutes = match[2] || '00';
       }
       
+      // Normalize hours to be between 1 and 12
+      if (hours > 12) {
+        hours = hours % 12 || 12;
+      }
+      if (hours === 0) {
+        hours = 12;
+      }
+      
       period = match[match.length - 1] || '';
       
-      // Default to AM if no period specified
-      if (!period && hours < 12) period = 'AM';
-      if (!period && hours >= 12) period = 'PM';
+      // Default to AM if no period specified and hours < 7
+      // Default to PM if no period specified and hours >= 7
+      if (!period) {
+        period = hours >= 7 && hours !== 12 ? 'PM' : 'AM';
+      }
       
       // Normalize period
       period = period.length === 1 ? period + 'M' : period;
@@ -53,7 +66,7 @@ const parseTimeInput = (input: string): string | null => {
     }
   }
   
-  return input;
+  return null;
 };
 
 export function TimeInput({ 
@@ -65,29 +78,30 @@ export function TimeInput({
 }: TimeInputProps) {
   const [localValue, setLocalValue] = useState(value || '');
   
-  // Add useEffect to update local state when prop changes
   useEffect(() => {
     setLocalValue(value || '');
   }, [value]);
   
   const handleChange = (text: string) => {
+    // Just update local state and pass through the raw value
     setLocalValue(text);
     
     if (!text) {
       onChange(null);
       return;
     }
-    
-    const parsedTime = parseTimeInput(text);
-    if (parsedTime) {
-      onChange(parsedTime);
-    }
   };
 
   const handleInputBlur = () => {
     if (localValue) {
       const parsedTime = parseTimeInput(localValue);
-      setLocalValue(parsedTime || localValue);
+      if (parsedTime) {
+        setLocalValue(parsedTime);
+        onChange(parsedTime);
+      } else {
+        // If parsing fails, keep the previous valid value
+        setLocalValue(value || '');
+      }
     }
     onBlur?.();
   };

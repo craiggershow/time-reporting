@@ -118,7 +118,8 @@ Add validation to the time inputted for a specific day. Check for the following 
     Total hours per week is greater than 50 hours
 Add a row below the total hours per day that indicates if there is an error with the time inputted for a specific day.  If everything is okay show a checkmark in the cell.  If not okay show an error with a tooltip
     Don't show the errors until the user clicks away from the active cell
-
+    If the total hours per week exceeds the validation limit, only show the tooltip error on the week total.  Don't display that error at the bottom of each day
+        Show checkmark or warning for weekly total independently of daily validations
 
 Admin Portal
 
