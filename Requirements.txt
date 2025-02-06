@@ -129,6 +129,8 @@ Add a row below the total hours per day that indicates if there is an error with
     Do not allow the user to submit the timesheet if any status rows have a red X
 Do not allow the user to submit the timesheet if any status rows have a red X
     the user should see a popup when trying to submit and there is any type of validation error
+Add lock icon next to cells that are locked because the day is in the future
+    The user should not be able to change the time for a future day
 
 
 Admin Portal

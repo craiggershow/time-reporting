@@ -242,12 +242,11 @@ export function WeekTable({
                 const dayDate = addDays(startDate, DAYS.indexOf(day));
                 const disabled = isFutureDate(dayDate);
                 
-                // Fix the field name mapping
                 const fieldMap = {
                   'Start': 'startTime',
                   'End': 'endTime',
-                  'Lunch Start': 'lunchStartTime',  // Fixed casing
-                  'Lunch End': 'lunchEndTime',      // Fixed casing
+                  'Lunch Start': 'lunchStartTime',
+                  'Lunch End': 'lunchEndTime',
                 };
                 
                 const fieldName = fieldMap[label] as keyof TimeEntry;
@@ -258,13 +257,20 @@ export function WeekTable({
                     styles.cell,
                     hasError && styles.errorCell
                   ]}>
-                    <TimeInput
-                      value={data[day][fieldName]}
-                      onChange={(value) => onUpdate(day, fieldName, value)}
-                      disabled={disabled}
-                      onBlur={() => handleBlur(day)}
-                      hasError={hasError}
-                    />
+                    <View style={styles.inputContainer}>
+                      <TimeInput
+                        value={data[day][fieldName]}
+                        onChange={(value) => onUpdate(day, fieldName, value)}
+                        disabled={disabled}
+                        onBlur={() => handleBlur(day)}
+                        hasError={hasError}
+                      />
+                      {disabled && (
+                        <View style={styles.lockIconContainer}>
+                          <Ionicons name="lock-closed" size={16} color="#94a3b8" />
+                        </View>
+                      )}
+                    </View>
                   </View>
                 );
               })}
@@ -414,5 +420,16 @@ const styles = StyleSheet.create({
   errorInput: {
     borderColor: '#ef4444',
     borderWidth: 2,
+  },
+  inputContainer: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  lockIconContainer: {
+    position: 'absolute',
+    right: -24,
+    top: '50%',
+    transform: [{ translateY: -8 }],
   },
 }); 
