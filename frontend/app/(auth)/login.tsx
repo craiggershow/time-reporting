@@ -69,9 +69,9 @@ export default function LoginScreen() {
       
       // Navigate to the appropriate screen based on login type
       if (loginType === 'admin') {
-        router.replace('/(app)/admin');
+        router.replace('/admin');
       } else {
-        router.replace('/(app)/timesheet');
+        router.replace('/timesheet');
       }
 
     } catch (error) {

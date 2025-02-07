@@ -17,7 +17,7 @@ export function Header() {
         {user?.isAdmin && (
           <Pressable 
             style={styles.adminButton}
-            onPress={() => router.push('/(app)/admin')}
+            onPress={() => router.push('/admin')}
           >
             <Ionicons name="settings-outline" size={20} color="#64748b" />
             <ThemedText style={styles.adminText}>Admin Portal</ThemedText>

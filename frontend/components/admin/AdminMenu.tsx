@@ -16,14 +16,14 @@ const MENU_ITEMS: MenuItem[] = [
     id: 'timesheet',
     title: 'My Timesheet',
     icon: 'calendar-outline',
-    route: '/(app)/timesheet',
+    route: '/timesheet',
     description: 'View and edit your timesheet'
   },
   {
     id: 'timesheets',
     title: 'Timesheet Management',
     icon: 'time-outline',
-    route: '/(app)/admin/timesheets',
+    route: '/admin/timesheets',
     description: 'Review and approve employee timesheets'
   },
   {

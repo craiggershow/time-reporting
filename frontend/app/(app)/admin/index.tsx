@@ -10,10 +10,10 @@ export default function AdminPortal() {
   const { user } = useAuth();
   const router = useRouter();
 
-  // Redirect if not admin
   useEffect(() => {
     if (!user?.isAdmin) {
-      router.replace('/(app)');
+      router.replace('/timesheet');
+      return;
     }
   }, [user]);
 
