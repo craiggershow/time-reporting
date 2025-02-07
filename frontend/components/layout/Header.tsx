@@ -1,70 +1,72 @@
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { router } from 'expo-router';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { ThemedText } from '../ThemedText';
-import { useTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 export function Header() {
-  const { colors } = useTheme();
-
-  const handleLogout = () => {
-    router.replace('/(auth)/login');
-  };
+  const { user, logout } = useAuth();
+  const router = useRouter();
 
   return (
-    <View style={[styles.container, { 
-      borderBottomColor: colors.border,
-      backgroundColor: colors.inputBackground,
-    }]}>
-      <View style={styles.content}>
-        <View>
-          <ThemedText style={styles.title}>KV Dental</ThemedText>
-          <ThemedText style={styles.email}>admin@kvdental.ca</ThemedText>
-        </View>
-        <TouchableOpacity 
-          onPress={handleLogout}
-          style={[styles.logoutButton, { backgroundColor: colors.tint }]}
+    <View style={styles.header}>
+      <View style={styles.leftSection}>
+        <ThemedText>{user?.name}</ThemedText>
+      </View>
+      <View style={styles.rightSection}>
+        {user?.isAdmin && (
+          <Pressable 
+            style={styles.adminButton}
+            onPress={() => router.push('/(app)/admin')}
+          >
+            <Ionicons name="settings-outline" size={20} color="#64748b" />
+            <ThemedText style={styles.adminText}>Admin Portal</ThemedText>
+          </Pressable>
+        )}
+        <Pressable 
+          style={styles.logoutButton}
+          onPress={logout}
         >
-          <Ionicons name="log-out-outline" size={20} color="#fff" />
-          <ThemedText style={styles.logoutText}>Logout</ThemedText>
-        </TouchableOpacity>
+          <Ionicons name="log-out-outline" size={20} color="#64748b" />
+          <ThemedText>Logout</ThemedText>
+        </Pressable>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  content: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
   },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
+  leftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  email: {
-    fontSize: 12,
-    marginTop: 2,
-    color: '#ffffff',
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  adminButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#f1f5f9',
+  },
+  adminText: {
+    color: '#64748b',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
     gap: 8,
-  },
-  logoutText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
   },
 }); 

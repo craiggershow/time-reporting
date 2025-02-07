@@ -141,7 +141,7 @@ Admin portal must enable the administrator to manage the list of employees, view
 Business Rules for the Admin Portal
 The system should be able to automatically calculate when the next pay period is
 Admin portal must be secured via username and password following up to date security principles
-
+There should be a method to access the admin portal from the login page and from the timesheet page
 
 UI Design Features for the Admin Portal
 Enable the ability to reset a password if it is forgotten

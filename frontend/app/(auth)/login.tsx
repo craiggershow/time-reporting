@@ -1,4 +1,4 @@
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image, Pressable } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
@@ -6,18 +6,22 @@ import { ThemedView } from '@/components/ThemedView';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Picker } from '@react-native-picker/picker';
 import { getRememberedEmail, saveRememberedEmail, clearRememberedEmail } from '@/utils/storage';
 import { useTheme } from '@/hooks/useTheme';
 import { buildApiUrl } from '@/constants/Config';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginScreen() {
   const { colors } = useTheme();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const [loginType, setLoginType] = useState<'employee' | 'admin'>('employee');
 
   useEffect(() => {
     // Load remembered email on mount
@@ -42,8 +46,11 @@ export default function LoginScreen() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include',
+        body: JSON.stringify({ 
+          email, 
+          password,
+          isAdmin: loginType === 'admin'
+        }),
       });
 
       if (!response.ok) {
@@ -53,16 +60,20 @@ export default function LoginScreen() {
 
       const data = await response.json();
       
-      // Store user data or token if needed
-      // await AsyncStorage.setItem('user', JSON.stringify(data.user));
-
-      if (rememberMe) {
-        await saveRememberedEmail(email);
-      } else {
-        await clearRememberedEmail();
+      // Verify admin access if attempting admin login
+      if (loginType === 'admin' && !data.isAdmin) {
+        throw new Error('You do not have admin access');
       }
 
-      router.replace('/(app)/timesheet');
+      await login(data);
+      
+      // Navigate to the appropriate screen based on login type
+      if (loginType === 'admin') {
+        router.replace('/(app)/admin');
+      } else {
+        router.replace('/(app)/timesheet');
+      }
+
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Login failed');
     } finally {
@@ -72,50 +83,66 @@ export default function LoginScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Image 
-        source={require('@/assets/images/KV-Dental-Sign-logo-and-Name-500x86.gif')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
-      <ThemedText type="title">Time Sheet Portal</ThemedText>
-      
-      <View style={styles.form}>
-        <Input
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          placeholder="Enter your email"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          editable={!isLoading}
+      <View style={styles.content}>
+        <Image 
+          source={require('@/assets/images/KV-Dental-Sign-logo-and-Name-500x86.gif')}
+          style={styles.logo}
+          resizeMode="contain"
         />
+        <ThemedText type="title">Time Sheet Portal</ThemedText>
         
-        <Input
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Enter your password"
-          secureTextEntry
-          editable={!isLoading}
-        />
+        <View style={styles.formContainer}>
+          <View style={[styles.pickerContainer, { backgroundColor: colors.inputBackground }]}>
+            <Picker
+              selectedValue={loginType}
+              onValueChange={(value) => setLoginType(value as 'employee' | 'admin')}
+              style={styles.picker}
+              enabled={!isLoading}
+            >
+              <Picker.Item label="Employee Login" value="employee" />
+              <Picker.Item label="Admin Login" value="admin" />
+            </Picker>
+          </View>
 
-        {error && (
-          <ThemedText style={styles.error}>{error}</ThemedText>
-        )}
+          <View style={styles.form}>
+            <Input
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!isLoading}
+            />
+            
+            <Input
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter your password"
+              secureTextEntry
+              editable={!isLoading}
+            />
 
-        <Checkbox
-          checked={rememberMe}
-          onPress={() => setRememberMe(!rememberMe)}
-          label="Remember my email"
-        />
+            {error && (
+              <ThemedText style={styles.error}>{error}</ThemedText>
+            )}
 
-        <Button 
-          onPress={handleLogin} 
-          style={styles.loginButton}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Logging in...' : 'Login'}
-        </Button>
+            <Checkbox
+              checked={rememberMe}
+              onPress={() => setRememberMe(!rememberMe)}
+              label="Remember my email"
+            />
+
+            <Button 
+              onPress={handleLogin} 
+              style={styles.loginButton}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Logging in...' : 'Login'}
+            </Button>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -133,11 +160,22 @@ const styles = StyleSheet.create({
     height: 52,
     marginBottom: 40,
   },
-  form: {
+  formContainer: {
     width: '100%',
     maxWidth: 400,
     gap: 16,
     marginTop: 32,
+  },
+  pickerContainer: {
+    borderRadius: 8,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    overflow: 'hidden',
+  },
+  picker: {
+    height: 50,
+    width: '100%',
   },
   loginButton: {
     marginTop: 8,

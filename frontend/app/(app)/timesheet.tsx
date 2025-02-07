@@ -731,79 +731,81 @@ export default function TimesheetScreen() {
     <View style={styles.container}>
       <Header />
       <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <Image 
-            source={require('../../assets/images/KV-Dental-Sign-logo-and-Name-500x86.gif')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
-
-        <WeekTable
-          data={state.currentPayPeriod.week1}
-          weekNumber={1}
-          startDate={state.currentPayPeriod.startDate}
-          onUpdate={(day, field, value) => handleTimeUpdate(1, day, field, value)}
-          onDayTypeChange={(day, type) => handleDayTypeChange(1, day, type)}
-          onExtraHoursChange={(hours) => handleExtraHoursChange(1, hours)}
-          onCopyPrevious={(day) => handleCopyPrevious(1, day)}
-        />
-
-        <View style={styles.weekActions}>
-          <Button variant="secondary" onPress={handleCopyWeek}>
-            Copy to Week 2
-          </Button>
-        </View>
-
-        <WeekTable
-          data={state.currentPayPeriod.week2}
-          weekNumber={2}
-          startDate={addWeeks(state.currentPayPeriod.startDate, 1)}
-          onUpdate={(day, field, value) => handleTimeUpdate(2, day, field, value)}
-          onDayTypeChange={(day, type) => handleDayTypeChange(2, day, type)}
-          onExtraHoursChange={(hours) => handleExtraHoursChange(2, hours)}
-          onCopyPrevious={(day) => handleCopyPrevious(2, day)}
-        />
-
-        <View style={[styles.summary, { backgroundColor: colors.inputBackground }]}>
-          <ThemedText type="subtitle">Summary</ThemedText>
-          <View style={[styles.summaryRow, { backgroundColor: colors.background }]}>
-            <ThemedText>Week 1 Total:</ThemedText>
-            <ThemedText>{week1Total.toFixed(2)} hours</ThemedText>
-          </View>
-          <View style={[styles.summaryRow, { backgroundColor: colors.background }]}>
-            <ThemedText>Week 2 Total:</ThemedText>
-            <ThemedText>{week2Total.toFixed(2)} hours</ThemedText>
-          </View>
-          <View style={[styles.vacationHours, { backgroundColor: colors.background }]}>
-            <ThemedText>Vacation Hours:</ThemedText>
-            <Input
-              label=""
-              value={vacationHours}
-              onChangeText={handleVacationHoursChange}
-              keyboardType="numeric"
-              style={styles.vacationInput}
+        <View style={styles.contentCard}>
+          <View style={styles.header}>
+            <Image 
+              source={require('../../assets/images/KV-Dental-Sign-logo-and-Name-500x86.gif')}
+              style={styles.logo}
+              resizeMode="contain"
             />
           </View>
-          <View style={[styles.summaryRow, { backgroundColor: colors.background }]}>
-            <ThemedText type="defaultSemiBold">Pay Period Total:</ThemedText>
-            <ThemedText type="defaultSemiBold">{periodTotal.toFixed(2)} hours</ThemedText>
-          </View>
-        </View>
 
-        <View style={styles.actions}>
-          <SubmitButton
-            onPress={handleSubmit}
-            isSubmitting={isSubmitting}
-            validationErrors={getValidationErrors()}
+          <WeekTable
+            data={state.currentPayPeriod.week1}
+            weekNumber={1}
+            startDate={state.currentPayPeriod.startDate}
+            onUpdate={(day, field, value) => handleTimeUpdate(1, day, field, value)}
+            onDayTypeChange={(day, type) => handleDayTypeChange(1, day, type)}
+            onExtraHoursChange={(hours) => handleExtraHoursChange(1, hours)}
+            onCopyPrevious={(day) => handleCopyPrevious(1, day)}
           />
-          <Button 
-            variant="secondary" 
-            onPress={handleRecall}
-            style={styles.recallButton}
-          >
-            Recall Previous Submission
-          </Button>
+
+          <View style={styles.weekActions}>
+            <Button variant="secondary" onPress={handleCopyWeek}>
+              Copy to Week 2
+            </Button>
+          </View>
+
+          <WeekTable
+            data={state.currentPayPeriod.week2}
+            weekNumber={2}
+            startDate={addWeeks(state.currentPayPeriod.startDate, 1)}
+            onUpdate={(day, field, value) => handleTimeUpdate(2, day, field, value)}
+            onDayTypeChange={(day, type) => handleDayTypeChange(2, day, type)}
+            onExtraHoursChange={(hours) => handleExtraHoursChange(2, hours)}
+            onCopyPrevious={(day) => handleCopyPrevious(2, day)}
+          />
+
+          <View style={[styles.summary, { backgroundColor: colors.inputBackground }]}>
+            <ThemedText type="subtitle">Summary</ThemedText>
+            <View style={[styles.summaryRow, { backgroundColor: colors.background }]}>
+              <ThemedText>Week 1 Total:</ThemedText>
+              <ThemedText>{week1Total.toFixed(2)} hours</ThemedText>
+            </View>
+            <View style={[styles.summaryRow, { backgroundColor: colors.background }]}>
+              <ThemedText>Week 2 Total:</ThemedText>
+              <ThemedText>{week2Total.toFixed(2)} hours</ThemedText>
+            </View>
+            <View style={[styles.vacationHours, { backgroundColor: colors.background }]}>
+              <ThemedText>Vacation Hours:</ThemedText>
+              <Input
+                label=""
+                value={vacationHours}
+                onChangeText={handleVacationHoursChange}
+                keyboardType="numeric"
+                style={styles.vacationInput}
+              />
+            </View>
+            <View style={[styles.summaryRow, { backgroundColor: colors.background }]}>
+              <ThemedText type="defaultSemiBold">Pay Period Total:</ThemedText>
+              <ThemedText type="defaultSemiBold">{periodTotal.toFixed(2)} hours</ThemedText>
+            </View>
+          </View>
+
+          <View style={styles.actions}>
+            <SubmitButton
+              onPress={handleSubmit}
+              isSubmitting={isSubmitting}
+              validationErrors={getValidationErrors()}
+            />
+            <Button 
+              variant="secondary" 
+              onPress={handleRecall}
+              style={styles.recallButton}
+            >
+              Recall Previous Submission
+            </Button>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -821,9 +823,24 @@ function calculateWeekTotal(weekData: WeekData): number {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f1f5f9', // Light blueish gray from Tailwind's slate-100
   },
   content: {
     flex: 1,
+  },
+  contentCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    margin: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   header: {
     padding: 16,
