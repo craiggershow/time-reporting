@@ -1,5 +1,5 @@
-import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
 import { startOfWeek, addWeeks } from 'date-fns';
 import { ThemedText } from '@/components/ThemedText';
 import { WeekTable } from '@/components/timesheet/WeekTable';
@@ -19,6 +19,7 @@ import { TimesheetForm } from '@/components/TimesheetForm';
 import { convertTo24Hour, convertTo12Hour } from '../../utils/time';
 import { validateTimeEntry, validateWeeklyHours } from '@/utils/timeValidation';
 import { SubmitButton } from '@/components/ui/SubmitButton';
+import { Ionicons } from '@expo/vector-icons';
 
 interface DayData {
   startTime: string | null;
@@ -48,6 +49,12 @@ export default function TimesheetScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const [autoSubmitStatus, setAutoSubmitStatus] = useState<{
+    isError: boolean;
+    message: string | null;
+  } | null>(null);
 
   useEffect(() => {
     const fetchCurrentTimesheet = async () => {
@@ -113,6 +120,183 @@ export default function TimesheetScreen() {
     fetchCurrentTimesheet();
   }, []);
 
+  const autoSubmit = async (newState: TimesheetData) => {
+    // First check if this is a start time without an end time
+    const weekKey = Object.keys(newState).find(key => key.startsWith('week')) as 'week1' | 'week2';
+    const dayKey = DAYS.find(day => {
+      const entry = newState[weekKey][day];
+      return (entry.startTime && !entry.endTime) || (entry.lunchStartTime && !entry.lunchEndTime);
+    });
+
+    if (dayKey) {
+      console.log('Waiting for end time to be entered');
+      return; // Exit early if we're waiting for an end time
+    }
+
+    // Now check if we have any complete pairs to submit
+    const hasCompletePairs = ['week1', 'week2'].some(weekKey => {
+      return DAYS.some(day => {
+        const entry = newState[weekKey as 'week1' | 'week2'][day];
+        return (
+          (entry.startTime && entry.endTime) || // Complete work time pair
+          (entry.lunchStartTime && entry.lunchEndTime) // Complete lunch time pair
+        );
+      });
+    });
+
+    if (!hasCompletePairs) {
+      console.log('No complete time pairs to submit');
+      return; // Don't submit if we don't have any complete pairs
+    }
+
+    try {
+      setIsSaving(true);
+      setAutoSubmitStatus(null);
+
+      // Get current timesheet for payPeriodId first
+      const currentResponse = await fetch(buildApiUrl('CURRENT_TIMESHEET'), {
+        credentials: 'include',
+      });
+
+      if (!currentResponse.ok) {
+        const errorData = await currentResponse.json();
+        throw new Error(errorData.error || 'Failed to get current timesheet');
+      }
+
+      const currentTimesheet = await currentResponse.json();
+      if (!currentTimesheet.payPeriod?.id) {
+        throw new Error('No payPeriodId found');
+      }
+
+      // Use the same submit data format as handleSubmit
+      const submitData = {
+        payPeriodId: currentTimesheet.payPeriod.id,
+        vacationHours: newState.vacationHours,
+        weeks: [
+          {
+            weekNumber: 1,
+            extraHours: newState.week1.extraHours || 0,
+            monday: {
+              startTime: convertTo24Hour(newState.week1.monday.startTime),
+              endTime: convertTo24Hour(newState.week1.monday.endTime),
+              lunchStartTime: convertTo24Hour(newState.week1.monday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(newState.week1.monday.lunchEndTime),
+              dayType: newState.week1.monday.dayType.toUpperCase(),
+              totalHours: newState.week1.monday.totalHours,
+            },
+            tuesday: {
+              startTime: convertTo24Hour(newState.week1.tuesday.startTime),
+              endTime: convertTo24Hour(newState.week1.tuesday.endTime),
+              lunchStartTime: convertTo24Hour(newState.week1.tuesday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(newState.week1.tuesday.lunchEndTime),
+              dayType: newState.week1.tuesday.dayType.toUpperCase(),
+              totalHours: newState.week1.tuesday.totalHours,
+            },
+            wednesday: {
+              startTime: convertTo24Hour(newState.week1.wednesday.startTime),
+              endTime: convertTo24Hour(newState.week1.wednesday.endTime),
+              lunchStartTime: convertTo24Hour(newState.week1.wednesday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(newState.week1.wednesday.lunchEndTime),
+              dayType: newState.week1.wednesday.dayType.toUpperCase(),
+              totalHours: newState.week1.wednesday.totalHours,
+            },
+            thursday: {
+              startTime: convertTo24Hour(newState.week1.thursday.startTime),
+              endTime: convertTo24Hour(newState.week1.thursday.endTime),
+              lunchStartTime: convertTo24Hour(newState.week1.thursday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(newState.week1.thursday.lunchEndTime),
+              dayType: newState.week1.thursday.dayType.toUpperCase(),
+              totalHours: newState.week1.thursday.totalHours,
+            },
+            friday: {
+              startTime: convertTo24Hour(newState.week1.friday.startTime),
+              endTime: convertTo24Hour(newState.week1.friday.endTime),
+              lunchStartTime: convertTo24Hour(newState.week1.friday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(newState.week1.friday.lunchEndTime),
+              dayType: newState.week1.friday.dayType.toUpperCase(),
+              totalHours: newState.week1.friday.totalHours,
+            },
+          },
+          {
+            weekNumber: 2,
+            extraHours: newState.week2.extraHours || 0,
+            monday: {
+              startTime: convertTo24Hour(newState.week2.monday.startTime),
+              endTime: convertTo24Hour(newState.week2.monday.endTime),
+              lunchStartTime: convertTo24Hour(newState.week2.monday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(newState.week2.monday.lunchEndTime),
+              dayType: newState.week2.monday.dayType.toUpperCase(),
+              totalHours: newState.week2.monday.totalHours,
+            },
+            tuesday: {
+              startTime: convertTo24Hour(newState.week2.tuesday.startTime),
+              endTime: convertTo24Hour(newState.week2.tuesday.endTime),
+              lunchStartTime: convertTo24Hour(newState.week2.tuesday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(newState.week2.tuesday.lunchEndTime),
+              dayType: newState.week2.tuesday.dayType.toUpperCase(),
+              totalHours: newState.week2.tuesday.totalHours,
+            },
+            wednesday: {
+              startTime: convertTo24Hour(newState.week2.wednesday.startTime),
+              endTime: convertTo24Hour(newState.week2.wednesday.endTime),
+              lunchStartTime: convertTo24Hour(newState.week2.wednesday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(newState.week2.wednesday.lunchEndTime),
+              dayType: newState.week2.wednesday.dayType.toUpperCase(),
+              totalHours: newState.week2.wednesday.totalHours,
+            },
+            thursday: {
+              startTime: convertTo24Hour(newState.week2.thursday.startTime),
+              endTime: convertTo24Hour(newState.week2.thursday.endTime),
+              lunchStartTime: convertTo24Hour(newState.week2.thursday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(newState.week2.thursday.lunchEndTime),
+              dayType: newState.week2.thursday.dayType.toUpperCase(),
+              totalHours: newState.week2.thursday.totalHours,
+            },
+            friday: {
+              startTime: convertTo24Hour(newState.week2.friday.startTime),
+              endTime: convertTo24Hour(newState.week2.friday.endTime),
+              lunchStartTime: convertTo24Hour(newState.week2.friday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(newState.week2.friday.lunchEndTime),
+              dayType: newState.week2.friday.dayType.toUpperCase(),
+              totalHours: newState.week2.friday.totalHours,
+            },
+          },
+        ],
+      };
+
+      const response = await fetch(buildApiUrl('SUBMIT_TIMESHEET'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(submitData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to submit timesheet');
+      }
+
+      // Clear any previous error status on successful submit
+      setAutoSubmitStatus(null);
+
+      Alert.alert(
+        'Success',
+        'Timesheet submitted successfully',
+        [{ text: 'OK', onPress: () => router.replace('/(app)') }]
+      );
+    } catch (error) {
+      console.error('Auto-submit error:', error);
+      setAutoSubmitStatus({
+        isError: true,
+        message: error instanceof Error ? error.message : 'Failed to submit timesheet'
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleTimeUpdate = (week: 1 | 2, day: keyof WeekData, field: keyof TimeEntry, value: string | null) => {
     if (!state.currentPayPeriod) return;
 
@@ -152,6 +336,16 @@ export default function TimesheetScreen() {
       updatedEntry,
       currentState: state.currentPayPeriod[weekKey][day]
     });
+
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Set new timeout for auto-submit
+    saveTimeoutRef.current = setTimeout(() => {
+      autoSubmit(state.currentPayPeriod!);
+    }, 2000);
   };
 
   const handleDayTypeChange = (week: 1 | 2, day: keyof WeekData, type: DayType) => {
@@ -538,7 +732,11 @@ export default function TimesheetScreen() {
       <Header />
       <ScrollView style={styles.content}>
         <View style={styles.header}>
-          <ThemedText type="title">Time Sheet</ThemedText>
+          <Image 
+            source={require('../../assets/images/KV-Dental-Sign-logo-and-Name-500x86.gif')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
 
         <WeekTable
@@ -630,6 +828,11 @@ const styles = StyleSheet.create({
   header: {
     padding: 16,
     alignItems: 'center',
+    marginBottom: 16,
+  },
+  logo: {
+    width: 200,
+    height: 60,
   },
   weekActions: {
     padding: 16,
@@ -691,5 +894,23 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 8,
+  },
+  savingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  savingText: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  autoSubmitError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 8,
+    backgroundColor: '#fee2e2',
+    borderRadius: 4,
+    marginLeft: 16,
   },
 }); 

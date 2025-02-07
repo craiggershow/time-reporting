@@ -18,6 +18,7 @@ export const API_ENDPOINTS = {
   RECALL_TIMESHEET: 'api/timesheets/recall',
   PAY_PERIODS: 'api/pay-periods',
   EMPLOYEES: 'api/employees',
+  SAVE_TIMESHEET_DRAFT: '/api/timesheet/draft',
 } as const;
 
 // Helper function to build API URLs

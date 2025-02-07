@@ -45,6 +45,7 @@ export function WeekTable({
   const [validationState, setValidationState] = useState<ValidationState>({});
   const [showValidation, setShowValidation] = useState<{ [key: string]: boolean }>({});
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+  const [hoveredLock, setHoveredLock] = useState<string | null>(null);
 
   // Calculate weekly total
   const weeklyTotal = DAYS.reduce((sum, day) => sum + data[day].totalHours, 0) + (data.extraHours || 0);
@@ -255,7 +256,8 @@ export function WeekTable({
                 return (
                   <View key={day} style={[
                     styles.cell,
-                    hasError && styles.errorCell
+                    hasError && styles.errorCell,
+                    disabled && styles.disabledCell
                   ]}>
                     <View style={styles.inputContainer}>
                       <TimeInput
@@ -266,7 +268,14 @@ export function WeekTable({
                         hasError={hasError}
                       />
                       {disabled && (
-                        <View style={styles.lockIconContainer}>
+                        <View 
+                          style={styles.lockIconContainer}
+                          onMouseEnter={() => setHoveredLock(`${day}-${fieldName}`)}
+                          onMouseLeave={() => setHoveredLock(null)}
+                        >
+                          {hoveredLock === `${day}-${fieldName}` && (
+                            <Tooltip message="Cannot edit future dates" />
+                          )}
                           <Ionicons name="lock-closed" size={16} color="#94a3b8" />
                         </View>
                       )}
@@ -293,14 +302,33 @@ export function WeekTable({
             <View style={[styles.labelCell, { backgroundColor: colors.inputBackground }]}>
               <ThemedText>Type</ThemedText>
             </View>
-            {DAYS.map((day) => (
-              <View key={day} style={styles.cell}>
-                <DayTypeSelect
-                  value={data[day].dayType}
-                  onChange={(type) => onDayTypeChange(day, type)}
-                />
-              </View>
-            ))}
+            {DAYS.map((day) => {
+              const dayDate = addDays(startDate, DAYS.indexOf(day));
+              const disabled = isFutureDate(dayDate);
+              return (
+                <View key={day} style={[styles.cell, disabled && styles.disabledCell]}>
+                  <View style={styles.inputContainer}>
+                    <DayTypeSelect
+                      value={data[day].dayType}
+                      onChange={(type) => onDayTypeChange(day, type)}
+                      disabled={disabled}
+                    />
+                    {disabled && (
+                      <View 
+                        style={styles.lockIconContainer}
+                        onMouseEnter={() => setHoveredLock(`${day}-type`)}
+                        onMouseLeave={() => setHoveredLock(null)}
+                      >
+                        {hoveredLock === `${day}-type` && (
+                          <Tooltip message="Cannot edit future dates" />
+                        )}
+                        <Ionicons name="lock-closed" size={16} color="#94a3b8" />
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
           </View>
 
           {/* Total Hours Row */}
@@ -431,5 +459,8 @@ const styles = StyleSheet.create({
     right: -24,
     top: '50%',
     transform: [{ translateY: -8 }],
+  },
+  disabledCell: {
+    backgroundColor: '#f1f5f9',
   },
 }); 

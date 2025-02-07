@@ -9,6 +9,8 @@ interface TimeInputProps {
   placeholder?: string;
   disabled?: boolean;
   hasError?: boolean;
+  onKeyDown?: (e: KeyboardEvent) => void;
+  tabIndex?: number;
 }
 
 const parseTimeInput = (input: string): string | null => {
@@ -76,7 +78,9 @@ export function TimeInput({
   onBlur,
   placeholder = "9:00 AM",
   disabled,
-  hasError 
+  hasError,
+  onKeyDown,
+  tabIndex
 }: TimeInputProps) {
   const [localValue, setLocalValue] = useState(value || '');
   
@@ -119,6 +123,8 @@ export function TimeInput({
       editable={!disabled}
       maxLength={8} // "12:45 PM" is 8 characters
       autoCapitalize="characters"
+      onKeyDown={onKeyDown}
+      tabIndex={tabIndex}
     />
   );
 }
