@@ -43,6 +43,7 @@ export default function LoginScreen() {
 
       const response = await fetch(buildApiUrl('LOGIN'), {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },

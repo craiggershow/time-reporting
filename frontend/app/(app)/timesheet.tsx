@@ -66,11 +66,10 @@ export default function TimesheetScreen() {
         }
 
         const response = await fetch(buildApiUrl('CURRENT_TIMESHEET'), {
-          method: 'GET',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
-          credentials: 'include',
         }).catch(error => {
           console.error('Network error:', error);
           throw new Error('Network error - Please check your connection');
