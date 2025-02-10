@@ -82,8 +82,8 @@ create_db_if_not_exists() {
 
 case "$1" in
   start)
-    cleanup_data_directory
-    initialize_database
+#    cleanup_data_directory
+#    initialize_database
 
     echo "Starting PostgreSQL..."
     "$PG_BIN/pg_ctl" -D "$PGDATA" -l "$LOGFILE" -o "-p $PORT" start
@@ -115,6 +115,25 @@ case "$1" in
         exit 1
     fi
     ;;
+  reset)
+    cleanup_data_directory
+    initialize_database
+
+    echo "Starting PostgreSQL..."
+    "$PG_BIN/pg_ctl" -D "$PGDATA" -l "$LOGFILE" -o "-p $PORT" start
+    
+    if [ $? -eq 0 ]; then
+        create_db_if_not_exists
+        echo "PostgreSQL is running on port $PORT"
+    else
+        echo "Failed to start PostgreSQL. Check the log file: $LOGFILE"
+        if [ -f "$LOGFILE" ]; then
+            cat "$LOGFILE"
+        fi
+        exit 1
+    fi
+    ;;
+    
   *)
     echo "Usage: $0 {start|stop|status}"
     exit 1
