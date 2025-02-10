@@ -1,7 +1,4 @@
-const express = require('express');
 import { Request, Response, NextFunction } from 'express-serve-static-core';
-
-//import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 
@@ -11,51 +8,42 @@ interface JwtPayload {
   role: 'ADMIN' | 'EMPLOYEE';
 }
 
-interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    email: string;
-    role: 'ADMIN' | 'EMPLOYEE';
-  };
-}
-
-export const authenticate = authMiddleware;
-
-export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+export async function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
-    // Debug logging
-    console.log('Auth Headers:', req.headers.authorization);
-    console.log('Cookies:', req.cookies);
+    const token = req.cookies.auth_token;
     
-    // Check both cookie and Authorization header
-    const authHeader = req.headers.authorization;
-    const token = req.cookies.auth_token || (authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : authHeader);
-    
-    console.log('Extracted token:', token?.substring(0, 20) + '...');
-
     if (!token) {
+      console.log('No token found in cookies');
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    console.log('Decoded token:', decoded);
-
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    console.log('Decoded token:', decoded); // Debug log
+    
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
+      where: { 
+        id: decoded.userId // Match the userId from JWT
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+      },
     });
 
     if (!user) {
-      console.log('User not found for token:', decoded);
-      return res.status(401).json({ error: 'Invalid token' });
+      console.log('User not found for id:', decoded.userId); // Debug log
+      return res.status(401).json({ error: 'User not found' });
     }
 
+    // Set user info using the global Express.Request type
     req.user = {
-      userId: user.id,
+      id: user.id, // Use id consistently in the request object
       email: user.email,
       role: user.role,
     };
 
-    console.log('Auth successful for user:', user.id);
+    console.log('Auth successful for user:', user.id); // Debug log
     next();
   } catch (error) {
     console.error('Auth error:', error);
@@ -63,7 +51,7 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
   }
 }
 
-export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction) {
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.user?.role !== 'ADMIN') {
     return res.status(403).json({ error: 'Admin access required' });
   }

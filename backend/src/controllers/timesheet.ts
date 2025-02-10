@@ -1,12 +1,14 @@
 import { Request as ExpressRequest, Response as ExpressResponse } from 'express-serve-static-core';
-import { prisma } from '../lib/prisma';
+import { PrismaClient } from '@prisma/client';
 import { startOfWeek, addWeeks, addDays } from 'date-fns';
 import { DayOfWeek, DayType, PayPeriod } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // Define the AuthRequest type
 interface AuthRequest extends ExpressRequest {
   user?: {
-    userId: string;
+    id: string;
     email: string;
     role: 'ADMIN' | 'EMPLOYEE';
   };
@@ -56,59 +58,79 @@ interface TimesheetSubmitData {
 
 // Function that creates or gets the current pay period
 async function getCurrentPayPeriod(): Promise<PayPeriod> {
-  const today = new Date();
-  const periodStart = startOfWeek(today, { weekStartsOn: 1 }); // Start on Monday
-  const periodEnd = addDays(periodStart, 13); // 2 weeks from start (ends on Sunday)
-  
-  const payPeriod = await prisma.payPeriod.findFirst({
-    where: {
-      startDate: periodStart,
-    },
-  });
+  try {
+    // Get the pay period start setting
+    const payPeriodSetting = await prisma.setting.findUnique({
+      where: { key: 'pay_period_start' }
+    });
 
-  if (payPeriod) {
-    return payPeriod;
+    console.log('Pay period setting:', payPeriodSetting); // Debug log
+
+    let periodStart;
+    if (payPeriodSetting?.value) {
+      // Use configured start date if available
+      periodStart = new Date(payPeriodSetting.value);
+    } else {
+      // Default to first Monday of current year if no setting
+      const today = new Date();
+      periodStart = startOfWeek(new Date(today.getFullYear(), 0, 1), { weekStartsOn: 1 });
+    }
+
+    const today = new Date();
+    const periodLength = 14; // 14 days for bi-weekly pay periods
+    
+    // Calculate periods elapsed since start
+    const daysSinceStart = Math.floor((today.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24));
+    const periodsElapsed = Math.floor(daysSinceStart / periodLength);
+    
+    // Calculate current period dates
+    const currentStartDate = addDays(periodStart, periodsElapsed * periodLength);
+    const currentEndDate = addDays(currentStartDate, periodLength - 1);
+
+    // Find or create the pay period
+    const payPeriod = await prisma.payPeriod.findFirst({
+      where: {
+        startDate: currentStartDate,
+      },
+    });
+
+    if (payPeriod) {
+      return payPeriod;
+    }
+
+    // Create new pay period if none exists
+    return await prisma.payPeriod.create({
+      data: {
+        startDate: currentStartDate,
+        endDate: currentEndDate,
+      },
+    });
+  } catch (error) {
+    console.error('Error getting pay period:', error);
+    throw error;
   }
-
-  // Create new pay period if none exists
-  return await prisma.payPeriod.create({
-    data: {
-      startDate: periodStart,
-      endDate: periodEnd,
-    },
-  });
 }
 
 export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse) {
   try {
-    if (!req.user?.userId) {
+    if (!req.user?.id) {
       console.log('No user ID in request');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // First verify the user exists
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.userId }
-    });
-
-    if (!user) {
-      console.log('User not found in database:', req.user.userId);
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Get or create the pay period with fixed date
+    // Get or create the pay period
     const payPeriod = await getCurrentPayPeriod();
 
-    // Then find or create the timesheet with weeks and days
+    // Find or create timesheet
     const timesheet = await prisma.timesheet.upsert({
       where: {
         userId_payPeriodId: {
-          userId: user.id,
+          userId: req.user.id,
           payPeriodId: payPeriod.id,
         }
       },
       create: {
-        userId: user.id,
+        userId: req.user.id,
         payPeriodId: payPeriod.id,
         status: 'DRAFT',
         vacationHours: 0,
@@ -148,39 +170,13 @@ export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse
         payPeriod: true,
         weeks: {
           include: {
-            days: {
-              orderBy: {
-                dayOfWeek: 'asc',
-              },
-            },
-          },
-          orderBy: {
-            weekNumber: 'asc',
-          },
-        },
-      },
+            days: true
+          }
+        }
+      }
     });
 
-    // Format the response to match frontend expectations
-    const formattedResponse = {
-      id: timesheet.id,
-      userId: timesheet.userId,
-      payPeriod: timesheet.payPeriod,
-      status: timesheet.status,
-      vacationHours: timesheet.vacationHours,
-      submittedAt: timesheet.submittedAt,
-      weeks: timesheet.weeks.map(week => ({
-        weekNumber: week.weekNumber,
-        extraHours: week.extraHours,
-        monday: week.days.find(d => d.dayOfWeek === 'MONDAY') || createEmptyDay(),
-        tuesday: week.days.find(d => d.dayOfWeek === 'TUESDAY') || createEmptyDay(),
-        wednesday: week.days.find(d => d.dayOfWeek === 'WEDNESDAY') || createEmptyDay(),
-        thursday: week.days.find(d => d.dayOfWeek === 'THURSDAY') || createEmptyDay(),
-        friday: week.days.find(d => d.dayOfWeek === 'FRIDAY') || createEmptyDay(),
-      })),
-    };
-
-    res.status(200).json(formattedResponse);
+    res.json(timesheet);
   } catch (error) {
     console.error('Error getting current timesheet:', error);
     res.status(500).json({ error: 'Failed to get current timesheet' });
@@ -200,13 +196,13 @@ function createEmptyDay() {
 
 export async function getPreviousTimesheet(req: AuthRequest, res: ExpressResponse) {
   try {
-    if (!req.user?.userId) {
+    if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const previousTimesheet = await prisma.timesheet.findFirst({
       where: {
-        userId: req.user.userId,
+        userId: req.user.id,
         status: 'SUBMITTED',
       },
       orderBy: {
@@ -236,7 +232,7 @@ export async function getPreviousTimesheet(req: AuthRequest, res: ExpressRespons
 
 export async function getTimesheet(req: AuthRequest, res: ExpressResponse) {
   try {
-    if (!req.user?.userId) {
+    if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -258,7 +254,7 @@ export async function getTimesheet(req: AuthRequest, res: ExpressResponse) {
       return res.status(404).json({ error: 'Timesheet not found' });
     }
 
-    if (timesheet.userId !== req.user.userId && req.user.role !== 'ADMIN') {
+    if (timesheet.userId !== req.user.id && req.user.role !== 'ADMIN') {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -276,7 +272,7 @@ export async function updateTimesheet(req: AuthRequest, res: ExpressResponse) {
   try {
     const { weeks, vacationHours } = req.body;
 
-    if (!req.user?.userId) {
+    if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -284,7 +280,7 @@ export async function updateTimesheet(req: AuthRequest, res: ExpressResponse) {
     const timesheet = await prisma.timesheet.findUnique({
       where: {
         userId_payPeriodId: {
-          userId: req.user.userId,
+          userId: req.user.id,
           payPeriodId: req.body.payPeriodId,
         },
       },
@@ -307,7 +303,7 @@ export async function updateTimesheet(req: AuthRequest, res: ExpressResponse) {
     const updatedTimesheet = await prisma.timesheet.update({
       where: {
         userId_payPeriodId: {
-          userId: req.user.userId,
+          userId: req.user.id,
           payPeriodId: req.body.payPeriodId,
         },
       },
@@ -373,13 +369,13 @@ function formatDateToTimeString(date: Date | null): string | null {
 export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
   try {
     const { payPeriodId, weeks, vacationHours } = req.body as TimesheetSubmitData;
-    const { userId } = req.user!;
+    const { id } = req.user!;
 
     // First find the timesheet
     const timesheet = await prisma.timesheet.findUnique({
       where: { 
         userId_payPeriodId: {
-          userId,
+          userId: id,
           payPeriodId,
         }
       }
@@ -393,7 +389,7 @@ export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
     const updatedTimesheet = await prisma.timesheet.update({
       where: { 
         userId_payPeriodId: {
-          userId,
+          userId: id,
           payPeriodId,
         }
       },
@@ -512,7 +508,7 @@ export async function recallTimesheet(req: AuthRequest, res: ExpressResponse) {
     }
 
     // Verify ownership
-    if (timesheet.userId !== req.user?.userId) {
+    if (timesheet.userId !== req.user?.id) {
       return res.status(403).json({ error: 'Access denied' });
     }
 

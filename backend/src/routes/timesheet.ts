@@ -14,7 +14,7 @@ import { validateTimesheet } from '../middleware/validation';
 
 const router = express.Router();
 
-// Protect all timesheet routes
+// Apply authentication to all timesheet routes
 router.use(authenticate);
 
 router.get('/', async (req: Request & { user: { id: string } }, res: Response) => {

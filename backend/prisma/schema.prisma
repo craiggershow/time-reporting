@@ -96,6 +96,14 @@ model Notification {
   @@index([timesheetId])
 }
 
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum UserRole {
   ADMIN
   EMPLOYEE
