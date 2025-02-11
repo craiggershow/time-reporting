@@ -1,0 +1,54 @@
+Here is an explanation of how the functions within the `timesheet.tsx` file relate and their sequence:
+
+1. **Component Setup and Initialization:**
+   - `TimesheetScreen`: The main functional component that sets up state, context, and other hooks. It initializes the timesheet screen and handles various user interactions.
+
+2. **Fetching and Processing Data:**
+   - `useEffect` (fetchTimesheet): This `useEffect` hook is responsible for fetching the current timesheet data from the backend when the component mounts. It processes the data and updates the state accordingly.
+
+3. **State Management and Updates:**
+   - `handleTimeUpdate`: Updates the time entry for a specific day and week. It calculates the total hours and dispatches the updated entry to the state.
+   - `handleDayTypeChange`: Updates the day type for a specific day and week.
+   - `handleExtraHoursChange`: Updates the extra hours for a specific week.
+   - `handleVacationHoursChange`: Updates the vacation hours in the state.
+
+4. **Auto-submit and Validation:**
+   - `autoSubmit`: Automatically submits the timesheet data after a set timeout if there are complete time pairs.
+   - `hasValidationErrors` and `getValidationErrors`: Check for validation errors in the timesheet data.
+
+5. **Submission and Recall:**
+   - `handleSubmit`: Handles the manual submission of the timesheet. It performs validation and submits the data to the backend.
+   - `handleRecall`: Placeholder function for recalling a previous submission (implementation TODO).
+
+6. **Helper Functions:**
+   - `calculateWeekTotal`: Calculates the total hours for a given week.
+   - `processWeekData`: Processes the raw week data from the backend into a structured format.
+
+**Sequence:**
+1. Component mounts and `fetchTimesheet` is called to load data.
+2. User interacts with the timesheet (e.g., updates time entries, changes day types).
+3. `handleTimeUpdate`, `handleDayTypeChange`, `handleExtraHoursChange`, and `handleVacationHoursChange` update the state with new values.
+4. If there are unsaved changes, `autoSubmit` is triggered after a timeout to submit the data.
+5. User can manually submit the timesheet using `handleSubmit`, which validates and sends the data to the backend.
+6. Helper functions assist in data processing and calculation throughout the component lifecycle.
+
+
+The `handle` functions within the `TimesheetScreen` component are called as follows:
+
+1. **`handleTimeUpdate`**:
+   - Called within the `WeekTable` component for each week.
+   - Example: `onUpdate={(day, field, value) => handleTimeUpdate(1, day, field, value)}` for week 1 and similarly for week 2.
+
+2. **`handleDayTypeChange`**:
+   - Called within the `WeekTable` component for each week to handle changes in the day type.
+   - Example: `onDayTypeChange={(day, type) => handleDayTypeChange(1, day, type)}` for week 1 and similarly for week 2.
+
+3. **`handleExtraHoursChange`**:
+   - Called within the `WeekTable` component for each week to handle changes in extra hours.
+   - Example: `onExtraHoursChange={(hours) => handleExtraHoursChange(1, hours)}` for week 1 and similarly for week 2.
+
+4. **`handleVacationHoursChange`**:
+   - Called within the `Input` component for vacation hours input.
+   - Example: `<Input value={vacationHours} onChangeText={handleVacationHoursChange} />`.
+
+These functions are used to update the state with the new values provided by the user interactions in the UI components.
