@@ -52,3 +52,16 @@ The `handle` functions within the `TimesheetScreen` component are called as foll
    - Example: `<Input value={vacationHours} onChangeText={handleVacationHoursChange} />`.
 
 These functions are used to update the state with the new values provided by the user interactions in the UI components.
+
+
+The TimesheetScreen function is a React component that manages the timesheet UI for recording and submitting work hours. It performs the following tasks:
+
+Initializes state and context hooks (useTimesheet, useTheme, useAuth).
+Fetches timesheet data from the backend when the component mounts (fetchTimesheet).
+Handles user interactions such as updating time entries (handleTimeUpdate), changing day types (handleDayTypeChange), updating extra hours (handleExtraHoursChange), and updating vacation hours (handleVacationHoursChange).
+Automatically submits the timesheet if there are complete time pairs (autoSubmit).
+Manages form submission with validation (handleSubmit).
+Provides UI for copying week data (handleCopyWeek), copying previous day's data (handleCopyPrevious), and recalling previous submissions (handleRecall).
+How it's Called:
+The TimesheetScreen component is likely rendered as part of the application's routing mechanism.
+It is called when the user navigates to the timesheet page within the application.
