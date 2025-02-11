@@ -55,69 +55,95 @@ export default function TimesheetScreen() {
     isError: boolean;
     message: string | null;
   } | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
-    const fetchCurrentTimesheet = async () => {
+    const fetchTimesheet = async () => {
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
-        
-        if (__DEV__) {
-          console.log('Fetching timesheet from:', buildApiUrl('CURRENT_TIMESHEET'));
-        }
 
         const response = await fetch(buildApiUrl('CURRENT_TIMESHEET'), {
           credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }).catch(error => {
-          console.error('Network error:', error);
-          throw new Error('Network error - Please check your connection');
         });
 
         if (!response.ok) {
-          console.error('Server error:', response.status, response.statusText);
-          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+          throw new Error(`Server error: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('Raw timesheet data:', data); // Debug full raw data
         
         if (data) {
+          // Find the weeks
+          const week1Data = data.weeks.find((w: any) => w.weekNumber === 1);
+          const week2Data = data.weeks.find((w: any) => w.weekNumber === 2);
+          
+          console.log('Week 1 raw data:', week1Data); // Debug week 1 data
+          console.log('Week 2 raw data:', week2Data); // Debug week 2 data
+
+          const processedData = {
+            startDate: new Date(data.payPeriod.startDate),
+            week1: {
+              ...createEmptyWeekData(),
+              ...processWeekData(week1Data), // Changed from week1Data?.data
+            },
+            week2: {
+              ...createEmptyWeekData(),
+              ...processWeekData(week2Data), // Changed from week2Data?.data
+            },
+            vacationHours: Number(data.vacationHours || 0),
+            totalHours: Number(data.totalHours || 0),
+            status: data.status,
+          };
+
+          console.log('Final processed timesheet data:', processedData);
+          
+          dispatch({
+            type: 'SET_PAY_PERIOD',
+            payload: processedData
+          });
+
+          setIsSubmitted(data.status === 'SUBMITTED');
+        } else {
+          // Handle case where no timesheet exists
           dispatch({
             type: 'SET_PAY_PERIOD',
             payload: {
-              startDate: new Date(data.payPeriod.startDate),
-              week1: data.weeks.find((w: any) => w.weekNumber === 1)?.data || createEmptyWeekData(),
-              week2: data.weeks.find((w: any) => w.weekNumber === 2)?.data || createEmptyWeekData(),
-              vacationHours: data.vacationHours || 0,
-              totalHours: data.totalHours || 0,
+              startDate: new Date(),
+              week1: createEmptyWeekData(),
+              week2: createEmptyWeekData(),
+              vacationHours: 0,
+              totalHours: 0,
             },
           });
-          setVacationHours(data.vacationHours?.toString() || '0');
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to load timesheet';
-        console.error('Timesheet fetch error:', error);
-        dispatch({ type: 'SET_ERROR', payload: errorMessage });
-        
-        // If API fails, initialize with empty data
-        dispatch({
-          type: 'SET_PAY_PERIOD',
-          payload: {
-            startDate: new Date(),
-            week1: createEmptyWeekData(),
-            week2: createEmptyWeekData(),
-            vacationHours: 0,
-            totalHours: 0,
-          },
+        console.error('Error fetching timesheet:', error);
+        dispatch({ 
+          type: 'SET_ERROR', 
+          payload: error instanceof Error ? error.message : 'Failed to load timesheet' 
         });
       } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     };
 
-    fetchCurrentTimesheet();
+    fetchTimesheet();
   }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const autoSubmit = async (newState: TimesheetData) => {
     // First check if this is a start time without an end time
@@ -636,6 +662,9 @@ export default function TimesheetScreen() {
         'Timesheet submitted successfully',
         [{ text: 'OK', onPress: () => router.replace('/(app)') }]
       );
+
+      setHasUnsavedChanges(false);
+      setIsSubmitted(true);
     } catch (error) {
       console.error('Submit error:', error);
       Alert.alert(
@@ -817,6 +846,44 @@ function calculateWeekTotal(weekData: WeekData): number {
     .reduce((sum, day) => sum + weekData[day].totalHours, 0);
   
   return totalRegularHours + (weekData.extraHours || 0);
+}
+
+// Helper function to process week data
+function processWeekData(weekData: any) {
+  console.log('Processing week data:', weekData); // Debug raw week data
+
+  if (!weekData) {
+    console.log('No week data provided, returning empty data');
+    return createEmptyWeekData();
+  }
+
+  // Process each day's data
+  const processedDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].reduce((acc, day) => {
+    console.log(`Processing ${day}:`, weekData[day]); // Debug each day's data
+    
+    const dayData = weekData[day] || {};
+    const processed = {
+      ...acc,
+      [day]: {
+        startTime: dayData.startTime || null,
+        endTime: dayData.endTime || null,
+        lunchStartTime: dayData.lunchStartTime || null,
+        lunchEndTime: dayData.lunchEndTime || null,
+        dayType: dayData.dayType || 'WORK',
+        totalHours: Number(dayData.totalHours || 0),
+      },
+    };
+    console.log(`Processed ${day}:`, processed[day]); // Debug processed day data
+    return processed;
+  }, {});
+
+  const result = {
+    ...processedDays,
+    extraHours: Number(weekData.extraHours || 0),
+  };
+
+  console.log('Final processed week data:', result); // Debug final result
+  return result;
 }
 
 const styles = StyleSheet.create({

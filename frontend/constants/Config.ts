@@ -14,8 +14,10 @@ export const API_ENDPOINTS = {
   LOGIN: 'api/auth/login',
   LOGOUT: 'api/auth/logout',
   CURRENT_TIMESHEET: 'api/timesheets/current',
+  PREVIOUS_TIMESHEET: 'api/timesheets/previous',
   SUBMIT_TIMESHEET: 'api/timesheets/submit',
-  RECALL_TIMESHEET: 'api/timesheets/recall',
+  PENDING_TIMESHEETS: 'api/admin/timesheets/pending',
+  APPROVE_TIMESHEET: 'api/admin/timesheets/approve',
   PAY_PERIODS: 'api/pay-periods',
   EMPLOYEES: 'api/employees',
   SAVE_TIMESHEET_DRAFT: '/api/timesheet/draft',
@@ -23,7 +25,8 @@ export const API_ENDPOINTS = {
 
 // Helper function to build API URLs
 export function buildApiUrl(endpoint: keyof typeof API_ENDPOINTS): string {
-  return `${API_BASE_URL}/${API_ENDPOINTS[endpoint]}`;
+  const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+  return `${baseUrl}/${API_ENDPOINTS[endpoint]}`;
 }
 
 // For debugging
