@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { Input } from '../ui/Input';
 import { useState, useEffect } from 'react';
+import { convertTo24Hour } from '@/utils/time';
 
 interface TimeInputProps {
   value: string | null;
@@ -73,37 +74,46 @@ const parseTimeInput = (input: string): string | null => {
 };
 
 export function TimeInput({ 
-  value, 
-  onChange, 
-  onBlur,
-  placeholder = "9:00 AM",
-  disabled,
+  value,
+  onChange,
   hasError,
+  disabled,
+  onBlur,
   onKeyDown,
-  tabIndex
+  tabIndex,
 }: TimeInputProps) {
   const [localValue, setLocalValue] = useState(value || '');
+  const [isEditing, setIsEditing] = useState(false);
   
   useEffect(() => {
-    setLocalValue(value || '');
-  }, [value]);
-  
+    if (!isEditing) {
+      setLocalValue(value || '');
+    }
+  }, [value, isEditing]);
+
   const handleChange = (text: string) => {
-    // Just update local state and pass through the raw value
     setLocalValue(text);
     
-    if (!text) {
+    // Only try to parse and convert if it looks like a complete time
+    if (text.match(/^\d{1,2}(:\d{2})?\s*(AM|PM|A|P)?$/i)) {
+      const parsedTime = parseTimeInput(text);
+      if (parsedTime) {
+        const time24h = convertTo24Hour(parsedTime);
+        onChange(time24h);
+      }
+    } else if (!text) {
       onChange(null);
-      return;
     }
   };
 
   const handleInputBlur = () => {
+    setIsEditing(false);
     if (localValue) {
       const parsedTime = parseTimeInput(localValue);
       if (parsedTime) {
         setLocalValue(parsedTime);
-        onChange(parsedTime);
+        const time24h = convertTo24Hour(parsedTime);
+        onChange(time24h);
       } else {
         // If parsing fails, keep the previous valid value
         setLocalValue(value || '');
@@ -112,17 +122,21 @@ export function TimeInput({
     onBlur?.();
   };
 
+  const handleInputFocus = () => {
+    setIsEditing(true);
+  };
+
   return (
     <Input
       label=""
       value={localValue}
       onChangeText={handleChange}
       onBlur={handleInputBlur}
-      placeholder={placeholder}
+      onFocus={handleInputFocus}
+      placeholder="--:-- --"
       style={[styles.input, hasError && styles.errorInput]}
       editable={!disabled}
       maxLength={8} // "12:45 PM" is 8 characters
-      autoCapitalize="characters"
       onKeyDown={onKeyDown}
       tabIndex={tabIndex}
     />

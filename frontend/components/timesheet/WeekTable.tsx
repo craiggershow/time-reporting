@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tooltip } from '../ui/Tooltip';
 import { useState, useEffect } from 'react';
 import { timeToMinutes } from '@/utils/timeCalculations';
+import { convertTo12Hour } from '@/utils/time';
 
 interface WeekTableProps {
   data: WeekData;
@@ -30,6 +31,12 @@ interface ValidationState {
     isValid: boolean;
     message?: string;
   };
+}
+
+// Add a formatter function
+function formatTimeForDisplay(time: string | null): string {
+  if (!time) return '';
+  return convertTo12Hour(time);
 }
 
 export function WeekTable({
@@ -261,7 +268,7 @@ export function WeekTable({
                   ]}>
                     <View style={styles.inputContainer}>
                       <TimeInput
-                        value={data[day][fieldName]}
+                        value={formatTimeForDisplay(data[day][fieldName])}
                         onChange={(value) => onUpdate(day, fieldName, value)}
                         disabled={disabled}
                         onBlur={() => handleBlur(day)}

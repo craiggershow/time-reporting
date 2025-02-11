@@ -1,3 +1,4 @@
+// For internal use and API communication - always 24-hour format
 export function convertTo24Hour(time12h: string | null): string {
   if (!time12h) return "00:00";
   
@@ -24,10 +25,10 @@ export function convertTo24Hour(time12h: string | null): string {
   // Normalize period to "am" or "pm"
   period = period === "a" || period === "am" ? "am" : "pm";
   
-  // Handle 12-hour cases
+  // Handle special cases for 12 AM/PM
   if (hoursNum === 12) {
     hoursNum = period === "am" ? 0 : 12;
-  } else if (period === "pm") {
+  } else if (period === "pm" && hoursNum < 12) {
     hoursNum += 12;
   }
   
@@ -35,15 +36,27 @@ export function convertTo24Hour(time12h: string | null): string {
   return `${hoursNum.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
 }
 
+// For UI display only - converts 24-hour to 12-hour format
 export function convertTo12Hour(time24h: string): string {
   if (!time24h || time24h === "00:00") return "";
   
   const [hours24, minutes] = time24h.split(':');
   const hours = parseInt(hours24, 10);
   
-  let period = hours >= 12 ? 'PM' : 'AM';
-  let hours12 = hours % 12;
-  hours12 = hours12 || 12; // Convert 0 to 12
+  // Special handling for noon and midnight
+  if (hours === 0) {
+    return `12:${minutes} AM`; // Midnight
+  } else if (hours === 12) {
+    return `12:${minutes} PM`; // Noon
+  }
+  
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hours12 = hours > 12 ? hours - 12 : hours;
   
   return `${hours12}:${minutes} ${period}`;
+}
+
+// For validation messages in UI
+export function formatTimeForDisplay(time24h: string): string {
+  return convertTo12Hour(time24h);
 } 
