@@ -850,18 +850,37 @@ function calculateWeekTotal(weekData: WeekData): number {
 
 // Helper function to process week data
 function processWeekData(weekData: any) {
-  console.log('Processing week data:', weekData); // Debug raw week data
+  console.log('Processing week data (full):', JSON.stringify(weekData, null, 2)); // Log full structure
 
   if (!weekData) {
     console.log('No week data provided, returning empty data');
     return createEmptyWeekData();
   }
 
+  // Try to find the correct data structure
+  const days = weekData.days || weekData.data?.days || [];
+  console.log('Days array:', days);
+
+  // Convert days array to object by day of week
+  const daysObject = days.reduce((acc: any, day: any) => {
+    return {
+      ...acc,
+      [day.dayOfWeek.toLowerCase()]: {
+        startTime: day.startTime,
+        endTime: day.endTime,
+        lunchStartTime: day.lunchStartTime,
+        lunchEndTime: day.lunchEndTime,
+        dayType: day.dayType,
+        totalHours: Number(day.totalHours || 0),
+      },
+    };
+  }, {});
+
+  console.log('Processed days object:', daysObject);
+
   // Process each day's data
   const processedDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].reduce((acc, day) => {
-    console.log(`Processing ${day}:`, weekData[day]); // Debug each day's data
-    
-    const dayData = weekData[day] || {};
+    const dayData = daysObject[day] || {};
     const processed = {
       ...acc,
       [day]: {
@@ -873,7 +892,6 @@ function processWeekData(weekData: any) {
         totalHours: Number(dayData.totalHours || 0),
       },
     };
-    console.log(`Processed ${day}:`, processed[day]); // Debug processed day data
     return processed;
   }, {});
 
@@ -882,7 +900,7 @@ function processWeekData(weekData: any) {
     extraHours: Number(weekData.extraHours || 0),
   };
 
-  console.log('Final processed week data:', result); // Debug final result
+  console.log('Final processed week data:', result);
   return result;
 }
 
