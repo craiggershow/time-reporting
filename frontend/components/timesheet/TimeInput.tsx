@@ -91,12 +91,10 @@ export function TimeInput({
   }, [value, isEditing]);
 
   const handleChange = (text: string) => {
-    console.log('TimeInput handleChange raw value:', text);
     setLocalValue(text);
     
     // Clear value if empty or placeholder
     if (!text || text === '--:--') {
-      console.log('TimeInput sending null value');
       onChange(null);
       return;
     }
@@ -104,7 +102,6 @@ export function TimeInput({
     // Only try to parse and convert if it looks like a complete time
     if (text.match(/^\d{1,2}(:\d{2})?\s*(AM|PM|A|P)?$/i)) {
       const time24h = convertTo24Hour(text);
-      console.log('TimeInput converted to 24h:', { input: text, output: time24h });
       onChange(time24h);
     }
   };
@@ -121,10 +118,6 @@ export function TimeInput({
     }
 
     const time24h = convertTo24Hour(localValue);
-    console.log('TimeInput blur conversion:', { 
-      input: localValue, 
-      output: time24h 
-    });
     if (time24h) {
       onChange(time24h);
     } else {

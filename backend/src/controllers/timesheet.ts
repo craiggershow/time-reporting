@@ -301,44 +301,15 @@ export async function getTimesheet(req: AuthRequest, res: ExpressResponse) {
 }
 
 function formatTimeForStorage(time: string | null): string | null {
-  console.log('Raw time input:', time); // Log the raw input
-  
   // Return null if time is null or empty
-  if (!time || time.trim() === '') {
-    console.log('Returning null for empty time');
-    return null;
-  }
-
-  // Parse time with AM/PM
-  const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (match) {
-    let [_, hours, minutes, period] = match;
-    let hoursNum = parseInt(hours);
-    
-    console.log('Parsed time:', { hours: hoursNum, minutes, period });
-
-    // Convert to 24-hour format
-    if (period.toUpperCase() === 'PM') {
-      if (hoursNum !== 12) {
-        hoursNum += 12;
-      }
-    } else if (period.toUpperCase() === 'AM' && hoursNum === 12) {
-      hoursNum = 0;
-    }
-
-    const formattedTime = `${hoursNum.toString().padStart(2, '0')}:${minutes}`;
-    console.log('Formatted 24h time:', formattedTime);
-    return formattedTime;
-  }
-
-  // If already in 24-hour format, return as is
+  if (!time || time.trim() === '') return null;
+  
+  // Keep the original time string if it's already in 24-hour format
   if (time.match(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)) {
-    console.log('Already in 24-hour format:', time);
     return time;
   }
-
-  console.log('Invalid time format:', time);
-  return null;
+  
+  return time;
 }
 
 export async function updateTimesheet(req: AuthRequest, res: ExpressResponse) {
@@ -442,19 +413,6 @@ function formatDateToTimeString(date: Date | null): string | null {
 export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
   try {
     const { payPeriodId, weeks, vacationHours } = req.body as TimesheetSubmitData;
-    
-    // Log the incoming data
-    console.log('Received timesheet data:', JSON.stringify({
-      payPeriodId,
-      weeks: weeks.map(week => ({
-        weekNumber: week.weekNumber,
-        monday: {
-          startTime: week.monday.startTime,
-          // ... other fields
-        },
-        // ... other days
-      })),
-    }, null, 2));
 
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });

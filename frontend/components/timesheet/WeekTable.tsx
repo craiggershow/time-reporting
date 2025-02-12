@@ -200,7 +200,6 @@ export function WeekTable({
   };
 
   const handleTimeUpdate = (day: keyof WeekData, field: keyof TimeEntry, value: string | null) => {
-    console.log('WeekTable handleTimeUpdate:', { day, field, value });
     onUpdate(day, field, value);
   };
 
@@ -274,15 +273,7 @@ export function WeekTable({
                     <View style={styles.inputContainer}>
                       <TimeInput
                         value={formatTimeForDisplay(data[day][fieldName])}
-                        onChange={(value) => {
-                          console.log('TimeInput onChange:', { 
-                            day, 
-                            field: fieldName, 
-                            value,
-                            formatted: formatTimeForDisplay(value)
-                          });
-                          handleTimeUpdate(day, fieldName, value);
-                        }}
+                        onChange={(value) => handleTimeUpdate(day, fieldName, value)}
                         disabled={disabled}
                         onBlur={() => handleBlur(day)}
                         hasError={hasError}
