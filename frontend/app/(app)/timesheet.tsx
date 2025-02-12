@@ -45,7 +45,6 @@ const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
 export default function TimesheetScreen() {
   const { state, dispatch } = useTimesheet();
   const { colors } = useTheme();
-  const [vacationHours, setVacationHours] = useState('0');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
@@ -81,6 +80,7 @@ export default function TimesheetScreen() {
           
           console.log('Week 1 raw data:', week1Data); // Debug week 1 data
           console.log('Week 2 raw data:', week2Data); // Debug week 2 data
+          console.log('Vacation raw data:', data.vacationHours); // Debug week 2 data
 
           const processedData = {
             startDate: new Date(data.payPeriod.startDate),
@@ -96,7 +96,7 @@ export default function TimesheetScreen() {
             totalHours: Number(data.totalHours || 0),
             status: data.status,
           };
-
+          console.log('Final processed vacation hours:', processedData.vacationHours);
           console.log('Final processed timesheet data:', processedData);
           
           dispatch({
@@ -396,12 +396,11 @@ export default function TimesheetScreen() {
     });
   };
 
-  const handleVacationHoursChange = (text: string) => {
-    const hours = parseFloat(text) || 0;
-    setVacationHours(text);
+  const handleVacationHoursChange = (value: string) => {
+    const hours = parseFloat(value) || 0;
     dispatch({
-      type: 'SET_VACATION_HOURS',
-      payload: hours,
+      type: 'UPDATE_VACATION_HOURS',
+      payload: hours
     });
   };
 
@@ -761,7 +760,7 @@ export default function TimesheetScreen() {
 
   const week1Total = calculateWeekTotal(state.currentPayPeriod.week1);
   const week2Total = calculateWeekTotal(state.currentPayPeriod.week2);
-  const periodTotal = week1Total + week2Total + parseFloat(vacationHours);
+  const periodTotal = week1Total + week2Total + state.currentPayPeriod.vacationHours;
 
   return (
     <View style={styles.container}>
@@ -816,10 +815,10 @@ export default function TimesheetScreen() {
               <ThemedText>Vacation Hours:</ThemedText>
               <Input
                 label=""
-                value={vacationHours}
+                value={state.currentPayPeriod?.vacationHours?.toString() || '0'}
                 onChangeText={handleVacationHoursChange}
-                keyboardType="numeric"
                 style={styles.vacationInput}
+                keyboardType="numeric"
               />
             </View>
             <View style={[styles.summaryRow, { backgroundColor: colors.background }]}>

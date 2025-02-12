@@ -13,7 +13,8 @@ type TimesheetAction =
   | { type: 'SET_EXTRA_HOURS'; payload: { week: 1 | 2; hours: number } }
   | { type: 'SET_VACATION_HOURS'; payload: number }
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null };
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'UPDATE_VACATION_HOURS'; payload: number };
 
 const initialState: TimesheetState = {
   currentPayPeriod: null,
@@ -109,6 +110,14 @@ function timesheetReducer(state: TimesheetState, action: TimesheetAction): Times
         ...state,
         error: action.payload,
         isLoading: false,
+      };
+    case 'UPDATE_VACATION_HOURS':
+      return {
+        ...state,
+        currentPayPeriod: state.currentPayPeriod ? {
+          ...state.currentPayPeriod,
+          vacationHours: action.payload
+        } : null
       };
     default:
       return state;

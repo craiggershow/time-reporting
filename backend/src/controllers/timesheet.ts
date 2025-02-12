@@ -1,7 +1,6 @@
 import { Request as ExpressRequest, Response as ExpressResponse } from 'express-serve-static-core';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, DayOfWeek, DayType, PayPeriod, TimesheetStatus } from '@prisma/client';
 import { startOfWeek, addWeeks, addDays } from 'date-fns';
-import { DayOfWeek, DayType, PayPeriod } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -179,7 +178,7 @@ export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse
       create: {
         userId: req.user.id,
         payPeriodId: payPeriod.id,
-        status: 'DRAFT',
+        status: TimesheetStatus.DRAFT,
         vacationHours: 0,
         weeks: {
           create: [
@@ -439,7 +438,7 @@ export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
       create: {
         userId: req.user.id,
         payPeriodId,
-        status: 'SUBMITTED',
+        status: TimesheetStatus.SUBMITTED,
         submittedAt: new Date(),
         vacationHours,
         weeks: {
@@ -463,7 +462,7 @@ export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
         },
       },
       update: {
-        status: 'SUBMITTED',
+        status: TimesheetStatus.SUBMITTED,
         submittedAt: new Date(),
         vacationHours,
         weeks: {
