@@ -70,10 +70,10 @@ model Day {
   dayOfWeek       DayOfWeek
   dayType         DayType     @default(REGULAR)
   // Time fields as strings
-  startTime       String      @default("00:00")
-  endTime         String      @default("00:00")
-  lunchStartTime  String      @default("00:00")
-  lunchEndTime    String      @default("00:00")
+  startTime       String?
+  endTime         String?
+  lunchStartTime  String?
+  lunchEndTime    String?
   totalHours      Float       @default(0)
   week            Week        @relation(fields: [weekId], references: [id])
   createdAt       DateTime    @default(now())

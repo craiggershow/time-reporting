@@ -1,20 +1,31 @@
 // For internal use and API communication - always 24-hour format
-export function convertTo24Hour(time12h: string | null): string {
-  if (!time12h) return "00:00";
+export function convertTo24Hour(time12h: string | null): string | null {
+  console.log('convertTo24Hour input:', time12h);
+  
+  if (!time12h || time12h.trim() === '') return null;
+  
+  // First check if already in 24-hour format
+  if (time12h.match(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)) {
+    console.log('Already in 24-hour format:', time12h);
+    return time12h;
+  }
   
   // Normalize input by removing spaces and converting to lowercase
   const input = time12h.toLowerCase().replace(/\s+/g, '');
+  console.log('convertTo24Hour normalized:', input);
   
-  // Extract hours, minutes, and period using regex
-  const timeRegex = /^(\d{1,2})(?::?(\d{2}))?(a|am|p|pm)?$/;
+  // Return null for placeholder value
+  if (input === '--:--') return null;
+  
+  // Extract hours, minutes, and period using regex for 12-hour format
+  const timeRegex = /^(\d{1,2})(?::?(\d{2}))?\s*(a|am|p|pm)?$/i;
   const match = input.match(timeRegex);
+  console.log('convertTo24Hour regex match:', match);
   
-  if (!match) return "00:00";
+  if (!match) return null;
   
   let [_, hours, minutes, period] = match;
-  
-  // Convert hours to number
-  let hoursNum = parseInt(hours, 10);
+  let hoursNum = parseInt(hours);
   
   // Default minutes to "00" if not provided
   minutes = minutes || "00";
@@ -25,20 +36,25 @@ export function convertTo24Hour(time12h: string | null): string {
   // Normalize period to "am" or "pm"
   period = period === "a" || period === "am" ? "am" : "pm";
   
+  console.log('convertTo24Hour parsed:', { hoursNum, minutes, period });
+  
   // Handle special cases for 12 AM/PM
-  if (hoursNum === 12) {
-    hoursNum = period === "am" ? 0 : 12;
-  } else if (period === "pm" && hoursNum < 12) {
-    hoursNum += 12;
+  if (period === "pm") {
+    if (hoursNum !== 12) {
+      hoursNum += 12;
+    }
+  } else if (period === "am" && hoursNum === 12) {
+    hoursNum = 0;
   }
   
-  // Format output
-  return `${hoursNum.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+  const result = `${hoursNum.toString().padStart(2, '0')}:${minutes}`;
+  console.log('convertTo24Hour result:', result);
+  return result;
 }
 
 // For UI display only - converts 24-hour to 12-hour format
-export function convertTo12Hour(time24h: string): string {
-  if (!time24h || time24h === "00:00") return "";
+export function convertTo12Hour(time24h: string | null): string {
+  if (!time24h) return "--:--";
   
   const [hours24, minutes] = time24h.split(':');
   const hours = parseInt(hours24, 10);
@@ -57,6 +73,7 @@ export function convertTo12Hour(time24h: string): string {
 }
 
 // For validation messages in UI
-export function formatTimeForDisplay(time24h: string): string {
+export function formatTimeForDisplay(time24h: string | null): string {
+  if (!time24h) return '--:--';
   return convertTo12Hour(time24h);
 } 

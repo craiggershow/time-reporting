@@ -7,7 +7,6 @@ interface TimeInputProps {
   value: string | null;
   onChange: (value: string | null) => void;
   onBlur?: () => void;
-  placeholder?: string;
   disabled?: boolean;
   hasError?: boolean;
   onKeyDown?: (e: KeyboardEvent) => void;
@@ -92,32 +91,45 @@ export function TimeInput({
   }, [value, isEditing]);
 
   const handleChange = (text: string) => {
+    console.log('TimeInput handleChange raw value:', text);
     setLocalValue(text);
+    
+    // Clear value if empty or placeholder
+    if (!text || text === '--:--') {
+      console.log('TimeInput sending null value');
+      onChange(null);
+      return;
+    }
     
     // Only try to parse and convert if it looks like a complete time
     if (text.match(/^\d{1,2}(:\d{2})?\s*(AM|PM|A|P)?$/i)) {
-      const parsedTime = parseTimeInput(text);
-      if (parsedTime) {
-        const time24h = convertTo24Hour(parsedTime);
-        onChange(time24h);
-      }
-    } else if (!text) {
-      onChange(null);
+      const time24h = convertTo24Hour(text);
+      console.log('TimeInput converted to 24h:', { input: text, output: time24h });
+      onChange(time24h);
     }
   };
 
   const handleInputBlur = () => {
     setIsEditing(false);
-    if (localValue) {
-      const parsedTime = parseTimeInput(localValue);
-      if (parsedTime) {
-        setLocalValue(parsedTime);
-        const time24h = convertTo24Hour(parsedTime);
-        onChange(time24h);
-      } else {
-        // If parsing fails, keep the previous valid value
-        setLocalValue(value || '');
-      }
+    
+    // Clear value if empty or placeholder
+    if (!localValue || localValue === '--:--') {
+      onChange(null);
+      setLocalValue('');
+      onBlur?.();
+      return;
+    }
+
+    const time24h = convertTo24Hour(localValue);
+    console.log('TimeInput blur conversion:', { 
+      input: localValue, 
+      output: time24h 
+    });
+    if (time24h) {
+      onChange(time24h);
+    } else {
+      // If parsing fails, keep the previous valid value
+      setLocalValue(value || '');
     }
     onBlur?.();
   };
@@ -133,7 +145,7 @@ export function TimeInput({
       onChangeText={handleChange}
       onBlur={handleInputBlur}
       onFocus={handleInputFocus}
-      placeholder="--:-- --"
+      placeholder="--:--"
       style={[styles.input, hasError && styles.errorInput]}
       editable={!disabled}
       maxLength={8} // "12:45 PM" is 8 characters

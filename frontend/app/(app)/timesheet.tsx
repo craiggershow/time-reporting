@@ -637,7 +637,15 @@ export default function TimesheetScreen() {
         ],
       };
 
-      console.log('Timesheet submission payload:', JSON.stringify(submitData, null, 2));
+      // Log the data before submission
+      console.log('Submitting timesheet data:', {
+        payPeriodId: submitData.payPeriodId,
+        weeks: submitData.weeks.map(week => ({
+          ...week,
+          monday: { ...week.monday, startTime: week.monday.startTime },  // Log specific times
+          // ... other days
+        })),
+      });
 
       const response = await fetch(buildApiUrl('SUBMIT_TIMESHEET'), {
         method: 'POST',
