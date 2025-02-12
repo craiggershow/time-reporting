@@ -768,11 +768,6 @@ export default function TimesheetScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.contentCard}>
           <View style={styles.header}>
-            <Image 
-              source={require('../../assets/images/KV-Dental-Sign-logo-and-Name-500x86.gif')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
           </View>
 
           <WeekTable
@@ -848,11 +843,10 @@ export default function TimesheetScreen() {
 }
 
 function calculateWeekTotal(weekData: WeekData): number {
-  const dayEntries = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
-  const totalRegularHours = dayEntries
-    .reduce((sum, day) => sum + weekData[day].totalHours, 0);
-  
-  return totalRegularHours + (weekData.extraHours || 0);
+  const daysTotal = Object.values(weekData)
+    .filter(day => typeof day === 'object' && 'totalHours' in day)
+    .reduce((sum, day) => sum + (day as TimeEntry).totalHours, 0);
+  return daysTotal + (weekData.extraHours || 0);
 }
 
 // Helper function to process week data
@@ -1020,5 +1014,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fee2e2',
     borderRadius: 4,
     marginLeft: 16,
+  },
+  hoursInput: {
+    width: 100,
+    textAlign: 'right',
   },
 }); 
