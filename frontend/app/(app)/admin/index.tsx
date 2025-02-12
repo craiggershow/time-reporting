@@ -45,7 +45,6 @@ export default function AdminPortal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f1f5f9', // Light blueish gray from Tailwind's slate-100
   },
   content: {
     flex: 1,
@@ -53,14 +52,6 @@ const styles = StyleSheet.create({
   section: {
     padding: 16,
     gap: 24,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#64748b',
-    marginTop: 8,
-  },
-  menuSection: {
-    marginTop: 24,
   },
   contentCard: {
     backgroundColor: '#ffffff',
@@ -74,5 +65,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#64748b',
+    marginTop: 8,
+  },
+  menuSection: {
+    marginTop: 24,
   },
 }); 

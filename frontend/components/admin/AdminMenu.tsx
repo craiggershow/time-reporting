@@ -4,49 +4,37 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 interface MenuItem {
-  id: string;
   title: string;
+  description: string;
   icon: keyof typeof Ionicons.glyphMap;
   route: string;
-  description: string;
 }
 
-const MENU_ITEMS: MenuItem[] = [
+const menuItems: MenuItem[] = [
   {
-    id: 'timesheet',
-    title: 'My Timesheet',
-    icon: 'calendar-outline',
-    route: '/timesheet',
-    description: 'View and edit your timesheet'
-  },
-  {
-    id: 'timesheets',
-    title: 'Timesheet Management',
-    icon: 'time-outline',
-    route: '/admin/timesheets',
-    description: 'Review and approve employee timesheets'
-  },
-  {
-    id: 'users',
     title: 'User Management',
+    description: 'Add, edit, and manage user accounts',
     icon: 'people-outline',
-    route: '/(app)/admin/users',
-    description: 'Manage employee accounts and permissions'
+    route: 'users',
   },
   {
-    id: 'reports',
+    title: 'Timesheet Approval',
+    description: 'Review and approve submitted timesheets',
+    icon: 'time-outline',
+    route: 'timesheets',
+  },
+  {
     title: 'Reports',
+    description: 'View and export timesheet reports',
     icon: 'bar-chart-outline',
-    route: '/(app)/admin/reports',
-    description: 'Generate and view timesheet reports'
+    route: 'reports',
   },
   {
-    id: 'settings',
     title: 'Settings',
+    description: 'Configure system settings',
     icon: 'settings-outline',
-    route: '/(app)/admin/settings',
-    description: 'Configure system settings and preferences'
-  }
+    route: 'settings',
+  },
 ];
 
 export function AdminMenu() {
@@ -54,20 +42,23 @@ export function AdminMenu() {
 
   return (
     <View style={styles.container}>
-      {MENU_ITEMS.map((item) => (
+      {menuItems.map((item) => (
         <Pressable
-          key={item.id}
+          key={item.route}
           style={styles.menuItem}
-          onPress={() => router.push(item.route)}
+          onPress={() => router.push({
+            pathname: item.route,
+            params: {}
+          })}
         >
           <View style={styles.iconContainer}>
             <Ionicons name={item.icon} size={24} color="#64748b" />
           </View>
           <View style={styles.textContainer}>
-            <ThemedText style={styles.title}>{item.title}</ThemedText>
+            <ThemedText type="subtitle">{item.title}</ThemedText>
             <ThemedText style={styles.description}>{item.description}</ThemedText>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+          <Ionicons name="chevron-forward" size={20} color="#64748b" />
         </Pressable>
       ))}
     </View>
@@ -76,37 +67,30 @@ export function AdminMenu() {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 12,
+    gap: 16,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8fafc',
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    gap: 16,
   },
   iconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: '#f1f5f9',
-    justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    justifyContent: 'center',
   },
   textContainer: {
     flex: 1,
   },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
-  },
   description: {
+    color: '#64748b',
     fontSize: 14,
-    color: '#475569',
     marginTop: 4,
   },
 }); 

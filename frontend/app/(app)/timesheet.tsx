@@ -908,7 +908,6 @@ function processWeekData(weekData: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f1f5f9', // Light blueish gray from Tailwind's slate-100
   },
   content: {
     flex: 1,

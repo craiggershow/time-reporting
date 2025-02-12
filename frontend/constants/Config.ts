@@ -13,14 +13,18 @@ export const API_TIMEOUT = 10000; // 10 seconds
 export const API_ENDPOINTS = {
   LOGIN: 'api/auth/login',
   LOGOUT: 'api/auth/logout',
+  CURRENT_USER: 'api/auth/me',
   CURRENT_TIMESHEET: 'api/timesheets/current',
   PREVIOUS_TIMESHEET: 'api/timesheets/previous',
   SUBMIT_TIMESHEET: 'api/timesheets/submit',
+  RECALL_TIMESHEET: (id: string) => `api/timesheets/${id}/recall`,
   PENDING_TIMESHEETS: 'api/admin/timesheets/pending',
   APPROVE_TIMESHEET: 'api/admin/timesheets/approve',
   PAY_PERIODS: 'api/pay-periods',
   EMPLOYEES: 'api/employees',
   SAVE_TIMESHEET_DRAFT: '/api/timesheet/draft',
+  USERS: 'api/admin/users',
+  USER: (id: string) => `api/admin/users/${id}`,
 } as const;
 
 // Helper function to build API URLs

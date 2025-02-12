@@ -54,9 +54,22 @@ export default function LoginScreen() {
         }),
       });
 
+      const contentType = response.headers.get('content-type');
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Login failed');
+        let errorMessage = 'Login failed';
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } else {
+          const text = await response.text();
+          console.error('Server response:', text);
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Make sure we have JSON response
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Invalid server response format');
       }
 
       const data = await response.json();
@@ -70,12 +83,13 @@ export default function LoginScreen() {
       
       // Navigate to the appropriate screen based on login type
       if (loginType === 'admin') {
-        router.replace('/admin');
+        router.replace('/admin/');
       } else {
         router.replace('/timesheet');
       }
 
     } catch (error) {
+      console.error('Login error:', error);
       setError(error instanceof Error ? error.message : 'Login failed');
     } finally {
       setIsLoading(false);

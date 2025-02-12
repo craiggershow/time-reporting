@@ -34,6 +34,9 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <Stack screenOptions={{
               headerShown: false,
+              contentStyle: {
+                backgroundColor: '#f1f5f9', // Set blue-gray background here
+              },
             }}>
               <Stack.Screen name="index" />
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />

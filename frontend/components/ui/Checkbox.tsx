@@ -1,45 +1,30 @@
-import { TouchableOpacity, StyleSheet, View, Text } from 'react-native';
-import { useTheme } from '@/context/ThemeContext';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { ThemedText } from '../ThemedText';
+import { Ionicons } from '@expo/vector-icons';
 
 interface CheckboxProps {
-  checked: boolean;
-  onPress: () => void;
   label: string;
+  value: boolean;
+  onChange: (value: boolean) => void;
+  disabled?: boolean;
 }
 
-export function Checkbox({ checked, onPress, label }: CheckboxProps) {
-  const { colors, isDark } = useTheme();
-
+export function Checkbox({ label, value, onChange, disabled }: CheckboxProps) {
   return (
-    <TouchableOpacity 
+    <Pressable 
       style={styles.container} 
-      onPress={onPress}
-      activeOpacity={0.7}
+      onPress={() => !disabled && onChange(!value)}
+      disabled={disabled}
     >
-      <View 
-        style={[
-          styles.checkbox, 
-          { 
-            borderColor: checked ? colors.tint : colors.border,
-            backgroundColor: checked ? colors.tint : 'transparent',
-          }
-        ]}
-      >
-        {checked && (
-          <View style={styles.checkmark}>
-            <Text 
-              style={[
-                styles.check, 
-                { color: '#fff' }
-              ]}
-            >
-              ✓
-            </Text>
-          </View>
-        )}
+      <View style={[
+        styles.checkbox,
+        value && styles.checked,
+        disabled && styles.disabled
+      ]}>
+        {value && <Ionicons name="checkmark" size={16} color="#ffffff" />}
       </View>
-      <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
-    </TouchableOpacity>
+      <ThemedText>{label}</ThemedText>
+    </Pressable>
   );
 }
 
@@ -48,26 +33,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingVertical: 4,
   },
   checkbox: {
     width: 20,
     height: 20,
-    borderWidth: 2,
     borderRadius: 4,
-    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#64748b',
     alignItems: 'center',
-  },
-  checkmark: {
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  check: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 'bold',
+  checked: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
   },
-  label: {
-    fontSize: 14,
+  disabled: {
+    opacity: 0.5,
   },
 }); 
