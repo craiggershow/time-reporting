@@ -17,12 +17,8 @@ export default function AppLayout() {
           options={{ headerShown: false }} 
         />
         <Stack.Screen 
-          name="admin"
-          options={{ 
-            headerShown: false,
-            // Remove any query parameters from the URL
-            href: null 
-          }} 
+          name="admin" 
+          options={{ headerShown: false }} 
         />
       </Stack>
     </ErrorBoundary>

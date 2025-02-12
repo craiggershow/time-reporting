@@ -9,21 +9,29 @@ interface JwtPayload {
 }
 
 export async function authenticate(req: Request, res: Response, next: NextFunction) {
+  console.log('\n=== Auth Middleware Start ===');
+  console.log('Path:', req.path);
+  console.log('Method:', req.method);
+  console.log('Cookies:', req.cookies);
+  console.log('Headers:', req.headers);
+  
   try {
     const token = req.cookies.auth_token;
     
     if (!token) {
-      console.log('No token found in cookies');
+      console.log('❌ No auth token found in cookies');
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    console.log('✓ Token found');
+    console.log('Verifying token...');
+    
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    console.log('Decoded token:', decoded); // Debug log
+    console.log('✓ Token verified');
+    console.log('Decoded payload:', { ...decoded, token: '[REDACTED]' });
     
     const user = await prisma.user.findUnique({
-      where: { 
-        id: decoded.userId // Match the userId from JWT
-      },
+      where: { id: decoded.userId },
       select: {
         id: true,
         email: true,
@@ -32,28 +40,35 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
     });
 
     if (!user) {
-      console.log('User not found for id:', decoded.userId); // Debug log
+      console.log('❌ User not found in database:', decoded.userId);
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // Set user info using the global Express.Request type
-    req.user = {
-      id: user.id, // Use id consistently in the request object
-      email: user.email,
-      role: user.role,
-    };
-
-    console.log('Auth successful for user:', user.id); // Debug log
+    console.log('✓ User found:', { id: user.id, role: user.role });
+    req.user = user;
+    console.log('=== Auth Middleware End ===\n');
     next();
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error('=== Auth Middleware Error ===');
+    console.error('Error Type:', error.constructor.name);
+    console.error('Error Message:', error.message);
+    console.error('Error Stack:', error.stack);
+    console.error('=== Auth Middleware End ===\n');
     res.status(401).json({ error: 'Invalid token' });
   }
 }
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  console.log('\n=== Admin Check Start ===');
+  console.log('User:', req.user);
+  
   if (req.user?.role !== 'ADMIN') {
+    console.log('❌ Access denied - not admin');
+    console.log('User role:', req.user?.role);
     return res.status(403).json({ error: 'Admin access required' });
   }
+  
+  console.log('✓ Admin access granted');
+  console.log('=== Admin Check End ===\n');
   next();
 } 

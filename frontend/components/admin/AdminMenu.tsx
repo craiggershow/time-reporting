@@ -15,7 +15,7 @@ const menuItems: MenuItem[] = [
     title: 'User Management',
     description: 'Add, edit, and manage user accounts',
     icon: 'people-outline',
-    route: 'users',
+    route: '/admin/users',
   },
   {
     title: 'Timesheet Approval',
@@ -46,10 +46,7 @@ export function AdminMenu() {
         <Pressable
           key={item.route}
           style={styles.menuItem}
-          onPress={() => router.push({
-            pathname: item.route,
-            params: {}
-          })}
+          onPress={() => router.push(item.route)}
         >
           <View style={styles.iconContainer}>
             <Ionicons name={item.icon} size={24} color="#64748b" />

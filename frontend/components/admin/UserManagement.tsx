@@ -9,8 +9,9 @@ import { UserForm } from './UserForm';
 interface User {
   id: string;
   email: string;
-  name: string;
-  isAdmin: boolean;
+  firstName: string;
+  lastName: string;
+  role: 'ADMIN' | 'EMPLOYEE';
   isActive: boolean;
 }
 
@@ -21,38 +22,62 @@ export function UserManagement() {
   const [showAddUser, setShowAddUser] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  async function fetchUsers() {
+  const fetchUsers = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await fetch(buildApiUrl('USERS'), {
+      
+      const url = buildApiUrl('USERS');
+      console.log('=== Fetching Users ===');
+      console.log('URL:', url);
+      console.log('Method: GET');
+      
+      const response = await fetch(url, {
+        method: 'GET',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('=== Error Response ===');
+        console.error('Status:', response.status);
+        console.error('Raw Response:', errorText);
         throw new Error('Failed to fetch users');
       }
 
       const data = await response.json();
+      console.log('=== Success Response ===');
+      console.log('Users Count:', data.length);
       setUsers(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (error) {
+      console.error('=== Fetch Error ===');
+      setError(error instanceof Error ? error.message : 'Failed to fetch users');
     } finally {
       setIsLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const columns = [
-    { key: 'name', title: 'Name' },
-    { key: 'email', title: 'Email' },
     { 
-      key: 'isAdmin', 
+      key: 'name',
+      title: 'Name',
+      render: (_, user: User) => `${user.firstName} ${user.lastName}`
+    },
+    { 
+      key: 'email',
+      title: 'Email' 
+    },
+    { 
+      key: 'role', 
       title: 'Admin',
-      render: (value: boolean) => value ? 'Yes' : 'No'
+      render: (role: string) => role === 'ADMIN' ? 'Yes' : 'No'
     },
     { 
       key: 'isActive', 
@@ -104,10 +129,10 @@ export function UserManagement() {
             setSelectedUser(null);
           }}
           onSave={() => {
-            fetchUsers();
             setShowAddUser(false);
             setSelectedUser(null);
           }}
+          fetchUsers={fetchUsers}
         />
       )}
     </View>

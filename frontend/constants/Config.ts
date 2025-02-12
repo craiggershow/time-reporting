@@ -24,12 +24,13 @@ export const API_ENDPOINTS = {
   EMPLOYEES: 'api/employees',
   SAVE_TIMESHEET_DRAFT: '/api/timesheet/draft',
   USERS: 'api/admin/users',
-  USER: (id: string) => `api/admin/users/${id}`,
+  // USER: (id: string) => `api/admin/users/${id}`, // Remove this if not using
 } as const;
 
 // Helper function to build API URLs
 export function buildApiUrl(endpoint: keyof typeof API_ENDPOINTS): string {
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+  const baseUrl = process.env.EXPO_PUBLIC_API_URL || DEV_API_URL;
+  console.log('Building URL with base:', baseUrl); // Debug log
   return `${baseUrl}/${API_ENDPOINTS[endpoint]}`;
 }
 

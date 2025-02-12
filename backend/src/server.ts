@@ -8,11 +8,11 @@ import { errorHandler } from './middleware/error';
 import { prisma } from './lib/prisma';
 import dotenv from 'dotenv';
 import { payPeriodRouter } from './routes/payPeriod';
+import { app } from './app';
 
 // Load environment variables
 dotenv.config();
 
-const app = express();
 const host = process.env.HOST || '0.0.0.0';
 const port = process.env.PORT || 8000;
 
@@ -56,24 +56,37 @@ app.use('/api/pay-periods', payPeriodRouter);
 // Error handling
 app.use(errorHandler);
 
-// Start server
-const server = app.listen(port, host, () => {
-  console.log(`Server running at http://${host}:${port}`);
-  console.log('Available routes:');
-  console.log(`- GET http://${host}:${port}/health`);
-  console.log(`- GET http://${host}:${port}/api/timesheets/current`);
-  console.log(`- GET http://${host}:${port}/api/timesheets/previous`);
-});
+async function startServer() {
+  try {
+    // Test database connection
+    await prisma.$connect();
+    console.log('Connected to database');
 
-// Handle shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    prisma.$disconnect();
-    process.exit();
-  });
-});
+    // Start server
+    const server = app.listen(port, host, () => {
+      console.log(`Server running at http://${host}:${port}`);
+      console.log('Available routes:');
+      console.log('- GET  /api/test');
+      console.log('- POST /api/auth/login');
+      console.log('- GET  /api/admin');
+      console.log('- GET  /api/admin/users');
+    });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received. Shutting down...');
+      server.close(() => {
+        prisma.$disconnect();
+        process.exit(0);
+      });
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 // Handle errors
 process.on('uncaughtException', (error) => {

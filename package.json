@@ -23,8 +23,10 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@react-native-picker/picker": "2.9.0",
+    "@types/express-session": "^1.18.1",
     "dotenv": "^16.4.7",
     "expo-constants": "~17.0.5",
-    "@react-native-picker/picker": "2.9.0"
+    "express-session": "^1.18.1"
   }
 }

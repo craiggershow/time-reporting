@@ -1,71 +1,84 @@
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, TextInput, Switch } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { useState } from 'react';
-import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Checkbox } from '../ui/Checkbox';
 import { buildApiUrl } from '@/constants/Config';
 import { Modal } from '../ui/Modal';
 
-interface UserFormProps {
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-    isAdmin: boolean;
-    isActive: boolean;
-  } | null;
-  onClose: () => void;
-  onSave: () => void;
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: 'ADMIN' | 'EMPLOYEE';
+  isActive: boolean;
 }
 
-export function UserForm({ user, onClose, onSave }: UserFormProps) {
-  const [formData, setFormData] = useState({
-    email: user?.email || '',
-    name: user?.name || '',
-    password: '',
-    isAdmin: user?.isAdmin || false,
-    isActive: user?.isActive ?? true,
-  });
+interface UserFormProps {
+  user?: User | null;
+  onClose: () => void;
+  onSave: () => void;
+  fetchUsers: () => Promise<void>;
+}
+
+export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
+  const [email, setEmail] = useState(user?.email || '');
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
+  const [password, setPassword] = useState('');
+  const [isAdmin, setIsAdmin] = useState(user?.role === 'ADMIN');
+  const [isActive, setIsActive] = useState(user?.isActive ?? true);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  async function handleSubmit() {
+  const handleSubmit = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
+      const data = {
+        email,
+        firstName,
+        lastName,
+        ...(password && { password }), // Only include if password is set
+        role: isAdmin ? 'ADMIN' : 'EMPLOYEE',
+        isActive,
+      };
+
       const url = user 
-        ? buildApiUrl(`USERS/${user.id}`)
+        ? `${buildApiUrl('USERS')}/${user.id}`
         : buildApiUrl('USERS');
 
       const response = await fetch(url, {
         method: user ? 'PUT' : 'POST',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        credentials: 'include',
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to save user');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save user');
       }
 
+      await fetchUsers();
       onSave();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (error) {
+      console.error('Error saving user:', error);
+      setError(error instanceof Error ? error.message : 'Failed to save user');
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Modal onClose={onClose}>
       <View style={styles.container}>
         <ThemedText type="subtitle">
-          {user ? 'Edit User' : 'Add New User'}
+          {user ? 'Edit User' : 'Add User'}
         </ThemedText>
 
         {error && (
@@ -75,40 +88,68 @@ export function UserForm({ user, onClose, onSave }: UserFormProps) {
         )}
 
         <View style={styles.form}>
-          <Input
-            label="Name"
-            value={formData.name}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
-          />
-
-          <Input
-            label="Email"
-            value={formData.email}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          <Input
-            label={user ? "New Password (optional)" : "Password"}
-            value={formData.password}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, password: text }))}
-            secureTextEntry
-          />
-
-          <View style={styles.checkboxContainer}>
-            <Checkbox
-              label="Admin Access"
-              value={formData.isAdmin}
-              onChange={(value) => setFormData(prev => ({ ...prev, isAdmin: value }))}
+          <View style={styles.inputContainer}>
+            <ThemedText style={styles.label}>Email</ThemedText>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholder="Enter email"
             />
           </View>
 
-          <View style={styles.checkboxContainer}>
-            <Checkbox
-              label="Active"
-              value={formData.isActive}
-              onChange={(value) => setFormData(prev => ({ ...prev, isActive: value }))}
+          <View style={styles.inputContainer}>
+            <ThemedText style={styles.label}>First Name</ThemedText>
+            <TextInput
+              style={styles.input}
+              value={firstName}
+              onChangeText={setFirstName}
+              placeholder="Enter first name"
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <ThemedText style={styles.label}>Last Name</ThemedText>
+            <TextInput
+              style={styles.input}
+              value={lastName}
+              onChangeText={setLastName}
+              placeholder="Enter last name"
+            />
+          </View>
+
+          {!user && (
+            <View style={styles.inputContainer}>
+              <ThemedText style={styles.label}>Password</ThemedText>
+              <TextInput
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                placeholder="Enter password"
+              />
+            </View>
+          )}
+
+          <View style={styles.switchContainer}>
+            <ThemedText>Admin User</ThemedText>
+            <Switch
+              value={isAdmin}
+              onValueChange={setIsAdmin}
+              trackColor={{ false: '#767577', true: '#81b0ff' }}
+              thumbColor={isAdmin ? '#f5dd4b' : '#f4f3f4'}
+            />
+          </View>
+
+          <View style={styles.switchContainer}>
+            <ThemedText>Active</ThemedText>
+            <Switch
+              value={isActive}
+              onValueChange={setIsActive}
+              trackColor={{ false: '#767577', true: '#81b0ff' }}
+              thumbColor={isActive ? '#f5dd4b' : '#f4f3f4'}
             />
           </View>
         </View>
@@ -142,8 +183,27 @@ const styles = StyleSheet.create({
     gap: 16,
     marginTop: 24,
   },
-  checkboxContainer: {
-    marginTop: 8,
+  inputContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    marginBottom: 8,
+    fontSize: 14,
+    color: '#4b5563',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 6,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#ffffff',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   actions: {
     flexDirection: 'row',

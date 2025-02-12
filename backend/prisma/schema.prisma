@@ -17,6 +17,7 @@ model User {
   firstName  String
   lastName   String
   role       UserRole    @default(EMPLOYEE)
+  isActive   Boolean     @default(true)
   timesheets Timesheet[]
   notifications Notification[]
   createdAt  DateTime    @default(now())

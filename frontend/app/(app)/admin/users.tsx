@@ -1,39 +1,10 @@
-import { View, StyleSheet } from 'react-native';
-import { Header } from '@/components/layout/Header';
+import { View } from 'react-native';
 import { UserManagement } from '@/components/admin/UserManagement';
 
-export default function UserManagementScreen() {
+export default function UsersScreen() {
   return (
-    <View style={styles.container}>
-      <Header />
-      <View style={styles.content}>
-        <View style={styles.contentCard}>
-          <UserManagement />
-        </View>
-      </View>
+    <View style={{ flex: 1 }}>
+      <UserManagement />
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-  contentCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-}); 
+} 
