@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { Checkbox } from '../ui/Checkbox';
 import { buildApiUrl } from '@/constants/Config';
 import { Modal } from '../ui/Modal';
+import { commonStyles } from '@/styles/common';
 
 interface User {
   id: string;
@@ -79,22 +80,35 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
 
   return (
     <Modal onClose={onClose}>
-      <View style={styles.container}>
+      <View 
+        testID="user-form-container" 
+        style={commonStyles.contentCard}
+      >
         <ThemedText type="subtitle">
           {user ? 'Edit User' : 'Add User'}
         </ThemedText>
 
         {error && (
-          <View style={styles.error}>
-            <ThemedText style={styles.errorText}>{error}</ThemedText>
+          <View 
+            testID="user-form-error" 
+            style={commonStyles.errorContainer}
+          >
+            <ThemedText style={commonStyles.errorMessage}>{error}</ThemedText>
           </View>
         )}
 
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <ThemedText style={styles.label}>Email</ThemedText>
+        <View 
+          testID="user-form-fields" 
+          style={commonStyles.formInputWrapper}
+        >
+          <View 
+            testID="email-input-container" 
+            style={commonStyles.formInputWrapper}
+          >
+            <ThemedText style={commonStyles.formLabel}>Email</ThemedText>
             <TextInput
-              style={styles.input}
+              testID="email-input"
+              style={commonStyles.formInput}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -103,20 +117,20 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <ThemedText style={styles.label}>First Name</ThemedText>
+          <View style={commonStyles.formInputWrapper}>
+            <ThemedText style={commonStyles.formLabel}>First Name</ThemedText>
             <TextInput
-              style={styles.input}
+              style={commonStyles.formInput}
               value={firstName}
               onChangeText={setFirstName}
               placeholder="Enter first name"
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <ThemedText style={styles.label}>Last Name</ThemedText>
+          <View style={commonStyles.formInputWrapper}>
+            <ThemedText style={commonStyles.formLabel}>Last Name</ThemedText>
             <TextInput
-              style={styles.input}
+              style={commonStyles.formInput}
               value={lastName}
               onChangeText={setLastName}
               placeholder="Enter last name"
@@ -124,10 +138,10 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
           </View>
 
           {!user && (
-            <View style={styles.inputContainer}>
-              <ThemedText style={styles.label}>Password</ThemedText>
+            <View style={commonStyles.formInputWrapper}>
+              <ThemedText style={commonStyles.formLabel}>Password</ThemedText>
               <TextInput
-                style={styles.input}
+                style={commonStyles.formInput}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -136,18 +150,18 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
             </View>
           )}
 
-          <View style={styles.inputContainer}>
-            <ThemedText style={styles.label}>Employee ID</ThemedText>
+          <View style={commonStyles.formInputWrapper}>
+            <ThemedText style={commonStyles.formLabel}>Employee ID</ThemedText>
             <TextInput
-              style={styles.input}
+              style={commonStyles.formInput}
               value={employeeId}
               onChangeText={setEmployeeId}
               placeholder="Auto-generated if empty"
             />
           </View>
 
-          <View style={styles.switchContainer}>
-            <ThemedText>Admin User</ThemedText>
+          <View style={commonStyles.formInputWrapper}>
+            <ThemedText style={commonStyles.formLabel}>Admin User</ThemedText>
             <Switch
               value={isAdmin}
               onValueChange={setIsAdmin}
@@ -156,8 +170,8 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
             />
           </View>
 
-          <View style={styles.switchContainer}>
-            <ThemedText>Active</ThemedText>
+          <View style={commonStyles.formInputWrapper}>
+            <ThemedText style={commonStyles.formLabel}>Active</ThemedText>
             <Switch
               value={isActive}
               onValueChange={setIsActive}
@@ -167,15 +181,20 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
           </View>
         </View>
 
-        <View style={styles.actions}>
-          <Button
-            variant="secondary"
+        <View 
+          testID="form-actions" 
+          style={commonStyles.buttonContainer}
+        >
+          <Button 
+            testID="cancel-button"
+            variant="secondary" 
             onPress={onClose}
           >
             Cancel
           </Button>
-          <Button
-            onPress={handleSubmit}
+          <Button 
+            testID="save-button"
+            onPress={handleSubmit} 
             isLoading={isLoading}
           >
             Save

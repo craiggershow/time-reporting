@@ -1,10 +1,11 @@
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import { buildApiUrl } from '@/constants/Config';
 import { DataTable } from '../ui/DataTable';
 import { UserForm } from './UserForm';
+import { commonStyles } from '@/styles/common';
 
 interface User {
   id: string;
@@ -93,7 +94,7 @@ export function UserManagement() {
       key: 'actions',
       title: 'Actions',
       render: (_: any, user: User) => (
-        <View style={styles.actions}>
+        <View style={commonStyles.actions}>
           <Button 
             variant="secondary"
             onPress={() => setSelectedUser(user)}
@@ -106,8 +107,14 @@ export function UserManagement() {
   ];
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View 
+      testID="user-management-page" 
+      style={commonStyles.pageContainer}
+    >
+      <View 
+        testID="user-management-header" 
+        style={commonStyles.pageHeader}
+      >
         <ThemedText type="subtitle">User Management</ThemedText>
         <Button onPress={() => setShowAddUser(true)}>
           Add User
@@ -115,8 +122,11 @@ export function UserManagement() {
       </View>
 
       {error && (
-        <View style={styles.error}>
-          <ThemedText style={styles.errorText}>{error}</ThemedText>
+        <View 
+          testID="error-message-container" 
+          style={commonStyles.errorContainer}
+        >
+          <ThemedText style={commonStyles.errorMessage}>{error}</ThemedText>
         </View>
       )}
 
@@ -142,30 +152,4 @@ export function UserManagement() {
       )}
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  error: {
-    backgroundColor: '#fee2e2',
-    padding: 12,
-    borderRadius: 6,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: '#dc2626',
-  },
-}); 
+} 

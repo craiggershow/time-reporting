@@ -1,6 +1,7 @@
 import { View, StyleSheet, Pressable } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing } from '@/styles/common';
 
 interface ModalProps {
   children: React.ReactNode;
@@ -8,13 +9,13 @@ interface ModalProps {
 }
 
 export function Modal({ children, onClose }: ModalProps) {
-  const { colors } = useTheme();
+  const theme = useTheme();
 
   return (
     <View style={[styles.overlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
-      <View style={[styles.content, { backgroundColor: colors.background }]}>
+      <View style={styles.content}>
         <Pressable style={styles.closeButton} onPress={onClose}>
-          <Ionicons name="close" size={24} color={colors.text} />
+          <Ionicons name="close" size={24} color={theme.colors.text} />
         </Pressable>
         {children}
       </View>
@@ -24,26 +25,24 @@ export function Modal({ children, onClose }: ModalProps) {
 
 const styles = StyleSheet.create({
   overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.md,
   },
   content: {
-    width: '100%',
-    maxWidth: 600,
     borderRadius: 12,
-    position: 'relative',
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    width: '100%',
+    maxWidth: 500,
   },
   closeButton: {
     position: 'absolute',
-    top: 16,
-    right: 16,
+    top: spacing.md,
+    right: spacing.md,
     zIndex: 1,
-    padding: 8,
+    padding: spacing.xs,
   },
 }); 

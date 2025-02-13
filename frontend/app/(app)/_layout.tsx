@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { colors } from '@/styles/common';
 
 export default function AppLayout() {
   return (
@@ -8,7 +9,7 @@ export default function AppLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: {
-            backgroundColor: '#f1f5f9', // Set blue-gray background here
+            backgroundColor: colors.appBackground, // Use the new color
           },
         }}
       >

@@ -1,6 +1,7 @@
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ActivityIndicator } from 'react-native';
+import { commonStyles, spacing } from '@/styles/common';
 
 interface Column<T> {
   key: keyof T | 'actions';
@@ -17,29 +18,45 @@ interface DataTableProps<T> {
 export function DataTable<T>({ data, columns, isLoading }: DataTableProps<T>) {
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={{ padding: spacing.xl, alignItems: 'center' }}>
         <ActivityIndicator size="large" />
       </View>
     );
   }
 
   return (
-    <ScrollView horizontal>
-      <View>
-        {/* Header Row */}
-        <View style={styles.headerRow}>
+    <ScrollView 
+      horizontal 
+      testID="data-table-scroll-container"
+    >
+      <View testID="data-table-container">
+        <View 
+          testID="data-table-header" 
+          style={commonStyles.tableContainer.headerRow}
+        >
           {columns.map((column) => (
-            <View key={column.key as string} style={styles.headerCell}>
+            <View 
+              key={column.key as string} 
+              testID={`header-cell-${column.key}`}
+              style={commonStyles.tableContainer.headerCell}
+            >
               <ThemedText type="defaultSemiBold">{column.title}</ThemedText>
             </View>
           ))}
         </View>
 
-        {/* Data Rows */}
         {data.map((item, rowIndex) => (
-          <View key={rowIndex} style={styles.dataRow}>
+          <View 
+            key={rowIndex} 
+            testID={`table-row-${rowIndex}`}
+            style={commonStyles.tableContainer.row}
+          >
             {columns.map((column) => (
-              <View key={column.key as string} style={styles.dataCell}>
+              <View 
+                key={column.key as string} 
+                testID={`table-cell-${column.key}-${rowIndex}`}
+                style={commonStyles.tableContainer.cell}
+              >
                 {column.render ? (
                   column.render(item[column.key], item)
                 ) : (
@@ -51,41 +68,11 @@ export function DataTable<T>({ data, columns, isLoading }: DataTableProps<T>) {
         ))}
 
         {data.length === 0 && (
-          <View style={styles.emptyState}>
+          <View style={{ padding: spacing.xl, alignItems: 'center' }}>
             <ThemedText>No data available</ThemedText>
           </View>
         )}
       </View>
     </ScrollView>
   );
-}
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    padding: 32,
-    alignItems: 'center',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    backgroundColor: '#f8fafc',
-  },
-  headerCell: {
-    padding: 12,
-    minWidth: 120,
-  },
-  dataRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-  },
-  dataCell: {
-    padding: 12,
-    minWidth: 120,
-  },
-  emptyState: {
-    padding: 32,
-    alignItems: 'center',
-  },
-}); 
+} 
