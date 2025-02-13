@@ -8,6 +8,7 @@ import { UserForm } from './UserForm';
 
 interface User {
   id: string;
+  employeeId: string;
   email: string;
   firstName: string;
   lastName: string;
@@ -65,6 +66,10 @@ export function UserManagement() {
   }, []);
 
   const columns = [
+    { 
+      key: 'employeeId',
+      title: 'Employee ID',
+    },
     { 
       key: 'name',
       title: 'Name',

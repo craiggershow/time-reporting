@@ -19,6 +19,7 @@ async function main() {
         firstName: 'Admin',
         lastName: 'User',
         role: 'ADMIN',
+        employeeId: '000001',
       },
     });
     console.log('Created admin user');
@@ -39,6 +40,7 @@ async function main() {
         firstName: 'Test',
         lastName: 'Employee',
         role: 'EMPLOYEE',
+        employeeId: '000002',
       },
     });
     console.log('Created employee user');

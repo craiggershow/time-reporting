@@ -3,6 +3,7 @@ const express = require('express');
 import { Request, Response } from 'express-serve-static-core';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
+import { getNextEmployeeId } from '../utils/employeeId';
 
 const router = express.Router();
 
@@ -40,6 +41,7 @@ router.get('/users', async (req: Request, res: Response) => {
     const users = await prisma.user.findMany({
       select: {
         id: true,
+        employeeId: true,
         email: true,
         firstName: true,
         lastName: true,
@@ -71,7 +73,11 @@ router.get('/users', async (req: Request, res: Response) => {
 // Create user
 router.post('/users', async (req: Request, res: Response) => {
   try {
-    const { email, firstName, lastName, password, role, isActive } = req.body;
+    const { email, firstName, lastName, password, role, isActive, employeeId } = req.body;
+    
+    // If employeeId is not provided, generate a new one
+    const actualEmployeeId = employeeId || await getNextEmployeeId();
+
     const user = await prisma.user.create({
       data: {
         email,
@@ -80,9 +86,11 @@ router.post('/users', async (req: Request, res: Response) => {
         password,
         role,
         isActive,
+        employeeId: actualEmployeeId,
       },
       select: {
         id: true,
+        employeeId: true,
         email: true,
         firstName: true,
         lastName: true,

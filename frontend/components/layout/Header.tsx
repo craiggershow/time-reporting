@@ -42,6 +42,13 @@ export function Header() {
           />
         </View>
       </View>
+      {user && (
+        <View style={styles.userInfo}>
+          <ThemedText>
+            {user.firstName} {user.lastName} ({user.employeeId})
+          </ThemedText>
+        </View>
+      )}
     </View>
   );
 }
@@ -95,5 +102,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 8,
+  },
+  userInfo: {
+    padding: 16,
   },
 }); 

@@ -13,6 +13,7 @@ interface User {
   lastName: string;
   role: 'ADMIN' | 'EMPLOYEE';
   isActive: boolean;
+  employeeId: string;
 }
 
 interface UserFormProps {
@@ -31,6 +32,7 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
   const [isActive, setIsActive] = useState(user?.isActive ?? true);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [employeeId, setEmployeeId] = useState(user?.employeeId || '');
 
   const handleSubmit = async () => {
     try {
@@ -44,6 +46,7 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
         ...(password && { password }), // Only include if password is set
         role: isAdmin ? 'ADMIN' : 'EMPLOYEE',
         isActive,
+        employeeId,
       };
 
       const url = user 
@@ -132,6 +135,16 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
               />
             </View>
           )}
+
+          <View style={styles.inputContainer}>
+            <ThemedText style={styles.label}>Employee ID</ThemedText>
+            <TextInput
+              style={styles.input}
+              value={employeeId}
+              onChangeText={setEmployeeId}
+              placeholder="Auto-generated if empty"
+            />
+          </View>
 
           <View style={styles.switchContainer}>
             <ThemedText>Admin User</ThemedText>
