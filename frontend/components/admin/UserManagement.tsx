@@ -6,6 +6,8 @@ import { buildApiUrl } from '@/constants/Config';
 import { DataTable } from '../ui/DataTable';
 import { UserForm } from './UserForm';
 import { commonStyles } from '@/styles/common';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { ErrorMessage } from '../ui/ErrorMessage';
 
 interface User {
   id: string;
@@ -106,15 +108,17 @@ export function UserManagement() {
     },
   ];
 
+  if (isLoading && !users.length) {
+    return (
+      <View testID="user-management-loading" style={commonStyles.pageContainer}>
+        <LoadingSpinner message="Loading users..." />
+      </View>
+    );
+  }
+
   return (
-    <View 
-      testID="user-management-page" 
-      style={commonStyles.pageContainer}
-    >
-      <View 
-        testID="user-management-header" 
-        style={commonStyles.pageHeader}
-      >
+    <View testID="user-management-page" style={commonStyles.pageContainer}>
+      <View testID="user-management-header" style={commonStyles.pageHeader}>
         <ThemedText type="subtitle">User Management</ThemedText>
         <Button onPress={() => setShowAddUser(true)}>
           Add User
@@ -122,12 +126,11 @@ export function UserManagement() {
       </View>
 
       {error && (
-        <View 
-          testID="error-message-container" 
-          style={commonStyles.errorContainer}
-        >
-          <ThemedText style={commonStyles.errorMessage}>{error}</ThemedText>
-        </View>
+        <ErrorMessage
+          message={error}
+          onRetry={fetchUsers}
+          onDismiss={() => setError(null)}
+        />
       )}
 
       <DataTable

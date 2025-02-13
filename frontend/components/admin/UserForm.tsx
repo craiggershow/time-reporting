@@ -44,7 +44,7 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
         email,
         firstName,
         lastName,
-        ...(password && { password }), // Only include if password is set
+        ...(password && { password }),
         role: isAdmin ? 'ADMIN' : 'EMPLOYEE',
         isActive,
         employeeId,
@@ -63,16 +63,20 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
         body: JSON.stringify(data),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save user');
+        throw new Error(responseData.error || 'Failed to save user');
       }
 
       await fetchUsers();
       onSave();
     } catch (error) {
       console.error('Error saving user:', error);
-      setError(error instanceof Error ? error.message : 'Failed to save user');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'An unexpected error occurred';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
