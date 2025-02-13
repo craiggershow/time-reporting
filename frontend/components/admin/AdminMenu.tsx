@@ -1,6 +1,6 @@
 import { View, StyleSheet, Pressable } from 'react-native';
 import { ThemedText } from '../ThemedText';
-import { useRouter, Link } from 'expo-router';
+import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 interface MenuItem {
@@ -21,19 +21,19 @@ const menuItems: MenuItem[] = [
     title: 'Timesheet Approval',
     description: 'Review and approve submitted timesheets',
     icon: 'time-outline',
-    route: 'timesheets',
+    route: '/(app)/admin/timesheets',
   },
   {
     title: 'Reports',
     description: 'View and export timesheet reports',
     icon: 'bar-chart-outline',
-    route: 'reports',
+    route: '/(app)/admin/reports',
   },
   {
     title: 'Settings',
     description: 'Configure system settings',
     icon: 'settings-outline',
-    route: 'settings',
+    route: '/(app)/admin/settings',
   },
 ];
 
@@ -44,8 +44,7 @@ export function AdminMenu() {
         <Link 
           key={item.route} 
           href={item.route} 
-          asChild 
-          replace
+          asChild
         >
           <Pressable style={styles.menuItem}>
             <View style={styles.iconContainer}>
