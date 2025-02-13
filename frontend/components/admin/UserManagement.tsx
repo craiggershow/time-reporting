@@ -1,7 +1,8 @@
-import { View } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { ThemedText } from '../ThemedText';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
 import { buildApiUrl } from '@/constants/Config';
 import { DataTable } from '../ui/DataTable';
 import { UserForm } from './UserForm';
@@ -9,6 +10,7 @@ import { commonStyles } from '@/styles/common';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { Ionicons } from '@expo/vector-icons';
 
 interface User {
   id: string;
@@ -28,6 +30,11 @@ export function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'EMPLOYEE'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [page, setPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   const fetchUsers = async () => {
     try {
@@ -158,6 +165,57 @@ export function UserManagement() {
     },
   ];
 
+  // Filter and search users
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      const matchesSearch = searchQuery.toLowerCase().split(' ').every(term =>
+        `${user.firstName} ${user.lastName} ${user.email} ${user.employeeId}`
+          .toLowerCase()
+          .includes(term)
+      );
+
+      const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
+      const matchesStatus = statusFilter === 'ALL' || 
+        (statusFilter === 'ACTIVE' ? user.isActive : !user.isActive);
+
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [users, searchQuery, roleFilter, statusFilter]);
+
+  // Pagination
+  const paginatedUsers = useMemo(() => {
+    const start = (page - 1) * itemsPerPage;
+    return filteredUsers.slice(start, start + itemsPerPage);
+  }, [filteredUsers, page, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, roleFilter, statusFilter]);
+
+  const handleExport = () => {
+    const csvContent = [
+      ['ID', 'Name', 'Email', 'Role', 'Status'],
+      ...filteredUsers.map(user => [
+        user.employeeId,
+        `${user.firstName} ${user.lastName}`,
+        user.email,
+        user.role,
+        user.isActive ? 'Active' : 'Inactive'
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'users.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   if (isLoading && !users.length) {
     return (
       <View testID="user-management-loading" style={commonStyles.pageContainer}>
@@ -170,9 +228,68 @@ export function UserManagement() {
     <View testID="user-management-page" style={commonStyles.pageContainer}>
       <View testID="user-management-header" style={commonStyles.pageHeader}>
         <ThemedText type="subtitle">User Management</ThemedText>
-        <Button onPress={() => setShowAddUser(true)}>
-          Add User
-        </Button>
+        <View style={styles.headerActions}>
+          <Button onPress={handleExport} variant="secondary">
+            <Ionicons name="download-outline" size={20} />
+            Export
+          </Button>
+          <Button onPress={() => setShowAddUser(true)}>
+            Add User
+          </Button>
+        </View>
+      </View>
+
+      <View style={styles.filters}>
+        <Input
+          label=""
+          placeholder="Search users..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.searchInput}
+          leftIcon={<Ionicons name="search" size={20} color="#64748b" />}
+        />
+
+        <View style={styles.filterButtons}>
+          <Button
+            variant={roleFilter === 'ALL' ? 'primary' : 'secondary'}
+            onPress={() => setRoleFilter('ALL')}
+          >
+            All Roles
+          </Button>
+          <Button
+            variant={roleFilter === 'ADMIN' ? 'primary' : 'secondary'}
+            onPress={() => setRoleFilter('ADMIN')}
+          >
+            Admins
+          </Button>
+          <Button
+            variant={roleFilter === 'EMPLOYEE' ? 'primary' : 'secondary'}
+            onPress={() => setRoleFilter('EMPLOYEE')}
+          >
+            Employees
+          </Button>
+        </View>
+
+        <View style={styles.filterButtons}>
+          <Button
+            variant={statusFilter === 'ALL' ? 'primary' : 'secondary'}
+            onPress={() => setStatusFilter('ALL')}
+          >
+            All Status
+          </Button>
+          <Button
+            variant={statusFilter === 'ACTIVE' ? 'primary' : 'secondary'}
+            onPress={() => setStatusFilter('ACTIVE')}
+          >
+            Active
+          </Button>
+          <Button
+            variant={statusFilter === 'INACTIVE' ? 'primary' : 'secondary'}
+            onPress={() => setStatusFilter('INACTIVE')}
+          >
+            Inactive
+          </Button>
+        </View>
       </View>
 
       {error && (
@@ -184,10 +301,30 @@ export function UserManagement() {
       )}
 
       <DataTable
-        data={users}
+        data={paginatedUsers}
         columns={columns}
         isLoading={isLoading}
       />
+
+      <View style={styles.pagination}>
+        <Button
+          variant="secondary"
+          onPress={() => setPage(p => Math.max(1, p - 1))}
+          disabled={page === 1}
+        >
+          Previous
+        </Button>
+        <ThemedText>
+          Page {page} of {totalPages}
+        </ThemedText>
+        <Button
+          variant="secondary"
+          onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+          disabled={page === totalPages}
+        >
+          Next
+        </Button>
+      </View>
 
       {(showAddUser || selectedUser) && (
         <UserForm
@@ -219,4 +356,29 @@ export function UserManagement() {
       )}
     </View>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  headerActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  filters: {
+    gap: 16,
+    marginBottom: 24,
+  },
+  searchInput: {
+    maxWidth: 300,
+  },
+  filterButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 24,
+  },
+}); 
