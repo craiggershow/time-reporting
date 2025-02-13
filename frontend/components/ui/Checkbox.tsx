@@ -3,27 +3,26 @@ import { ThemedText } from '../ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 
 interface CheckboxProps {
-  label: string;
-  value: boolean;
-  onChange: (value: boolean) => void;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
   disabled?: boolean;
 }
 
-export function Checkbox({ label, value, onChange, disabled }: CheckboxProps) {
+export function Checkbox({ checked, onChange, label, disabled }: CheckboxProps) {
   return (
     <Pressable 
-      style={styles.container} 
-      onPress={() => !disabled && onChange(!value)}
+      style={[
+        styles.container,
+        styles.checkbox, 
+        checked && styles.checked, 
+        disabled && styles.disabled
+      ]} 
+      onPress={() => !disabled && onChange(!checked)}
       disabled={disabled}
     >
-      <View style={[
-        styles.checkbox,
-        value && styles.checked,
-        disabled && styles.disabled
-      ]}>
-        {value && <Ionicons name="checkmark" size={16} color="#ffffff" />}
-      </View>
-      <ThemedText>{label}</ThemedText>
+      {checked && <Ionicons name="checkmark" size={16} color="#ffffff" />}
+      {label && <ThemedText style={styles.label}>{label}</ThemedText>}
     </Pressable>
   );
 }
@@ -35,13 +34,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   checkbox: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
     borderRadius: 4,
     borderWidth: 2,
     borderColor: '#64748b',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#ffffff',
   },
   checked: {
     backgroundColor: '#2563eb',
@@ -49,5 +49,8 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
+  },
+  label: {
+    marginLeft: 8,
   },
 }); 

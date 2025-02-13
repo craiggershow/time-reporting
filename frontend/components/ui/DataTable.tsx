@@ -4,23 +4,35 @@ import { ActivityIndicator } from 'react-native';
 import { commonStyles, spacing } from '@/styles/common';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { Checkbox } from './Checkbox';
 
 interface Column<T> {
-  key: keyof T | 'actions';
+  key: keyof T | 'actions' | 'select';
   title: string;
   render?: (value: any, item: T) => React.ReactNode;
   sortable?: boolean;
+  width?: number;
 }
 
 interface DataTableProps<T> {
   data: T[];
   columns: Column<T>[];
   isLoading?: boolean;
+  selectedIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
+  getItemId?: (item: T) => string;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
 
-export function DataTable<T>({ data, columns, isLoading }: DataTableProps<T>) {
+export function DataTable<T>({ 
+  data, 
+  columns, 
+  isLoading,
+  selectedIds = [],
+  onSelectionChange,
+  getItemId = (item: any) => item.id,
+}: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
 
@@ -64,6 +76,45 @@ export function DataTable<T>({ data, columns, isLoading }: DataTableProps<T>) {
       : (bValue < aValue ? -1 : 1);
   });
 
+  const handleSelectAll = () => {
+    if (!onSelectionChange) return;
+    
+    if (selectedIds.length === sortedData.length) {
+      onSelectionChange([]);
+    } else {
+      onSelectionChange(sortedData.map(item => getItemId(item)));
+    }
+  };
+
+  const handleSelectItem = (item: T) => {
+    if (!onSelectionChange) return;
+    
+    const id = getItemId(item);
+    if (selectedIds.includes(id)) {
+      onSelectionChange(selectedIds.filter(selectedId => selectedId !== id));
+    } else {
+      onSelectionChange([...selectedIds, id]);
+    }
+  };
+
+  const renderSelectColumn = () => ({
+    key: 'select',
+    title: '',
+    width: 48,
+    render: (_: any, item: T) => (
+      <View style={styles.checkboxCell}>
+        <Checkbox
+          checked={selectedIds.includes(getItemId(item))}
+          onChange={() => handleSelectItem(item)}
+        />
+      </View>
+    ),
+  });
+
+  const allColumns = onSelectionChange 
+    ? [renderSelectColumn(), ...columns]
+    : columns;
+
   if (isLoading) {
     return (
       <View style={{ padding: spacing.xl, alignItems: 'center' }}>
@@ -76,7 +127,15 @@ export function DataTable<T>({ data, columns, isLoading }: DataTableProps<T>) {
     <ScrollView horizontal testID="data-table-scroll-container">
       <View testID="data-table-container">
         <View testID="data-table-header" style={commonStyles.tableContainer.headerRow}>
-          {columns.map((column) => (
+          {onSelectionChange && (
+            <View style={[commonStyles.tableContainer.headerCell, styles.checkboxCell]}>
+              <Checkbox
+                checked={selectedIds.length === sortedData.length}
+                onChange={handleSelectAll}
+              />
+            </View>
+          )}
+          {allColumns.map((column) => (
             <Pressable
               key={column.key as string}
               testID={`header-cell-${column.key}`}
@@ -106,7 +165,7 @@ export function DataTable<T>({ data, columns, isLoading }: DataTableProps<T>) {
             testID={`table-row-${rowIndex}`}
             style={commonStyles.tableContainer.row}
           >
-            {columns.map((column) => (
+            {allColumns.map((column) => (
               <View
                 key={column.key as string}
                 testID={`table-cell-${column.key}-${rowIndex}`}
@@ -140,5 +199,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  checkboxCell: {
+    width: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 }); 

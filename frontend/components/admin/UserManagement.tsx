@@ -35,6 +35,9 @@ export function UserManagement() {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [page, setPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [showBulkActionDialog, setShowBulkActionDialog] = useState(false);
+  const [bulkAction, setBulkAction] = useState<'activate' | 'deactivate' | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -112,6 +115,45 @@ export function UserManagement() {
       setShowConfirmDialog(false);
       setUserToDeactivate(null);
     }
+  };
+
+  const handleBulkAction = async () => {
+    if (!bulkAction || selectedUserIds.length === 0) return;
+
+    try {
+      setIsLoading(true);
+      const isActivating = bulkAction === 'activate';
+      
+      await Promise.all(selectedUserIds.map(userId => 
+        fetch(`${buildApiUrl('USERS')}/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ isActive: isActivating }),
+        })
+      ));
+
+      await fetchUsers();
+      setSelectedUserIds([]);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to update users');
+    } finally {
+      setIsLoading(false);
+      setShowBulkActionDialog(false);
+      setBulkAction(null);
+    }
+  };
+
+  const handleBulkActivate = () => {
+    setBulkAction('activate');
+    setShowBulkActionDialog(true);
+  };
+
+  const handleBulkDeactivate = () => {
+    setBulkAction('deactivate');
+    setShowBulkActionDialog(true);
   };
 
   const columns = [
@@ -229,6 +271,25 @@ export function UserManagement() {
       <View testID="user-management-header" style={commonStyles.pageHeader}>
         <ThemedText type="subtitle">User Management</ThemedText>
         <View style={styles.headerActions}>
+          {selectedUserIds.length > 0 && (
+            <View style={styles.bulkActions}>
+              <ThemedText style={styles.selectedCount}>
+                {selectedUserIds.length} selected
+              </ThemedText>
+              <Button 
+                variant="secondary"
+                onPress={handleBulkActivate}
+              >
+                Activate Selected
+              </Button>
+              <Button 
+                variant="secondary"
+                onPress={handleBulkDeactivate}
+              >
+                Deactivate Selected
+              </Button>
+            </View>
+          )}
           <Button onPress={handleExport} variant="secondary">
             <Ionicons name="download-outline" size={20} />
             Export
@@ -304,6 +365,8 @@ export function UserManagement() {
         data={paginatedUsers}
         columns={columns}
         isLoading={isLoading}
+        selectedIds={selectedUserIds}
+        onSelectionChange={setSelectedUserIds}
       />
 
       <View style={styles.pagination}>
@@ -354,6 +417,20 @@ export function UserManagement() {
           }}
         />
       )}
+
+      {showBulkActionDialog && (
+        <ConfirmDialog
+          title={`${bulkAction === 'activate' ? 'Activate' : 'Deactivate'} Users`}
+          message={`Are you sure you want to ${bulkAction} ${selectedUserIds.length} users?`}
+          confirmText={bulkAction === 'activate' ? 'Activate' : 'Deactivate'}
+          isDestructive={bulkAction === 'deactivate'}
+          onConfirm={handleBulkAction}
+          onCancel={() => {
+            setShowBulkActionDialog(false);
+            setBulkAction(null);
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -380,5 +457,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
     marginTop: 24,
+  },
+  bulkActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  selectedCount: {
+    color: '#64748b',
+    fontSize: 14,
   },
 }); 
