@@ -34,12 +34,14 @@ export function ConfirmDialog({
           <Button
             variant="secondary"
             onPress={onCancel}
+            style={styles.button}
           >
             {cancelText}
           </Button>
           <Button
             variant={isDestructive ? 'danger' : 'primary'}
             onPress={onConfirm}
+            style={styles.button}
           >
             {confirmText}
           </Button>
@@ -51,23 +53,28 @@ export function ConfirmDialog({
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.lg,
     backgroundColor: colors.appBackground,
     borderRadius: 8,
-    maxWidth: 400,
     width: '100%',
   },
   title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
     marginBottom: spacing.sm,
-    color: colors.text.light,
   },
   message: {
-    color: colors.text.lightSecondary,
+    color: colors.text.secondary,
     marginBottom: spacing.lg,
+    fontSize: 16,
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  button: {
+    minWidth: 100,
   },
 }); 

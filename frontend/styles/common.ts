@@ -20,7 +20,26 @@ export const colors = {
     success: '#22c55e',
     error: '#dc2626',
     errorBg: '#fee2e2',
-  }
+  },
+  button: {
+    primary: {
+      background: '#2563eb',
+      text: '#ffffff',
+    },
+    secondary: {
+      background: '#f1f5f9',
+      text: '#1e293b',
+      border: '#e2e8f0',
+    },
+    danger: {
+      background: '#dc2626',
+      text: '#ffffff',
+    },
+  },
+  modal: {
+    overlay: 'rgba(0, 0, 0, 0.5)',
+    background: '#ffffff',
+  },
 };
 
 // Common spacing values
