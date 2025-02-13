@@ -6,6 +6,7 @@ import { Checkbox } from '../ui/Checkbox';
 import { buildApiUrl } from '@/constants/Config';
 import { Modal } from '../ui/Modal';
 import { commonStyles } from '@/styles/common';
+import { ErrorMessage } from '../ui/ErrorMessage';
 
 interface User {
   id: string;
@@ -35,7 +36,22 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [employeeId, setEmployeeId] = useState(user?.employeeId || '');
 
+  const validateForm = (): string | null => {
+    if (!email) return 'Email is required';
+    if (!email.includes('@')) return 'Invalid email format';
+    if (!firstName) return 'First name is required';
+    if (!lastName) return 'Last name is required';
+    if (!user && !password) return 'Password is required for new users';
+    return null;
+  };
+
   const handleSubmit = async () => {
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -93,12 +109,10 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
         </ThemedText>
 
         {error && (
-          <View 
-            testID="user-form-error" 
-            style={commonStyles.errorContainer}
-          >
-            <ThemedText style={commonStyles.errorMessage}>{error}</ThemedText>
-          </View>
+          <ErrorMessage
+            message={error}
+            onDismiss={() => setError(null)}
+          />
         )}
 
         <View 

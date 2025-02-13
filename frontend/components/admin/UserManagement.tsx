@@ -8,6 +8,7 @@ import { UserForm } from './UserForm';
 import { commonStyles } from '@/styles/common';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { ErrorMessage } from '../ui/ErrorMessage';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 interface User {
   id: string;
@@ -25,6 +26,8 @@ export function UserManagement() {
   const [error, setError] = useState<string | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -68,6 +71,42 @@ export function UserManagement() {
     fetchUsers();
   }, []);
 
+  const handleToggleUserStatus = (user: User) => {
+    setUserToDeactivate(user);
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmStatusChange = async () => {
+    if (!userToDeactivate) return;
+
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${buildApiUrl('USERS')}/${userToDeactivate.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          ...userToDeactivate, 
+          isActive: !userToDeactivate.isActive 
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${userToDeactivate.isActive ? 'deactivate' : 'activate'} user`);
+      }
+
+      await fetchUsers();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : `Failed to ${userToDeactivate.isActive ? 'deactivate' : 'activate'} user`);
+    } finally {
+      setIsLoading(false);
+      setShowConfirmDialog(false);
+      setUserToDeactivate(null);
+    }
+  };
+
   const columns = [
     { 
       key: 'employeeId',
@@ -102,6 +141,12 @@ export function UserManagement() {
             onPress={() => setSelectedUser(user)}
           >
             Edit
+          </Button>
+          <Button 
+            variant={user.isActive ? "secondary" : "primary"}
+            onPress={() => handleToggleUserStatus(user)}
+          >
+            {user.isActive ? 'Deactivate' : 'Activate'}
           </Button>
         </View>
       ),
@@ -151,6 +196,20 @@ export function UserManagement() {
             setSelectedUser(null);
           }}
           fetchUsers={fetchUsers}
+        />
+      )}
+
+      {showConfirmDialog && userToDeactivate && (
+        <ConfirmDialog
+          title={userToDeactivate.isActive ? "Deactivate User" : "Activate User"}
+          message={`Are you sure you want to ${userToDeactivate.isActive ? 'deactivate' : 'activate'} ${userToDeactivate.firstName} ${userToDeactivate.lastName}?`}
+          confirmText={userToDeactivate.isActive ? "Deactivate" : "Activate"}
+          isDestructive={userToDeactivate.isActive}
+          onConfirm={handleConfirmStatusChange}
+          onCancel={() => {
+            setShowConfirmDialog(false);
+            setUserToDeactivate(null);
+          }}
         />
       )}
     </View>
