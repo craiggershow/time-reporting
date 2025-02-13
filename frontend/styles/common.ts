@@ -10,6 +10,8 @@ export const colors = {
     primary: '#000000',
     secondary: '#4b5563',
     error: '#dc2626',
+    light: '#f8fafc',     // Add light text color
+    lightSecondary: '#cbd5e1', // Add secondary light text
   },
   input: {
     border: '#d1d5db',
@@ -68,7 +70,7 @@ export const commonStyles = StyleSheet.create({
   formLabel: {
     marginBottom: spacing.xs,
     fontSize: 14,
-    color: colors.text.secondary,
+    color: colors.text.light,
   },
   
   // Error styles
@@ -80,6 +82,7 @@ export const commonStyles = StyleSheet.create({
   },
   errorMessage: {
     color: colors.status.error,
+    backgroundColor: 'rgba(254, 226, 226, 0.1)',
   },
   
   // Button container styles
@@ -110,5 +113,13 @@ export const commonStyles = StyleSheet.create({
       padding: spacing.sm,
       minWidth: 120,
     },
+  },
+  
+  // Text styles for admin portal
+  lightText: {
+    color: colors.text.light,
+  },
+  lightTextSecondary: {
+    color: colors.text.lightSecondary,
   },
 }); 
