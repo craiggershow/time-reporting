@@ -1,38 +1,51 @@
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Header } from '@/components/layout/Header';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
+import { commonStyles, colors } from '@/styles/common';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { unstable_settings } from '@/app/_layout';
 
 export default function AdminPortal() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!user?.isAdmin) {
-      router.replace('/timesheet');
+    if (!isLoading && !user?.isAdmin) {
+      router.replace('/(app)/timesheet');
       return;
     }
-  }, [user]);
+  }, [user, isLoading]);
 
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <View style={commonStyles.loadingContainer}>
+        <LoadingSpinner />
+      </View>
+    );
+  }
+
+  // Don't render anything while redirecting
   if (!user?.isAdmin) {
     return null;
   }
 
   return (
-    <View style={styles.container}>
+    <View style={commonStyles.adminContainer}>
       <Header />
-      <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <View style={styles.contentCard}>
+      <ScrollView style={commonStyles.adminContent}>
+        <View style={commonStyles.adminSection}>
+          <View style={commonStyles.contentCard}>
             <ThemedText type="title">Admin Portal</ThemedText>
-            <ThemedText style={styles.subtitle}>
+            <ThemedText style={commonStyles.adminSubtitle}>
               Manage timesheets, users, and system settings
             </ThemedText>
             
-            <View style={styles.menuSection}>
+            <View style={commonStyles.adminMenuSection}>
               <AdminMenu />
             </View>
           </View>
@@ -40,38 +53,4 @@ export default function AdminPortal() {
       </ScrollView>
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-  },
-  section: {
-    padding: 16,
-    gap: 24,
-  },
-  contentCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#64748b',
-    marginTop: 8,
-  },
-  menuSection: {
-    marginTop: 24,
-  },
-}); 
+} 

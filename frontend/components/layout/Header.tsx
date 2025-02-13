@@ -10,7 +10,7 @@ export function Header() {
   const router = useRouter();
 
   const adminLinks = [
-    { label: 'Dashboard', href: '/(app)/admin/dashboard' },
+    { label: 'Dashboard', href: '/(app)/admin' },
     { label: 'Employees', href: '/(app)/admin/employees' },
     { label: 'Pay Periods', href: '/(app)/admin/pay-periods' },
     { label: 'Reports', href: '/(app)/admin/reports' },
@@ -18,6 +18,10 @@ export function Header() {
     { label: 'Timesheets', href: '/(app)/admin/timesheets' },
     { label: 'Users', href: '/(app)/admin/users' },
   ];
+
+  const handleAdminNavigation = () => {
+    router.replace('/(app)/admin');
+  };
 
   return (
     <View style={styles.container}>
@@ -29,7 +33,7 @@ export function Header() {
           {user?.isAdmin && (
             <Pressable 
               style={styles.adminButton}
-              onPress={() => router.push('/admin')}
+              onPress={handleAdminNavigation}
             >
               <Ionicons name="settings-outline" size={20} color="#000000" />
               <ThemedText style={styles.adminText}>Admin Portal</ThemedText>

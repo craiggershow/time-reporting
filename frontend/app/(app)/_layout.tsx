@@ -3,6 +3,10 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { colors } from '@/styles/common';
 import { View, StyleSheet } from 'react-native';
 
+export const unstable_settings = {
+  initialRouteName: 'index',
+};
+
 export default function AppLayout() {
   return (
     <ErrorBoundary>
@@ -13,18 +17,8 @@ export default function AppLayout() {
             contentStyle: { backgroundColor: colors.background.page },
           }}
         >
-          <Stack.Screen
-            name="index"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="timesheet"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="admin"
-            options={{ headerShown: false }}
-          />
+          <Stack.Screen name="index" />
+          <Stack.Screen name="admin" />
         </Stack>
       </View>
     </ErrorBoundary>

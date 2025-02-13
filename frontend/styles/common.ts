@@ -179,4 +179,31 @@ export const commonStyles = StyleSheet.create({
   lightTextSecondary: {
     color: colors.text.lightSecondary,
   },
+  
+  // Admin styles
+  adminContainer: {
+    flex: 1,
+    backgroundColor: colors.adminBackground,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.adminBackground,
+  },
+  adminContent: {
+    flex: 1,
+  },
+  adminSection: {
+    padding: spacing.lg,
+    gap: spacing.lg,
+  },
+  adminSubtitle: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    marginTop: spacing.sm,
+  },
+  adminMenuSection: {
+    marginTop: spacing.lg,
+  },
 }); 

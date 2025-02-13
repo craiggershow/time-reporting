@@ -1,6 +1,6 @@
 import { View, StyleSheet, Pressable } from 'react-native';
 import { ThemedText } from '../ThemedText';
-import { useRouter } from 'expo-router';
+import { useRouter, Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 interface MenuItem {
@@ -15,7 +15,7 @@ const menuItems: MenuItem[] = [
     title: 'User Management',
     description: 'Add, edit, and manage user accounts',
     icon: 'people-outline',
-    route: '/admin/users',
+    route: '/(app)/admin/users',
   },
   {
     title: 'Timesheet Approval',
@@ -38,25 +38,26 @@ const menuItems: MenuItem[] = [
 ];
 
 export function AdminMenu() {
-  const router = useRouter();
-
   return (
     <View style={styles.container}>
       {menuItems.map((item) => (
-        <Pressable
-          key={item.route}
-          style={styles.menuItem}
-          onPress={() => router.push(item.route)}
+        <Link 
+          key={item.route} 
+          href={item.route} 
+          asChild 
+          replace
         >
-          <View style={styles.iconContainer}>
-            <Ionicons name={item.icon} size={24} color="#64748b" />
-          </View>
-          <View style={styles.textContainer}>
-            <ThemedText type="subtitle">{item.title}</ThemedText>
-            <ThemedText style={styles.description}>{item.description}</ThemedText>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#64748b" />
-        </Pressable>
+          <Pressable style={styles.menuItem}>
+            <View style={styles.iconContainer}>
+              <Ionicons name={item.icon} size={24} color="#64748b" />
+            </View>
+            <View style={styles.textContainer}>
+              <ThemedText type="subtitle">{item.title}</ThemedText>
+              <ThemedText style={styles.description}>{item.description}</ThemedText>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#64748b" />
+          </Pressable>
+        </Link>
       ))}
     </View>
   );

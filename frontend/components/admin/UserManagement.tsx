@@ -12,6 +12,7 @@ import { ErrorMessage } from '../ui/ErrorMessage';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../layout/Header';
+import { useRouter } from 'expo-router';
 
 interface User {
   id: string;
@@ -39,6 +40,7 @@ export function UserManagement() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [showBulkActionDialog, setShowBulkActionDialog] = useState(false);
   const [bulkAction, setBulkAction] = useState<'activate' | 'deactivate' | null>(null);
+  const router = useRouter();
 
   const fetchUsers = async () => {
     try {
