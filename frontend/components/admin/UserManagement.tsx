@@ -110,25 +110,30 @@ export function UserManagement() {
   const columns = [
     { 
       key: 'employeeId',
-      title: 'Employee ID',
+      title: 'Id',
+      sortable: true,
     },
     { 
       key: 'name',
       title: 'Name',
+      sortable: true,
       render: (_, user: User) => `${user.firstName} ${user.lastName}`
     },
     { 
       key: 'email',
-      title: 'Email' 
+      title: 'Email',
+      sortable: true,
     },
     { 
       key: 'role', 
       title: 'Admin',
+      sortable: true,
       render: (role: string) => role === 'ADMIN' ? 'Yes' : 'No'
     },
     { 
       key: 'isActive', 
       title: 'Status',
+      sortable: true,
       render: (value: boolean) => value ? 'Active' : 'Inactive'
     },
     {
