@@ -6,19 +6,17 @@ export default function AdminLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: {
-          backgroundColor: colors.adminBackground,
-        },
+        contentStyle: { backgroundColor: colors.adminBackground },
       }}
     >
-      <Stack.Screen 
-        name="index"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="users"
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="dashboard" />
+      <Stack.Screen name="employees" />
+      <Stack.Screen name="pay-periods" />
+      <Stack.Screen name="reports" />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="timesheets" />
+      <Stack.Screen name="users" />
     </Stack>
   );
 } 

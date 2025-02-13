@@ -1,4 +1,4 @@
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '../ui/Button';
@@ -6,11 +6,12 @@ import { Input } from '../ui/Input';
 import { buildApiUrl } from '@/constants/Config';
 import { DataTable } from '../ui/DataTable';
 import { UserForm } from './UserForm';
-import { commonStyles } from '@/styles/common';
+import { commonStyles, colors, spacing } from '@/styles/common';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Ionicons } from '@expo/vector-icons';
+import { Header } from '../layout/Header';
 
 interface User {
   id: string;
@@ -161,29 +162,53 @@ export function UserManagement() {
       key: 'employeeId',
       title: 'Id',
       sortable: true,
+      render: (id: string) => (
+        <ThemedText style={styles.cellText}>
+          {id}
+        </ThemedText>
+      ),
     },
     { 
       key: 'name',
       title: 'Name',
       sortable: true,
-      render: (_, user: User) => `${user.firstName} ${user.lastName}`
+      render: (_, user: User) => (
+        <ThemedText style={styles.cellText}>
+          {`${user.firstName} ${user.lastName}`}
+        </ThemedText>
+      ),
     },
     { 
       key: 'email',
       title: 'Email',
       sortable: true,
+      render: (email: string) => (
+        <ThemedText style={styles.cellText}>
+          {email}
+        </ThemedText>
+      ),
     },
     { 
       key: 'role', 
       title: 'Admin',
       sortable: true,
-      render: (role: string) => role === 'ADMIN' ? 'Yes' : 'No'
+      render: (role: string) => (
+        <ThemedText style={styles.cellText}>
+          {role === 'ADMIN' ? 'Yes' : 'No'}
+        </ThemedText>
+      ),
     },
     { 
       key: 'isActive', 
       title: 'Status',
       sortable: true,
-      render: (value: boolean) => value ? 'Active' : 'Inactive'
+      render: (value: boolean) => (
+        <View style={[styles.statusBadge, value ? styles.activeBadge : styles.inactiveBadge]}>
+          <ThemedText style={value ? styles.activeText : styles.inactiveText}>
+            {value ? 'Active' : 'Inactive'}
+          </ThemedText>
+        </View>
+      ),
     },
     {
       key: 'actions',
@@ -267,127 +292,193 @@ export function UserManagement() {
   }
 
   return (
-    <View testID="user-management-page" style={commonStyles.pageContainer}>
-      <View testID="user-management-header" style={commonStyles.pageHeader}>
-        <ThemedText type="subtitle">User Management</ThemedText>
-        <View style={styles.headerActions}>
-          {selectedUserIds.length > 0 && (
-            <View style={styles.bulkActions}>
-              <ThemedText style={styles.selectedCount}>
-                {selectedUserIds.length} selected
+    <View 
+      style={[
+        styles.pageContainer,
+        { backgroundColor: colors.adminBackground },
+        Platform.select({
+          web: {
+            backgroundColor: colors.adminBackground,
+            minHeight: '100vh',
+          }
+        })
+      ]}
+    >
+      <Header />
+      <ScrollView 
+        style={[
+          styles.content,
+          { backgroundColor: colors.adminBackground }
+        ]}
+      >
+        <View 
+          style={[
+            styles.section,
+            { backgroundColor: colors.adminBackground }
+          ]}
+        >
+          <View style={styles.headerCard}>
+            <View style={styles.headerLeft}>
+              <ThemedText type="title">User Management</ThemedText>
+              <ThemedText style={styles.subtitle}>
+                Manage user accounts and permissions
               </ThemedText>
+            </View>
+            <View style={styles.headerActions}>
+              {selectedUserIds.length > 0 && (
+                <View style={styles.bulkActions}>
+                  <View style={styles.selectedBadge}>
+                    <ThemedText style={styles.selectedCount}>
+                      {selectedUserIds.length} selected
+                    </ThemedText>
+                  </View>
+                  <Button 
+                    variant="secondary"
+                    onPress={handleBulkActivate}
+                    leftIcon={<Ionicons name="checkmark-circle" size={20} />}
+                  >
+                    Activate
+                  </Button>
+                  <Button 
+                    variant="secondary"
+                    onPress={handleBulkDeactivate}
+                    leftIcon={<Ionicons name="close-circle" size={20} />}
+                  >
+                    Deactivate
+                  </Button>
+                </View>
+              )}
               <Button 
                 variant="secondary"
-                onPress={handleBulkActivate}
+                onPress={handleExport}
+                leftIcon={<Ionicons name="download-outline" size={20} />}
               >
-                Activate Selected
+                Export
               </Button>
-              <Button 
-                variant="secondary"
-                onPress={handleBulkDeactivate}
+              <Button
+                onPress={() => setShowAddUser(true)}
+                leftIcon={<Ionicons name="add" size={20} />}
               >
-                Deactivate Selected
+                Add User
               </Button>
             </View>
+          </View>
+
+          <View style={styles.filtersCard}>
+            <View style={styles.searchSection}>
+              <Input
+                label=""
+                placeholder="Search users..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={styles.searchInput}
+                leftIcon={<Ionicons name="search" size={20} color={colors.text.secondary} />}
+              />
+              <ThemedText style={styles.resultCount}>
+                {filteredUsers.length} users found
+              </ThemedText>
+            </View>
+
+            <View style={styles.filterGroups}>
+              <View style={styles.filterGroup}>
+                <ThemedText style={styles.filterLabel}>Role</ThemedText>
+                <View style={styles.filterButtons}>
+                  <Button
+                    variant={roleFilter === 'ALL' ? 'primary' : 'secondary'}
+                    onPress={() => setRoleFilter('ALL')}
+                    size="small"
+                  >
+                    All
+                  </Button>
+                  <Button
+                    variant={roleFilter === 'ADMIN' ? 'primary' : 'secondary'}
+                    onPress={() => setRoleFilter('ADMIN')}
+                    size="small"
+                  >
+                    Admins
+                  </Button>
+                  <Button
+                    variant={roleFilter === 'EMPLOYEE' ? 'primary' : 'secondary'}
+                    onPress={() => setRoleFilter('EMPLOYEE')}
+                    size="small"
+                  >
+                    Employees
+                  </Button>
+                </View>
+              </View>
+
+              <View style={styles.filterGroup}>
+                <ThemedText style={styles.filterLabel}>Status</ThemedText>
+                <View style={styles.filterButtons}>
+                  <Button
+                    variant={statusFilter === 'ALL' ? 'primary' : 'secondary'}
+                    onPress={() => setStatusFilter('ALL')}
+                    size="small"
+                  >
+                    All
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'ACTIVE' ? 'primary' : 'secondary'}
+                    onPress={() => setStatusFilter('ACTIVE')}
+                    size="small"
+                  >
+                    Active
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'INACTIVE' ? 'primary' : 'secondary'}
+                    onPress={() => setStatusFilter('INACTIVE')}
+                    size="small"
+                  >
+                    Inactive
+                  </Button>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {error && (
+            <ErrorMessage
+              message={error}
+              onRetry={fetchUsers}
+              onDismiss={() => setError(null)}
+            />
           )}
-          <Button onPress={handleExport} variant="secondary">
-            <Ionicons name="download-outline" size={20} />
-            Export
-          </Button>
-          <Button onPress={() => setShowAddUser(true)}>
-            Add User
-          </Button>
+
+          <View style={styles.tableCard}>
+            <DataTable
+              data={paginatedUsers}
+              columns={columns}
+              isLoading={isLoading}
+              selectedIds={selectedUserIds}
+              onSelectionChange={setSelectedUserIds}
+            />
+
+            <View style={styles.pagination}>
+              <Button
+                variant="secondary"
+                onPress={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                size="small"
+                leftIcon={<Ionicons name="chevron-back" size={16} />}
+              >
+                Previous
+              </Button>
+              <ThemedText style={styles.paginationText}>
+                Page {page} of {totalPages}
+              </ThemedText>
+              <Button
+                variant="secondary"
+                onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                size="small"
+                rightIcon={<Ionicons name="chevron-forward" size={16} />}
+              >
+                Next
+              </Button>
+            </View>
+          </View>
         </View>
-      </View>
-
-      <View style={styles.filters}>
-        <Input
-          label=""
-          placeholder="Search users..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          style={styles.searchInput}
-          leftIcon={<Ionicons name="search" size={20} color="#64748b" />}
-        />
-
-        <View style={styles.filterButtons}>
-          <Button
-            variant={roleFilter === 'ALL' ? 'primary' : 'secondary'}
-            onPress={() => setRoleFilter('ALL')}
-          >
-            All Roles
-          </Button>
-          <Button
-            variant={roleFilter === 'ADMIN' ? 'primary' : 'secondary'}
-            onPress={() => setRoleFilter('ADMIN')}
-          >
-            Admins
-          </Button>
-          <Button
-            variant={roleFilter === 'EMPLOYEE' ? 'primary' : 'secondary'}
-            onPress={() => setRoleFilter('EMPLOYEE')}
-          >
-            Employees
-          </Button>
-        </View>
-
-        <View style={styles.filterButtons}>
-          <Button
-            variant={statusFilter === 'ALL' ? 'primary' : 'secondary'}
-            onPress={() => setStatusFilter('ALL')}
-          >
-            All Status
-          </Button>
-          <Button
-            variant={statusFilter === 'ACTIVE' ? 'primary' : 'secondary'}
-            onPress={() => setStatusFilter('ACTIVE')}
-          >
-            Active
-          </Button>
-          <Button
-            variant={statusFilter === 'INACTIVE' ? 'primary' : 'secondary'}
-            onPress={() => setStatusFilter('INACTIVE')}
-          >
-            Inactive
-          </Button>
-        </View>
-      </View>
-
-      {error && (
-        <ErrorMessage
-          message={error}
-          onRetry={fetchUsers}
-          onDismiss={() => setError(null)}
-        />
-      )}
-
-      <DataTable
-        data={paginatedUsers}
-        columns={columns}
-        isLoading={isLoading}
-        selectedIds={selectedUserIds}
-        onSelectionChange={setSelectedUserIds}
-      />
-
-      <View style={styles.pagination}>
-        <Button
-          variant="secondary"
-          onPress={() => setPage(p => Math.max(1, p - 1))}
-          disabled={page === 1}
-        >
-          Previous
-        </Button>
-        <ThemedText>
-          Page {page} of {totalPages}
-        </ThemedText>
-        <Button
-          variant="secondary"
-          onPress={() => setPage(p => Math.min(totalPages, p + 1))}
-          disabled={page === totalPages}
-        >
-          Next
-        </Button>
-      </View>
+      </ScrollView>
 
       {(showAddUser || selectedUser) && (
         <UserForm
@@ -436,35 +527,130 @@ export function UserManagement() {
 }
 
 const styles = StyleSheet.create({
+  pageContainer: {
+    flex: 1,
+    backgroundColor: colors.adminBackground,
+    minHeight: '100%',
+  },
+  content: {
+    flex: 1,
+    backgroundColor: colors.adminBackground,
+  },
+  section: {
+    flex: 1,
+    padding: spacing.lg,
+    gap: spacing.lg,
+    backgroundColor: colors.adminBackground,
+  },
+  headerCard: {
+    ...commonStyles.contentCard,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerLeft: {
+    gap: spacing.xs,
+  },
+  subtitle: {
+    color: colors.text.secondary,
+    fontSize: 14,
+  },
   headerActions: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'center',
+    gap: spacing.sm,
   },
-  filters: {
-    gap: 16,
-    marginBottom: 24,
+  filtersCard: {
+    ...commonStyles.contentCard,
+    gap: spacing.lg,
+  },
+  searchSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
   },
   searchInput: {
+    flex: 1,
     maxWidth: 300,
+  },
+  resultCount: {
+    color: colors.text.secondary,
+    fontSize: 14,
+  },
+  filterGroups: {
+    flexDirection: 'row',
+    gap: spacing.xl,
+  },
+  filterGroup: {
+    gap: spacing.sm,
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.secondary,
   },
   filterButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.xs,
+  },
+  tableCard: {
+    ...commonStyles.contentCard,
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
-    marginTop: 24,
+    gap: spacing.md,
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  paginationText: {
+    color: colors.text.secondary,
+    minWidth: 100,
+    textAlign: 'center',
   },
   bulkActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.sm,
+  },
+  selectedBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 16,
   },
   selectedCount: {
-    color: '#64748b',
+    color: '#ffffff',
     fontSize: 14,
+    fontWeight: '500',
+  },
+  cellText: {
+    color: colors.table.row.text,
+    fontSize: 14,
+  },
+  statusBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  activeBadge: {
+    backgroundColor: colors.table.status.active.background,
+  },
+  inactiveBadge: {
+    backgroundColor: colors.table.status.inactive.background,
+  },
+  activeText: {
+    color: colors.table.status.active.text,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  inactiveText: {
+    color: colors.table.status.inactive.text,
+    fontSize: 14,
+    fontWeight: '500',
   },
 }); 

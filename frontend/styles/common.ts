@@ -40,6 +40,35 @@ export const colors = {
     overlay: 'rgba(0, 0, 0, 0.5)',
     background: '#ffffff',
   },
+  background: {
+    page: '#f1f5f9',    // Light gray for page backgrounds
+    card: '#ffffff',     // White for card backgrounds
+    tableHeader: '#f8fafc', // Slightly different gray for table headers
+    tableAlt: '#f8fafc',    // Alternating row color
+  },
+  table: {
+    header: {
+      background: '#1e293b',
+      text: '#f8fafc',
+      border: '#475569',
+    },
+    row: {
+      background: 'transparent',
+      alternateBackground: 'rgba(255, 255, 255, 0.02)',
+      text: '#f8fafc',
+      border: '#475569',
+    },
+    status: {
+      active: {
+        background: '#dcfce7',
+        text: '#166534',
+      },
+      inactive: {
+        background: '#fee2e2',
+        text: '#991b1b',
+      },
+    }
+  },
 };
 
 // Common spacing values
@@ -56,15 +85,22 @@ export const commonStyles = StyleSheet.create({
   // Page level styles
   pageContainer: {
     flex: 1,
+    backgroundColor: colors.background.page,
     padding: spacing.md,
   },
   
   // Card styles
   contentCard: {
+    backgroundColor: colors.background.card,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
     padding: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   
   // Header styles
@@ -116,8 +152,9 @@ export const commonStyles = StyleSheet.create({
   tableContainer: {
     headerRow: {
       flexDirection: 'row',
+      backgroundColor: '#1e293b',
       borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      borderBottomColor: '#475569',
     },
     headerCell: {
       padding: spacing.sm,
@@ -126,7 +163,8 @@ export const commonStyles = StyleSheet.create({
     row: {
       flexDirection: 'row',
       borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      borderBottomColor: '#475569',
+      backgroundColor: 'transparent',
     },
     cell: {
       padding: spacing.sm,

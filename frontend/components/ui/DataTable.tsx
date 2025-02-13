@@ -1,7 +1,7 @@
 import { View, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ActivityIndicator } from 'react-native';
-import { commonStyles, spacing } from '@/styles/common';
+import { commonStyles, spacing, colors } from '@/styles/common';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Checkbox } from './Checkbox';
@@ -128,7 +128,7 @@ export function DataTable<T>({
       <View testID="data-table-container">
         <View testID="data-table-header" style={commonStyles.tableContainer.headerRow}>
           {onSelectionChange && (
-            <View style={[commonStyles.tableContainer.headerCell, styles.checkboxCell]}>
+            <View style={commonStyles.tableContainer.headerCell}>
               <Checkbox
                 checked={selectedIds.length === sortedData.length}
                 onChange={handleSelectAll}
@@ -146,12 +146,12 @@ export function DataTable<T>({
               onPress={() => column.sortable && handleSort(column.key as keyof T)}
             >
               <View style={styles.headerContent}>
-                <ThemedText type="defaultSemiBold">{column.title}</ThemedText>
+                <ThemedText style={commonStyles.lightText}>{column.title}</ThemedText>
                 {column.sortable && sortKey === column.key && (
                   <Ionicons 
                     name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
                     size={16} 
-                    color="#64748b"
+                    color={colors.text.light}
                   />
                 )}
               </View>
@@ -163,7 +163,10 @@ export function DataTable<T>({
           <View 
             key={rowIndex}
             testID={`table-row-${rowIndex}`}
-            style={commonStyles.tableContainer.row}
+            style={[
+              commonStyles.tableContainer.row,
+              rowIndex % 2 === 1 && { backgroundColor: colors.table.row.alternateBackground }
+            ]}
           >
             {allColumns.map((column) => (
               <View
@@ -174,7 +177,7 @@ export function DataTable<T>({
                 {column.render ? (
                   column.render(item[column.key], item)
                 ) : (
-                  <ThemedText>{String(item[column.key])}</ThemedText>
+                  <ThemedText style={commonStyles.lightText}>{String(item[column.key])}</ThemedText>
                 )}
               </View>
             ))}

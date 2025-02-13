@@ -6,6 +6,9 @@ import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { TimesheetProvider } from '@/context/TimesheetContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { View, StyleSheet } from 'react-native';
+import { colors } from '@/styles/common';
+import { globalStyles } from '@/styles/global';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -23,28 +26,54 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
+  useEffect(() => {
+    // Insert global styles
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = globalStyles;
+    document.head.appendChild(styleSheet);
+
+    return () => {
+      document.head.removeChild(styleSheet);
+    };
+  }, []);
+
   if (!fontsLoaded) {
     return null;
   }
 
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <TimesheetProvider>
-          <QueryClientProvider client={queryClient}>
-            <Stack screenOptions={{
-              headerShown: false,
-              contentStyle: {
-                backgroundColor: '#f1f5f9', // Set blue-gray background here
-              },
-            }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="(app)" options={{ headerShown: false }} />
-            </Stack>
-          </QueryClientProvider>
-        </TimesheetProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <View style={[styles.root, { backgroundColor: colors.background.page }]}>
+      <AuthProvider>
+        <ThemeProvider>
+          <TimesheetProvider>
+            <QueryClientProvider client={queryClient}>
+              <View style={styles.container}>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: colors.background.page },
+                  }}
+                >
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(app)" options={{ headerShown: false }} />
+                </Stack>
+              </View>
+            </QueryClientProvider>
+          </TimesheetProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: colors.background.page,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.page,
+  },
+});

@@ -9,6 +9,16 @@ export function Header() {
   const { user, logout } = useAuth();
   const router = useRouter();
 
+  const adminLinks = [
+    { label: 'Dashboard', href: '/(app)/admin/dashboard' },
+    { label: 'Employees', href: '/(app)/admin/employees' },
+    { label: 'Pay Periods', href: '/(app)/admin/pay-periods' },
+    { label: 'Reports', href: '/(app)/admin/reports' },
+    { label: 'Settings', href: '/(app)/admin/settings' },
+    { label: 'Timesheets', href: '/(app)/admin/timesheets' },
+    { label: 'Users', href: '/(app)/admin/users' },
+  ];
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
