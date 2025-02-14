@@ -1,17 +1,31 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 
-// Color palette
-export const colors = {
+// Base colors without dependencies
+const baseColors = {
   primary: '#2563eb',
   appBackground: '#f1f5f9',
   adminBackground: '#334155',
   border: '#e2e8f0',
+  textPrimary: '#000000',
+  textSecondary: '#4b5563',
+  textError: '#dc2626',
+  textLight: '#f8fafc',
+  textLightSecondary: '#cbd5e1',
+  tableHeaderBackground: '#003399',
+};
+
+// Color palette with organized structure
+export const colors = {
+  primary: baseColors.primary,
+  appBackground: baseColors.appBackground,
+  adminBackground: baseColors.adminBackground,
+  border: baseColors.border,
   text: {
-    primary: '#000000',
-    secondary: '#4b5563',
-    error: '#dc2626',
-    light: '#f8fafc',     // Add light text color
-    lightSecondary: '#cbd5e1', // Add secondary light text
+    primary: baseColors.textPrimary,
+    secondary: baseColors.textSecondary,
+    error: baseColors.textError,
+    light: baseColors.textLight,
+    lightSecondary: baseColors.textLightSecondary,
   },
   input: {
     border: '#d1d5db',
@@ -23,13 +37,13 @@ export const colors = {
   },
   button: {
     primary: {
-      background: '#2563eb',
+      background: baseColors.primary,
       text: '#ffffff',
     },
     secondary: {
       background: '#f1f5f9',
       text: '#1e293b',
-      border: '#e2e8f0',
+      border: baseColors.border,
     },
     danger: {
       background: '#dc2626',
@@ -43,20 +57,18 @@ export const colors = {
   background: {
     page: '#f1f5f9',    // Light gray for page backgrounds
     card: '#ffffff',     // White for card backgrounds
-    tableHeader: '#f8fafc', // Slightly different gray for table headers
-    tableAlt: '#f8fafc',    // Alternating row color
   },
   table: {
     header: {
-      background: '#1e293b',
-      text: '#f8fafc',
-      border: '#475569',
+      background: '#f8fafc',
+      text: baseColors.textPrimary,
+      border: '#cbd5e1',  // Darker border color
     },
     row: {
-      background: 'transparent',
-      alternateBackground: 'rgba(255, 255, 255, 0.02)',
-      text: '#f8fafc',
-      border: '#475569',
+      background: '#ffffff',
+      alternateBackground: '#f8fafc',
+      border: '#cbd5e1',  // Darker border color
+      boarderBottomWidth: 50,
     },
     status: {
       active: {
@@ -80,6 +92,22 @@ export const spacing = {
   xl: 32,
 };
 
+// First define base styles that don't depend on commonStyles
+const baseStyles = {
+  card: {
+    backgroundColor: colors.background.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+};
+
 // Common styles
 export const commonStyles = StyleSheet.create({
   // Page level styles
@@ -91,16 +119,7 @@ export const commonStyles = StyleSheet.create({
   
   // Card styles
   contentCard: {
-    backgroundColor: colors.background.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3.84,
-    elevation: 5,
+    ...baseStyles.card,
   },
   
   // Header styles
@@ -118,6 +137,8 @@ export const commonStyles = StyleSheet.create({
     borderRadius: 6,
     padding: spacing.sm,
     fontSize: 16,
+    backgroundColor: '#ffffff',
+    color: colors.text.primary,
   },
   formInputWrapper: {
     marginBottom: spacing.md,
@@ -180,30 +201,177 @@ export const commonStyles = StyleSheet.create({
     color: colors.text.lightSecondary,
   },
   
-  // Admin styles
-  adminContainer: {
+  // Admin Layout Patterns
+  adminPage: {
     flex: 1,
     backgroundColor: colors.adminBackground,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.adminBackground,
+    ...Platform.select({
+      web: {
+        minHeight: '100vh',
+      }
+    })
   },
   adminContent: {
     flex: 1,
+    backgroundColor: colors.adminBackground,
   },
   adminSection: {
     padding: spacing.lg,
     gap: spacing.lg,
   },
-  adminSubtitle: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    marginTop: spacing.sm,
+
+  // Admin Cards
+  adminCard: {
+    ...baseStyles.card,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  adminMenuSection: {
-    marginTop: spacing.lg,
+  adminFilters: {
+    ...baseStyles.card,
+    gap: spacing.lg,
+  },
+
+  // Admin Text Styles
+  adminText: {
+    subtitle: {
+      color: colors.text.secondary,
+      fontSize: 14,
+    },
+    count: {
+      color: '#ffffff',
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    cell: {
+      color: colors.text.primary,
+      fontSize: 14,
+    },
+  },
+
+  // Admin Status Badges
+  adminStatus: {
+    badge: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: 12,
+      alignSelf: 'flex-start',
+    },
+    active: {
+      backgroundColor: colors.table.status.active.background,
+      color: colors.table.status.active.text,
+    },
+    inactive: {
+      backgroundColor: colors.table.status.inactive.background,
+      color: colors.table.status.inactive.text,
+    },
+  },
+
+  // Admin Filter Components
+  adminSearch: {
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.lg,
+    },
+    input: {
+      flex: 1,
+      maxWidth: 300,
+      backgroundColor: '#ffffff',
+      borderWidth: 1,
+      borderColor: colors.input.border,
+      borderRadius: 6,
+      padding: spacing.sm,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+  },
+  adminFilterGroup: {
+    section: {
+      flexDirection: 'row',
+      gap: spacing.xl,
+    },
+    group: {
+      gap: spacing.sm,
+    },
+    buttons: {
+      flexDirection: 'row',
+      gap: spacing.xs,
+    },
+  },
+
+  // Admin Actions
+  adminActions: {
+    bulk: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    selectedBadge: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderRadius: 16,
+    },
+  },
+
+  // Admin Table
+  adminTable: {
+    container: {
+      ...baseStyles.card,
+    },
+    header: {
+      flexDirection: 'row',
+      borderBottomWidth: 2,
+      borderBottomColor: colors.border,
+      backgroundColor: baseColors.tableHeaderBackground,
+    },
+    headerCell: {
+      padding: spacing.sm,
+      minWidth: 120,
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: baseColors.textLight,
+      flex: 0,
+    },
+    headerContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.sm,
+    },
+    headerText: {
+      color: baseColors.textLight,
+      fontWeight: '500',
+      textAlign: 'center',
+    },
+    row: {
+      flexDirection: 'row',
+      borderBottomWidth: 2,
+      borderBottomColor: colors.border,
+    },
+    cell: {
+      padding: spacing.sm,
+      minWidth: 120,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: 0,
+      paddingHorizontal: spacing.sm,
+    },
+    pagination: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginTop: spacing.lg,
+      paddingTop: spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
   },
 }); 

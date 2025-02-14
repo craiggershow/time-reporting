@@ -1,7 +1,7 @@
-import { View, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { View, ScrollView, Pressable } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ActivityIndicator } from 'react-native';
-import { commonStyles, spacing, colors } from '@/styles/common';
+import { commonStyles, spacing, colors, baseColors } from '@/styles/common';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Checkbox } from './Checkbox';
@@ -9,8 +9,8 @@ import { Checkbox } from './Checkbox';
 interface Column<T> {
   key: keyof T | 'actions' | 'select';
   title: string;
-  render?: (value: any, item: T) => React.ReactNode;
   sortable?: boolean;
+  render?: (value: any, item: T) => React.ReactNode;
   width?: number;
 }
 
@@ -27,7 +27,7 @@ type SortDirection = 'asc' | 'desc' | null;
 
 export function DataTable<T>({ 
   data, 
-  columns, 
+  columns,
   isLoading,
   selectedIds = [],
   onSelectionChange,
@@ -38,13 +38,11 @@ export function DataTable<T>({
 
   const handleSort = (key: keyof T) => {
     if (sortKey === key) {
-      // Toggle direction if same key
       setSortDirection(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc');
       if (sortDirection === 'desc') {
         setSortKey(null);
       }
     } else {
-      // New sort key
       setSortKey(key);
       setSortDirection('asc');
     }
@@ -53,7 +51,6 @@ export function DataTable<T>({
   const sortedData = [...data].sort((a, b) => {
     if (!sortKey || !sortDirection) return 0;
     
-    // Special handling for name field
     if (sortKey === 'name') {
       const aName = `${(a as any).firstName} ${(a as any).lastName}`;
       const bName = `${(b as any).firstName} ${(b as any).lastName}`;
@@ -76,44 +73,37 @@ export function DataTable<T>({
       : (bValue < aValue ? -1 : 1);
   });
 
-  const handleSelectAll = () => {
-    if (!onSelectionChange) return;
-    
-    if (selectedIds.length === sortedData.length) {
-      onSelectionChange([]);
-    } else {
-      onSelectionChange(sortedData.map(item => getItemId(item)));
-    }
-  };
-
-  const handleSelectItem = (item: T) => {
-    if (!onSelectionChange) return;
-    
-    const id = getItemId(item);
-    if (selectedIds.includes(id)) {
-      onSelectionChange(selectedIds.filter(selectedId => selectedId !== id));
-    } else {
-      onSelectionChange([...selectedIds, id]);
-    }
-  };
-
-  const renderSelectColumn = () => ({
-    key: 'select',
-    title: '',
-    width: 48,
-    render: (_: any, item: T) => (
-      <View style={styles.checkboxCell}>
+  const columnsWithSelection = [
+    ...(selectedIds ? [{
+      key: 'select',
+      title: (
         <Checkbox
-          checked={selectedIds.includes(getItemId(item))}
-          onChange={() => handleSelectItem(item)}
+          value={data.length > 0 && selectedIds.length === data.length}
+          onValueChange={(checked) => {
+            if (onSelectionChange) {
+              onSelectionChange(checked ? data.map(item => getItemId(item)) : []);
+            }
+          }}
         />
-      </View>
-    ),
-  });
-
-  const allColumns = onSelectionChange 
-    ? [renderSelectColumn(), ...columns]
-    : columns;
+      ),
+      width: 50,
+      render: (_: any, item: T) => (
+        <Checkbox
+          value={selectedIds.includes(getItemId(item))}
+          onValueChange={(checked) => {
+            if (onSelectionChange) {
+              onSelectionChange(
+                checked 
+                  ? [...selectedIds, getItemId(item)]
+                  : selectedIds.filter(id => id !== getItemId(item))
+              );
+            }
+          }}
+        />
+      ),
+    }] : []),
+    ...columns,
+  ];
 
   if (isLoading) {
     return (
@@ -126,59 +116,55 @@ export function DataTable<T>({
   return (
     <ScrollView horizontal testID="data-table-scroll-container">
       <View testID="data-table-container">
-        <View testID="data-table-header" style={commonStyles.tableContainer.headerRow}>
-          {onSelectionChange && (
-            <View style={commonStyles.tableContainer.headerCell}>
-              <Checkbox
-                checked={selectedIds.length === sortedData.length}
-                onChange={handleSelectAll}
-              />
-            </View>
-          )}
-          {allColumns.map((column) => (
+        <View style={commonStyles.adminTable.header}>
+          {columnsWithSelection.map((column) => (
             <Pressable
               key={column.key as string}
               testID={`header-cell-${column.key}`}
               style={[
-                commonStyles.tableContainer.headerCell,
-                column.sortable && styles.sortableHeader
+                commonStyles.adminTable.headerCell,
+                { width: column.width || 120 },
               ]}
               onPress={() => column.sortable && handleSort(column.key as keyof T)}
             >
-              <View style={styles.headerContent}>
-                <ThemedText style={commonStyles.lightText}>{column.title}</ThemedText>
+              <View style={[
+                commonStyles.adminTable.headerContent,
+                { width: '100%' }
+              ]}>
+                <ThemedText style={commonStyles.adminTable.headerText}>
+                  {column.title}
+                </ThemedText>
                 {column.sortable && sortKey === column.key && (
                   <Ionicons 
                     name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
                     size={16} 
-                    color={colors.text.light}
+                    color={baseColors.textLight}
                   />
                 )}
               </View>
             </Pressable>
           ))}
         </View>
-
-        {sortedData.map((item, rowIndex) => (
-          <View 
-            key={rowIndex}
-            testID={`table-row-${rowIndex}`}
-            style={[
-              commonStyles.tableContainer.row,
-              rowIndex % 2 === 1 && { backgroundColor: colors.table.row.alternateBackground }
-            ]}
-          >
-            {allColumns.map((column) => (
-              <View
+        
+        {sortedData.map((item) => (
+          <View key={getItemId(item)} style={commonStyles.adminTable.row}>
+            {columnsWithSelection.map((column) => (
+              <View 
                 key={column.key as string}
-                testID={`table-cell-${column.key}-${rowIndex}`}
-                style={commonStyles.tableContainer.cell}
+                style={[
+                  commonStyles.adminTable.cell,
+                  { width: column.width || 120 },
+                  column.key === 'select' && { 
+                    width: 50,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }
+                ]}
               >
-                {column.render ? (
-                  column.render(item[column.key], item)
-                ) : (
-                  <ThemedText style={commonStyles.lightText}>{String(item[column.key])}</ThemedText>
-                )}
+                {column.render 
+                  ? column.render(item[column.key], item)
+                  : <ThemedText style={{ textAlign: 'center', width: '100%' }}>{String(item[column.key])}</ThemedText>
+                }
               </View>
             ))}
           </View>
@@ -192,20 +178,4 @@ export function DataTable<T>({
       </View>
     </ScrollView>
   );
-}
-
-const styles = StyleSheet.create({
-  sortableHeader: {
-    cursor: 'pointer',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  checkboxCell: {
-    width: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-}); 
+} 

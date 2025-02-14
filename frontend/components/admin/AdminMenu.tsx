@@ -2,6 +2,7 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing } from '@/styles/common';
 
 interface MenuItem {
   title: string;
@@ -39,7 +40,7 @@ const menuItems: MenuItem[] = [
 
 export function AdminMenu() {
   return (
-    <View style={styles.container}>
+    <View style={{ gap: spacing.md }}>
       {menuItems.map((item) => (
         <Link 
           key={item.route} 
@@ -47,14 +48,19 @@ export function AdminMenu() {
           asChild
         >
           <Pressable style={styles.menuItem}>
-            <View style={styles.iconContainer}>
-              <Ionicons name={item.icon} size={24} color="#64748b" />
-            </View>
-            <View style={styles.textContainer}>
+            <Ionicons 
+              name={item.icon} 
+              size={24} 
+              color={colors.text.secondary} 
+              style={styles.icon} 
+            />
+            <View style={{ flex: 1 }}>
               <ThemedText type="subtitle">{item.title}</ThemedText>
-              <ThemedText style={styles.description}>{item.description}</ThemedText>
+              <ThemedText style={{ color: colors.text.secondary, fontSize: 14, marginTop: spacing.xs }}>
+                {item.description}
+              </ThemedText>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#64748b" />
+            <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
           </Pressable>
         </Link>
       ))}
@@ -63,31 +69,17 @@ export function AdminMenu() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: 16,
-  },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#f8fafc',
+    padding: spacing.md,
+    backgroundColor: colors.background.card,
     borderRadius: 8,
-    gap: 16,
+    gap: spacing.md,
   },
-  iconContainer: {
-    width: 40,
-    height: 40,
+  icon: {
+    padding: spacing.sm,
+    backgroundColor: colors.background.tableAlt,
     borderRadius: 20,
-    backgroundColor: '#f1f5f9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textContainer: {
-    flex: 1,
-  },
-  description: {
-    color: '#64748b',
-    fontSize: 14,
-    marginTop: 4,
   },
 }); 

@@ -1,56 +1,37 @@
-import { View, StyleSheet, Pressable } from 'react-native';
-import { ThemedText } from '../ThemedText';
+import { Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '@/styles/common';
 
 interface CheckboxProps {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  label?: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
   disabled?: boolean;
 }
 
-export function Checkbox({ checked, onChange, label, disabled }: CheckboxProps) {
+export function Checkbox({ value, onValueChange, disabled }: CheckboxProps) {
   return (
-    <Pressable 
-      style={[
-        styles.container,
-        styles.checkbox, 
-        checked && styles.checked, 
-        disabled && styles.disabled
-      ]} 
-      onPress={() => !disabled && onChange(!checked)}
+    <Pressable
+      onPress={() => onValueChange(!value)}
       disabled={disabled}
+      style={({ pressed }) => ({
+        width: 20,
+        height: 20,
+        borderRadius: 4,
+        borderWidth: 2,
+        borderColor: value ? colors.primary : colors.border,
+        backgroundColor: value ? colors.primary : 'transparent',
+        justifyContent: 'center',
+        alignItems: 'center',
+        opacity: (pressed || disabled) ? 0.7 : 1,
+      })}
     >
-      {checked && <Ionicons name="checkmark" size={16} color="#ffffff" />}
-      {label && <ThemedText style={styles.label}>{label}</ThemedText>}
+      {value && (
+        <Ionicons 
+          name="checkmark" 
+          size={16} 
+          color="#ffffff"
+        />
+      )}
     </Pressable>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#64748b',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
-  },
-  checked: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  label: {
-    marginLeft: 8,
-  },
-}); 
+} 

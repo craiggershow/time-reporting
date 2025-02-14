@@ -164,8 +164,9 @@ export function UserManagement() {
       key: 'employeeId',
       title: 'Id',
       sortable: true,
+      width: 100,
       render: (id: string) => (
-        <ThemedText style={styles.cellText}>
+        <ThemedText style={styles.text.cell}>
           {id}
         </ThemedText>
       ),
@@ -174,8 +175,9 @@ export function UserManagement() {
       key: 'name',
       title: 'Name',
       sortable: true,
+      width: 200,
       render: (_, user: User) => (
-        <ThemedText style={styles.cellText}>
+        <ThemedText style={styles.text.cell}>
           {`${user.firstName} ${user.lastName}`}
         </ThemedText>
       ),
@@ -184,8 +186,9 @@ export function UserManagement() {
       key: 'email',
       title: 'Email',
       sortable: true,
+      width: 300,
       render: (email: string) => (
-        <ThemedText style={styles.cellText}>
+        <ThemedText style={styles.text.cell}>
           {email}
         </ThemedText>
       ),
@@ -195,7 +198,7 @@ export function UserManagement() {
       title: 'Admin',
       sortable: true,
       render: (role: string) => (
-        <ThemedText style={styles.cellText}>
+        <ThemedText style={styles.text.cell}>
           {role === 'ADMIN' ? 'Yes' : 'No'}
         </ThemedText>
       ),
@@ -205,8 +208,8 @@ export function UserManagement() {
       title: 'Status',
       sortable: true,
       render: (value: boolean) => (
-        <View style={[styles.statusBadge, value ? styles.activeBadge : styles.inactiveBadge]}>
-          <ThemedText style={value ? styles.activeText : styles.inactiveText}>
+        <View style={[styles.status.badge, value ? styles.status.active : styles.status.inactive]}>
+          <ThemedText style={value ? styles.status.active : styles.status.inactive}>
             {value ? 'Active' : 'Inactive'}
           </ThemedText>
         </View>
@@ -296,12 +299,10 @@ export function UserManagement() {
   return (
     <View 
       style={[
-        styles.pageContainer,
-        { backgroundColor: colors.adminBackground },
+        styles.container,
         Platform.select({
           web: {
             backgroundColor: colors.adminBackground,
-            minHeight: '100vh',
           }
         })
       ]}
@@ -319,10 +320,10 @@ export function UserManagement() {
             { backgroundColor: colors.adminBackground }
           ]}
         >
-          <View style={styles.headerCard}>
-            <View style={styles.headerLeft}>
+          <View style={styles.header}>
+            <View style={styles.headerInfo}>
               <ThemedText type="title">User Management</ThemedText>
-              <ThemedText style={styles.subtitle}>
+              <ThemedText style={styles.text.subtitle}>
                 Manage user accounts and permissions
               </ThemedText>
             </View>
@@ -330,7 +331,7 @@ export function UserManagement() {
               {selectedUserIds.length > 0 && (
                 <View style={styles.bulkActions}>
                   <View style={styles.selectedBadge}>
-                    <ThemedText style={styles.selectedCount}>
+                    <ThemedText style={styles.text.count}>
                       {selectedUserIds.length} selected
                     </ThemedText>
                   </View>
@@ -366,8 +367,8 @@ export function UserManagement() {
             </View>
           </View>
 
-          <View style={styles.filtersCard}>
-            <View style={styles.searchSection}>
+          <View style={styles.filters}>
+            <View style={styles.searchContainer}>
               <Input
                 label=""
                 placeholder="Search users..."
@@ -376,14 +377,14 @@ export function UserManagement() {
                 style={styles.searchInput}
                 leftIcon={<Ionicons name="search" size={20} color={colors.text.secondary} />}
               />
-              <ThemedText style={styles.resultCount}>
+              <ThemedText style={styles.text.count}>
                 {filteredUsers.length} users found
               </ThemedText>
             </View>
 
-            <View style={styles.filterGroups}>
+            <View style={styles.filterSection}>
               <View style={styles.filterGroup}>
-                <ThemedText style={styles.filterLabel}>Role</ThemedText>
+                <ThemedText style={styles.text.cell}>Role</ThemedText>
                 <View style={styles.filterButtons}>
                   <Button
                     variant={roleFilter === 'ALL' ? 'primary' : 'secondary'}
@@ -410,7 +411,7 @@ export function UserManagement() {
               </View>
 
               <View style={styles.filterGroup}>
-                <ThemedText style={styles.filterLabel}>Status</ThemedText>
+                <ThemedText style={styles.text.cell}>Status</ThemedText>
                 <View style={styles.filterButtons}>
                   <Button
                     variant={statusFilter === 'ALL' ? 'primary' : 'secondary'}
@@ -446,7 +447,7 @@ export function UserManagement() {
             />
           )}
 
-          <View style={styles.tableCard}>
+          <View style={styles.table}>
             <DataTable
               data={paginatedUsers}
               columns={columns}
@@ -465,7 +466,7 @@ export function UserManagement() {
               >
                 Previous
               </Button>
-              <ThemedText style={styles.paginationText}>
+              <ThemedText style={styles.text.count}>
                 Page {page} of {totalPages}
               </ThemedText>
               <Button
@@ -529,130 +530,23 @@ export function UserManagement() {
 }
 
 const styles = StyleSheet.create({
-  pageContainer: {
-    flex: 1,
-    backgroundColor: colors.adminBackground,
-    minHeight: '100%',
-  },
-  content: {
-    flex: 1,
-    backgroundColor: colors.adminBackground,
-  },
-  section: {
-    flex: 1,
-    padding: spacing.lg,
-    gap: spacing.lg,
-    backgroundColor: colors.adminBackground,
-  },
-  headerCard: {
-    ...commonStyles.contentCard,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerLeft: {
+  container: commonStyles.adminPage,
+  content: commonStyles.adminContent,
+  section: commonStyles.adminSection,
+  header: commonStyles.adminCard,
+  headerInfo: {
     gap: spacing.xs,
   },
-  subtitle: {
-    color: colors.text.secondary,
-    fontSize: 14,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  filtersCard: {
-    ...commonStyles.contentCard,
-    gap: spacing.lg,
-  },
-  searchSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  searchInput: {
-    flex: 1,
-    maxWidth: 300,
-  },
-  resultCount: {
-    color: colors.text.secondary,
-    fontSize: 14,
-  },
-  filterGroups: {
-    flexDirection: 'row',
-    gap: spacing.xl,
-  },
-  filterGroup: {
-    gap: spacing.sm,
-  },
-  filterLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text.secondary,
-  },
-  filterButtons: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  tableCard: {
-    ...commonStyles.contentCard,
-  },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.lg,
-    paddingTop: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  paginationText: {
-    color: colors.text.secondary,
-    minWidth: 100,
-    textAlign: 'center',
-  },
-  bulkActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  selectedBadge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: 16,
-  },
-  selectedCount: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  cellText: {
-    color: colors.table.row.text,
-    fontSize: 14,
-  },
-  statusBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-  },
-  activeBadge: {
-    backgroundColor: colors.table.status.active.background,
-  },
-  inactiveBadge: {
-    backgroundColor: colors.table.status.inactive.background,
-  },
-  activeText: {
-    color: colors.table.status.active.text,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  inactiveText: {
-    color: colors.table.status.inactive.text,
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  filters: commonStyles.adminFilters,
+  searchContainer: commonStyles.adminSearch.container,
+  searchInput: commonStyles.adminSearch.input,
+  filterSection: commonStyles.adminFilterGroup.section,
+  filterGroup: commonStyles.adminFilterGroup.group,
+  filterButtons: commonStyles.adminFilterGroup.buttons,
+  table: commonStyles.adminTable.container,
+  bulkActions: commonStyles.adminActions.bulk,
+  selectedBadge: commonStyles.adminActions.selectedBadge,
+  text: commonStyles.adminText,
+  status: commonStyles.adminStatus,
+  pagination: commonStyles.adminTable.pagination,
 }); 
