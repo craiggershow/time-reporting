@@ -37,10 +37,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
   }
 
-  async function logout() {
-    await AsyncStorage.removeItem('user');
-    setUser(null);
-  }
+  const logout = async () => {
+    try {
+      // Clear auth state
+      setUser(null);
+      
+      // Clear stored credentials
+      await AsyncStorage.removeItem('user');
+      
+      // Clear any other auth-related storage
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userEmail');
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout }}>

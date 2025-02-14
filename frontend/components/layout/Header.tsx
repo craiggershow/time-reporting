@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/styles/common';
+import { Button } from '../ui/Button';
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -23,6 +24,18 @@ export function Header() {
     router.replace('/(app)/admin');
   };
 
+  const handleLogout = async () => {
+    try {
+      // Call the auth context logout function
+      await logout();
+      
+      // After successful logout, redirect to login page
+      router.replace('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
@@ -39,13 +52,13 @@ export function Header() {
               <ThemedText style={styles.adminText}>Admin Portal</ThemedText>
             </Pressable>
           )}
-          <Pressable 
-            style={styles.logoutButton}
-            onPress={logout}
+          <Button
+            variant="secondary"
+            onPress={handleLogout}
+            leftIcon={<Ionicons name="log-out-outline" size={20} />}
           >
-            <Ionicons name="log-out-outline" size={20} color="#000000" />
-            <ThemedText style={styles.logoutText}>Logout</ThemedText>
-          </Pressable>
+            Logout
+          </Button>
         </View>
       </View>
       <View style={styles.logoSection}>
