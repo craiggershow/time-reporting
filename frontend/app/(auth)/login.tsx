@@ -11,9 +11,10 @@ import { getRememberedEmail, saveRememberedEmail, clearRememberedEmail } from '@
 import { useTheme } from '@/hooks/useTheme';
 import { buildApiUrl } from '@/constants/Config';
 import { useAuth } from '@/context/AuthContext';
+import { colors as commonColors } from '@/styles/common';
 
 export default function LoginScreen() {
-  const { colors } = useTheme();
+  const { colors: themeColors } = useTheme();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -85,8 +86,14 @@ export default function LoginScreen() {
     }
   };
 
+  const handleSubmit = () => {
+    if (!isLoading) {
+      handleLogin();
+    }
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={styles.content}>
         <Image 
           source={require('@/assets/images/KV-Dental-Sign-logo-and-Name-500x86.gif')}
@@ -96,7 +103,7 @@ export default function LoginScreen() {
         <ThemedText type="title">Time Sheet Portal</ThemedText>
         
         <View style={styles.formContainer}>
-          <View style={[styles.pickerContainer, { backgroundColor: colors.inputBackground }]}>
+          <View style={[styles.pickerContainer, { backgroundColor: themeColors.inputBackground }]}>
             <Picker
               selectedValue={loginType}
               onValueChange={(value) => setLoginType(value as 'employee' | 'admin')}
@@ -117,6 +124,7 @@ export default function LoginScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!isLoading}
+              returnKeyType="next"
             />
             
             <Input
@@ -126,6 +134,8 @@ export default function LoginScreen() {
               placeholder="Enter your password"
               secureTextEntry
               editable={!isLoading}
+              returnKeyType="go"
+              onSubmitEditing={handleSubmit}
             />
 
             {error && (
@@ -136,6 +146,7 @@ export default function LoginScreen() {
               checked={rememberMe}
               onValueChange={() => setRememberMe(!rememberMe)}
               label="Remember my email"
+              labelStyle={styles.rememberMeText}
             />
 
             <Button 
@@ -187,5 +198,8 @@ const styles = StyleSheet.create({
   error: {
     color: '#ef4444',
     textAlign: 'center',
+  },
+  rememberMeText: {
+    color: commonColors.text.light,
   },
 }); 

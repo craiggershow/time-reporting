@@ -8,9 +8,10 @@ interface CheckboxProps {
   onValueChange: (value: boolean) => void;
   label?: string;
   disabled?: boolean;
+  labelStyle?: object;
 }
 
-export function Checkbox({ checked, onValueChange, label, disabled }: CheckboxProps) {
+export function Checkbox({ checked, onValueChange, label, disabled, labelStyle }: CheckboxProps) {
   return (
     <View style={styles.container}>
       <Pressable
@@ -33,7 +34,7 @@ export function Checkbox({ checked, onValueChange, label, disabled }: CheckboxPr
       </Pressable>
       {label && (
         <Pressable onPress={() => onValueChange(!checked)}>
-          <ThemedText style={styles.label}>{label}</ThemedText>
+          <ThemedText style={[styles.label, labelStyle]}>{label}</ThemedText>
         </Pressable>
       )}
     </View>
@@ -51,7 +52,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: colors.text.secondary,
+    borderColor: colors.text.light,
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   checkmark: {
-    marginTop: 1, // Fine-tune checkmark position
+    marginTop: 1,
   },
   label: {
     fontSize: 14,
