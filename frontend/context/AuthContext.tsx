@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buildApiUrl } from '@/constants/Config';
 
 interface AuthContextType {
   user: User | null;
@@ -23,7 +24,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userData = await AsyncStorage.getItem('user');
       if (userData) {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
       }
     } catch (error) {
       console.error('Error loading user:', error);
@@ -33,8 +35,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function login(userData: User) {
-    await AsyncStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
+    try {
+      // Save to AsyncStorage
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      // Update state
+      setUser(userData);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   }
 
   const logout = async () => {
@@ -45,9 +54,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Clear stored credentials
       await AsyncStorage.removeItem('user');
       
-      // Clear any other auth-related storage
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userEmail');
+      // Call logout endpoint
+      await fetch(buildApiUrl('LOGOUT'), {
+        method: 'POST',
+        credentials: 'include',
+      });
     } catch (error) {
       console.error('Logout error:', error);
       throw error;

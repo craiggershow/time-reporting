@@ -54,38 +54,27 @@ export default function LoginScreen() {
         }),
       });
 
-      const contentType = response.headers.get('content-type');
-      if (!response.ok) {
-        let errorMessage = 'Login failed';
-        if (contentType && contentType.includes('application/json')) {
-          const data = await response.json();
-          errorMessage = data.error || errorMessage;
-        } else {
-          const text = await response.text();
-          console.error('Server response:', text);
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Make sure we have JSON response
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Invalid server response format');
-      }
-
       const data = await response.json();
-      
-      // Verify admin access if attempting admin login
-      if (loginType === 'admin' && !data.isAdmin) {
-        throw new Error('You do not have admin access');
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
       }
 
+      // Handle remember me
+      if (rememberMe) {
+        await saveRememberedEmail(email);
+      } else {
+        await clearRememberedEmail();
+      }
+
+      // Save user data and handle navigation in one place
       await login(data);
       
-      // Navigate to the appropriate screen based on login type
-      if (loginType === 'admin') {
-        router.replace('/admin/');
+      // Navigate based on user role
+      if (data.isAdmin) {
+        router.replace('/(app)/admin');
       } else {
-        router.replace('/timesheet');
+        router.replace('/(app)/timesheet');
       }
 
     } catch (error) {
