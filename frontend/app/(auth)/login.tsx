@@ -145,7 +145,7 @@ export default function LoginScreen() {
 
             <Checkbox
               checked={rememberMe}
-              onPress={() => setRememberMe(!rememberMe)}
+              onValueChange={() => setRememberMe(!rememberMe)}
               label="Remember my email"
             />
 

@@ -1,7 +1,7 @@
-import { View, ScrollView, Pressable } from 'react-native';
+import { View, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ActivityIndicator } from 'react-native';
-import { commonStyles, spacing, colors, baseColors } from '@/styles/common';
+import { commonStyles, spacing, colors} from '@/styles/common';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Checkbox } from './Checkbox';
@@ -77,29 +77,33 @@ export function DataTable<T>({
     ...(selectedIds ? [{
       key: 'select',
       title: (
-        <Checkbox
-          value={data.length > 0 && selectedIds.length === data.length}
-          onValueChange={(checked) => {
-            if (onSelectionChange) {
-              onSelectionChange(checked ? data.map(item => getItemId(item)) : []);
-            }
-          }}
-        />
+        <View style={styles.checkboxCell}>
+          <Checkbox
+            value={data.length > 0 && selectedIds.length === data.length}
+            onValueChange={(checked) => {
+              if (onSelectionChange) {
+                onSelectionChange(checked ? data.map(item => getItemId(item)) : []);
+              }
+            }}
+          />
+        </View>
       ),
-      width: 50,
+      width: 60,
       render: (_: any, item: T) => (
-        <Checkbox
-          value={selectedIds.includes(getItemId(item))}
-          onValueChange={(checked) => {
-            if (onSelectionChange) {
-              onSelectionChange(
-                checked 
-                  ? [...selectedIds, getItemId(item)]
-                  : selectedIds.filter(id => id !== getItemId(item))
-              );
-            }
-          }}
-        />
+        <View style={styles.checkboxCell}>
+          <Checkbox
+            value={selectedIds.includes(getItemId(item))}
+            onValueChange={(checked) => {
+              if (onSelectionChange) {
+                onSelectionChange(
+                  checked 
+                    ? [...selectedIds, getItemId(item)]
+                    : selectedIds.filter(id => id !== getItemId(item))
+                );
+              }
+            }}
+          />
+        </View>
       ),
     }] : []),
     ...columns,
@@ -123,7 +127,11 @@ export function DataTable<T>({
               testID={`header-cell-${column.key}`}
               style={[
                 commonStyles.adminTable.headerCell,
-                { width: column.width || 120 },
+                { width: column.width || 120, minWidth: column.width || 120 },
+                column.key === 'select' && {
+                  width: 60,
+                  minWidth: 60,
+                }
               ]}
               onPress={() => column.sortable && handleSort(column.key as keyof T)}
             >
@@ -138,7 +146,7 @@ export function DataTable<T>({
                   <Ionicons 
                     name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
                     size={16} 
-                    color={baseColors.textLight}
+                    color={colors.text.light}
                   />
                 )}
               </View>
@@ -153,9 +161,10 @@ export function DataTable<T>({
                 key={column.key as string}
                 style={[
                   commonStyles.adminTable.cell,
-                  { width: column.width || 120 },
+                  { width: column.width || 120, minWidth: column.width || 120 },
                   column.key === 'select' && { 
-                    width: 50,
+                    width: 60,
+                    minWidth: 60,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }
@@ -178,4 +187,13 @@ export function DataTable<T>({
       </View>
     </ScrollView>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  checkboxCell: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xs,
+  },
+}); 

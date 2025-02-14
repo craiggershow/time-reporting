@@ -14,12 +14,12 @@ export function Checkbox({ value, onValueChange, disabled }: CheckboxProps) {
       onPress={() => onValueChange(!value)}
       disabled={disabled}
       style={({ pressed }) => ({
-        width: 20,
-        height: 20,
+        width: 24,
+        height: 24,
         borderRadius: 4,
-        borderWidth: 2,
-        borderColor: value ? colors.primary : colors.border,
-        backgroundColor: value ? colors.primary : 'transparent',
+        borderWidth: 3,
+        borderColor: value ? colors.primary : colors.text.secondary,
+        backgroundColor: value ? colors.primary : '#ffffff',
         justifyContent: 'center',
         alignItems: 'center',
         opacity: (pressed || disabled) ? 0.7 : 1,
@@ -28,7 +28,7 @@ export function Checkbox({ value, onValueChange, disabled }: CheckboxProps) {
       {value && (
         <Ionicons 
           name="checkmark" 
-          size={16} 
+          size={18} 
           color="#ffffff"
         />
       )}

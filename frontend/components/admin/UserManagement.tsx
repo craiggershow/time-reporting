@@ -186,11 +186,19 @@ export function UserManagement() {
       key: 'email',
       title: 'Email',
       sortable: true,
-      width: 300,
+      width: 400,
       render: (email: string) => (
-        <ThemedText style={styles.text.cell}>
-          {email}
-        </ThemedText>
+        <View style={{ width: 400 }}>
+          <ThemedText style={[
+            styles.text.cell, 
+            { 
+              width: '100%',
+              textAlign: 'center'  // Center the email text
+            }
+          ]}>
+            {email}
+          </ThemedText>
+        </View>
       ),
     },
     { 

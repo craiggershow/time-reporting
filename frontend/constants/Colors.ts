@@ -6,7 +6,7 @@
 export const Colors = {
   text: '#ffffff',
   background: '#0f2851',
-  border: '#3b82f6',
+  border: '#000000',
   tint: '#60a5fa',
   icon: '#e2e8f0',
   tabIconDefault: '#e2e8f0',
