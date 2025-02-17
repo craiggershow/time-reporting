@@ -1,9 +1,10 @@
 export interface User {
   id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  role: 'ADMIN' | 'EMPLOYEE';
   isAdmin: boolean;
-  token: string;
 }
 
 // Optional: Add a more detailed user type for the backend
@@ -18,7 +19,14 @@ export interface BackendUser {
 }
 
 export interface LoginResponse {
-  user: User;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: 'ADMIN' | 'EMPLOYEE';
+  };
+  token: string;
 }
 
 export interface AuthError {

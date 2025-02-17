@@ -726,7 +726,7 @@ export default function TimesheetScreen() {
       <View style={styles.container}>
         <Header />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.tint} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <ThemedText style={styles.loadingText}>Loading timesheet...</ThemedText>
         </View>
       </View>
@@ -796,17 +796,17 @@ export default function TimesheetScreen() {
             onCopyPrevious={(day) => handleCopyPrevious(2, day)}
           />
 
-          <View style={[styles.summary, { backgroundColor: colors.inputBackground }]}>
+          <View style={[styles.summary, { backgroundColor: colors.background.input }]}>
             <ThemedText type="subtitle">Summary</ThemedText>
-            <View style={[styles.summaryRow, { backgroundColor: colors.background }]}>
+            <View style={[styles.summaryRow, { backgroundColor: colors.background.card }]}>
               <ThemedText>Week 1 Total:</ThemedText>
               <ThemedText>{week1Total.toFixed(2)} hours</ThemedText>
             </View>
-            <View style={[styles.summaryRow, { backgroundColor: colors.background }]}>
+            <View style={[styles.summaryRow, { backgroundColor: colors.background.card }]}>
               <ThemedText>Week 2 Total:</ThemedText>
               <ThemedText>{week2Total.toFixed(2)} hours</ThemedText>
             </View>
-            <View style={[styles.vacationHours, { backgroundColor: colors.background }]}>
+            <View style={[styles.vacationHours, { backgroundColor: colors.background.card }]}>
               <ThemedText>Vacation Hours:</ThemedText>
               <Input
                 label=""
@@ -816,7 +816,7 @@ export default function TimesheetScreen() {
                 keyboardType="numeric"
               />
             </View>
-            <View style={[styles.summaryRow, { backgroundColor: colors.background }]}>
+            <View style={[styles.summaryRow, { backgroundColor: colors.background.card }]}>
               <ThemedText type="defaultSemiBold">Pay Period Total:</ThemedText>
               <ThemedText type="defaultSemiBold">{periodTotal.toFixed(2)} hours</ThemedText>
             </View>

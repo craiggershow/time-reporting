@@ -4,7 +4,7 @@ import { StyleSheet, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { Colors } from '@/constants/Colors';
+import { colors } from '@/constants/Colors';
 
 export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,7 +18,7 @@ export function Collapsible({ children, title }: PropsWithChildren & { title: st
         <ThemedText style={styles.title}>{title}</ThemedText>
         <IconSymbol 
           name={isOpen ? "chevron.up" : "chevron.down"} 
-          color={Colors.text} 
+          color={colors.light.text.primary} 
           size={20} 
         />
       </TouchableOpacity>
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
   },
   header: {
     flexDirection: 'row',
@@ -51,6 +51,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
   },
 });

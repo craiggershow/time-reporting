@@ -24,6 +24,7 @@ export const API_ENDPOINTS = {
   EMPLOYEES: 'api/employees',
   SAVE_TIMESHEET_DRAFT: '/api/timesheet/draft',
   USERS: 'api/admin/users',
+  SETTINGS: 'api/admin/settings',
   // USER: (id: string) => `api/admin/users/${id}`, // Remove this if not using
 } as const;
 

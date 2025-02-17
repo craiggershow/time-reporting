@@ -1,12 +1,18 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '@/types/auth';
+import { User, LoginResponse } from '@/types/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildApiUrl } from '@/constants/Config';
+
+interface LoginCredentials {
+  email: string;
+  password: string;
+  isAdmin?: boolean;
+}
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (user: User) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -16,52 +22,85 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  async function loadUser() {
+  const login = async (credentials: LoginCredentials) => {
     try {
-      const userData = await AsyncStorage.getItem('user');
-      if (userData) {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
+      console.log('Login attempt:', { ...credentials, password: '[REDACTED]' });
+      
+      const response = await fetch(buildApiUrl('LOGIN'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      const data = await response.json();
+      console.log('Login response:', data);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
       }
-    } catch (error) {
-      console.error('Error loading user:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
-  async function login(userData: User) {
-    try {
-      // Save to AsyncStorage
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      // Update state
+      if (!data.user || !data.user.role) {
+        console.error('Invalid user data:', data);
+        throw new Error('Invalid user data received');
+      }
+
+      const userData: User = {
+        id: data.user.id,
+        email: data.user.email,
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        role: data.user.role,
+        isAdmin: data.user.role === 'ADMIN'
+      };
+
+      console.log('Processed user data:', userData);
       setUser(userData);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
     }
-  }
+  };
 
   const logout = async () => {
     try {
-      // Clear auth state
-      setUser(null);
-      
-      // Clear stored credentials
-      await AsyncStorage.removeItem('user');
-      
-      // Call logout endpoint
       await fetch(buildApiUrl('LOGOUT'), {
         method: 'POST',
         credentials: 'include',
       });
+      setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
+    }
+  };
+
+  // Check auth status on mount
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch(buildApiUrl('CURRENT_USER'), {
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user && data.user.role) {
+          setUser({
+            ...data.user,
+            isAdmin: data.user.role === 'ADMIN'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 

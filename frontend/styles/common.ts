@@ -3,38 +3,52 @@ import { StyleSheet, Platform } from 'react-native';
 // Base colors without dependencies
 const baseColors = {
   primary: '#2563eb',
-  appBackground: '#f1f5f9',
-  adminBackground: '#334155',
+  secondary: '#64748b',
+  background: '#ffffff',
+  surface: '#f8fafc',
   border: '#e2e8f0',
-  textPrimary: '#000000',
-  textSecondary: '#4b5563',
-  textError: '#dc2626',
-  textLight: '#f8fafc',
-  textLightSecondary: '#cbd5e1',
-  tableHeaderBackground: '#003399',
+  tint: '#2563eb',
+  inputBackground: '#ffffff',
+  error: '#dc2626',
+  success: '#22c55e',
+  warning: '#f59e0b',
 };
 
 // Color palette with organized structure
 export const colors = {
   primary: baseColors.primary,
-  appBackground: baseColors.appBackground,
-  adminBackground: baseColors.adminBackground,
+  secondary: baseColors.secondary,
+  tint: baseColors.tint,
   border: baseColors.border,
-  text: {
-    primary: baseColors.textPrimary,
-    secondary: baseColors.textSecondary,
-    error: baseColors.textError,
-    light: baseColors.textLight,
-    lightSecondary: baseColors.textLightSecondary,
+  error: baseColors.error,
+  success: baseColors.success,
+  warning: baseColors.warning,
+  
+  background: {
+    page: baseColors.background,
+    card: baseColors.surface,
+    input: baseColors.inputBackground,
   },
+  
+  text: {
+    primary: '#000000',
+    secondary: '#4b5563',
+    error: '#dc2626',
+    light: '#ffffff',
+    lightSecondary: '#cbd5e1',
+  },
+
   input: {
     border: '#d1d5db',
+    background: baseColors.inputBackground,
   },
+
   status: {
-    success: '#22c55e',
-    error: '#dc2626',
-    errorBg: '#fee2e2',
+    success: baseColors.success,
+    error: baseColors.error,
+    warning: baseColors.warning,
   },
+
   button: {
     primary: {
       background: baseColors.primary,
@@ -46,22 +60,20 @@ export const colors = {
       border: baseColors.border,
     },
     danger: {
-      background: '#dc2626',
+      background: baseColors.error,
       text: '#ffffff',
     },
   },
+
   modal: {
     overlay: 'rgba(0, 0, 0, 0.5)',
     background: '#ffffff',
   },
-  background: {
-    page: '#f1f5f9',    // Light gray for page backgrounds
-    card: '#ffffff',     // White for card backgrounds
-  },
+
   table: {
     header: {
       background: '#f8fafc',
-      text: baseColors.textPrimary,
+      text: '#000000',
       border: '#cbd5e1',  // Darker border color
     },
     row: {

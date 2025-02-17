@@ -6,7 +6,6 @@ import { ThemedView } from '@/components/ThemedView';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { Picker } from '@react-native-picker/picker';
 import { getRememberedEmail, saveRememberedEmail, clearRememberedEmail } from '@/utils/storage';
 import { useTheme } from '@/hooks/useTheme';
 import { buildApiUrl } from '@/constants/Config';
@@ -41,46 +40,16 @@ export default function LoginScreen() {
     try {
       setIsLoading(true);
       setError(null);
-
-      const response = await fetch(buildApiUrl('LOGIN'), {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email, 
-          password,
-          isAdmin: loginType === 'admin'
-        }),
+      
+      await login({ 
+        email, 
+        password,
+        isAdmin: loginType === 'admin'
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-
-      // Handle remember me
-      if (rememberMe) {
-        await saveRememberedEmail(email);
-      } else {
-        await clearRememberedEmail();
-      }
-
-      // Save user data and handle navigation in one place
-      await login(data);
-      
-      // Navigate based on user role
-      if (data.isAdmin) {
-        router.replace('/(app)/admin');
-      } else {
-        router.replace('/(app)/timesheet');
-      }
-
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error instanceof Error ? error.message : 'Login failed');
+      // AuthLayout will handle navigation
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setIsLoading(false);
     }
@@ -103,18 +72,6 @@ export default function LoginScreen() {
         <ThemedText type="title">Time Sheet Portal</ThemedText>
         
         <View style={styles.formContainer}>
-          <View style={[styles.pickerContainer, { backgroundColor: themeColors.inputBackground }]}>
-            <Picker
-              selectedValue={loginType}
-              onValueChange={(value) => setLoginType(value as 'employee' | 'admin')}
-              style={styles.picker}
-              enabled={!isLoading}
-            >
-              <Picker.Item label="Employee Login" value="employee" />
-              <Picker.Item label="Admin Login" value="admin" />
-            </Picker>
-          </View>
-
           <View style={styles.form}>
             <Input
               label="Email"
@@ -180,17 +137,6 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     gap: 16,
     marginTop: 32,
-  },
-  pickerContainer: {
-    borderRadius: 8,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    overflow: 'hidden',
-  },
-  picker: {
-    height: 50,
-    width: '100%',
   },
   loginButton: {
     marginTop: 8,

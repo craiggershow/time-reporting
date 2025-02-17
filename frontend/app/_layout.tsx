@@ -56,8 +56,8 @@ export default function RootLayout() {
         <TimesheetProvider>
           <QueryClientProvider client={queryClient}>
             <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(app)" />
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(app)" options={{ headerShown: false }} />
             </Stack>
           </QueryClientProvider>
         </TimesheetProvider>
