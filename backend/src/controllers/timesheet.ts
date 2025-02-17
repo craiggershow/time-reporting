@@ -1,8 +1,9 @@
 import { Request as ExpressRequest, Response as ExpressResponse } from 'express-serve-static-core';
 import { PrismaClient, DayOfWeek, DayType, PayPeriod, TimesheetStatus } from '@prisma/client';
 import { startOfWeek, addWeeks, addDays } from 'date-fns';
+import { prisma } from '../lib/prisma';
 
-const prisma = new PrismaClient();
+const prismaClient = new PrismaClient();
 
 // Define the AuthRequest type
 interface AuthRequest extends ExpressRequest {
@@ -68,7 +69,7 @@ function createEmptyDay(dayOfWeek: DayOfWeek) {
 }
 
 async function createEmptyTimesheet(userId: string, payPeriodId: string) {
-  const timesheet = await prisma.timesheet.create({
+  const timesheet = await prismaClient.timesheet.create({
     data: {
       userId,
       payPeriodId,
@@ -102,55 +103,44 @@ async function createEmptyTimesheet(userId: string, payPeriodId: string) {
   return timesheet;
 }
 
-// Function that creates or gets the current pay period
+interface PayPeriod {
+  startDate: Date;
+  endDate: Date;
+}
+
 async function getCurrentPayPeriod(): Promise<PayPeriod> {
   try {
-    // Get the pay period start setting
-    const payPeriodSetting = await prisma.setting.findUnique({
-      where: { key: 'pay_period_start' }
+    // Get settings from database
+    const settings = await prisma.settings.findUnique({
+      where: { key: 'timesheet_settings' }
     });
 
-    console.log('Pay period setting:', payPeriodSetting); // Debug log
-
-    let periodStart;
-    if (payPeriodSetting?.value) {
-      // Use configured start date if available
-      periodStart = new Date(payPeriodSetting.value);
-    } else {
-      // Default to first Monday of current year if no setting
-      const today = new Date();
-      periodStart = startOfWeek(new Date(today.getFullYear(), 0, 1), { weekStartsOn: 1 });
+    if (!settings) {
+      throw new Error('Timesheet settings not found');
     }
 
-    const today = new Date();
-    const periodLength = 14; // 14 days for bi-weekly pay periods
+    const { payPeriodStartDate } = settings.value as { payPeriodStartDate: string };
+    const baseStartDate = new Date(payPeriodStartDate);
     
-    // Calculate periods elapsed since start
-    const daysSinceStart = Math.floor((today.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24));
-    const periodsElapsed = Math.floor(daysSinceStart / periodLength);
+    // Get current date
+    const now = new Date();
     
-    // Calculate current period dates
-    const currentStartDate = addDays(periodStart, periodsElapsed * periodLength);
-    const currentEndDate = addDays(currentStartDate, periodLength - 1);
-
-    // Find or create the pay period
-    const payPeriod = await prisma.payPeriod.findFirst({
-      where: {
-        startDate: currentStartDate,
-      },
-    });
-
-    if (payPeriod) {
-      return payPeriod;
+    // Calculate the most recent pay period start date
+    const currentStartDate = new Date(baseStartDate);
+    while (currentStartDate <= now) {
+      currentStartDate.setDate(currentStartDate.getDate() + 14); // Assuming 2-week pay periods
     }
+    currentStartDate.setDate(currentStartDate.getDate() - 14); // Go back one period
+    
+    // Calculate end date (13 days after start date, as the 14th day starts new period)
+    const endDate = new Date(currentStartDate);
+    endDate.setDate(endDate.getDate() + 13);
+    endDate.setHours(23, 59, 59, 999);
 
-    // Create new pay period if none exists
-    return await prisma.payPeriod.create({
-      data: {
-        startDate: currentStartDate,
-        endDate: currentEndDate,
-      },
-    });
+    return {
+      startDate: currentStartDate,
+      endDate: endDate
+    };
   } catch (error) {
     console.error('Error getting pay period:', error);
     throw error;
@@ -168,7 +158,7 @@ export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse
     const payPeriod = await getCurrentPayPeriod();
 
     // Find or create timesheet
-    const timesheet = await prisma.timesheet.upsert({
+    const timesheet = await prismaClient.timesheet.upsert({
       where: {
         userId_payPeriodId: {
           userId: req.user.id,
@@ -235,7 +225,7 @@ export async function getPreviousTimesheet(req: AuthRequest, res: ExpressRespons
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const previousTimesheet = await prisma.timesheet.findFirst({
+    const previousTimesheet = await prismaClient.timesheet.findFirst({
       where: {
         userId: req.user.id,
         status: 'SUBMITTED',
@@ -271,7 +261,7 @@ export async function getTimesheet(req: AuthRequest, res: ExpressResponse) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const timesheet = await prisma.timesheet.findUnique({
+    const timesheet = await prismaClient.timesheet.findUnique({
       where: {
         id: req.params.id,
       },
@@ -320,7 +310,7 @@ export async function updateTimesheet(req: AuthRequest, res: ExpressResponse) {
     }
 
     // Verify this is the current pay period
-    const timesheet = await prisma.timesheet.findUnique({
+    const timesheet = await prismaClient.timesheet.findUnique({
       where: {
         userId_payPeriodId: {
           userId: req.user.id,
@@ -343,7 +333,7 @@ export async function updateTimesheet(req: AuthRequest, res: ExpressResponse) {
     }
 
     // Update or create timesheet
-    const updatedTimesheet = await prisma.timesheet.update({
+    const updatedTimesheet = await prismaClient.timesheet.update({
       where: {
         userId_payPeriodId: {
           userId: req.user.id,
@@ -418,7 +408,7 @@ export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
     }
 
     // First, find the existing timesheet to get its ID
-    const existingTimesheet = await prisma.timesheet.findUnique({
+    const existingTimesheet = await prismaClient.timesheet.findUnique({
       where: {
         userId_payPeriodId: {
           userId: req.user.id,
@@ -428,7 +418,7 @@ export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
     });
 
     // Create or update timesheet
-    const timesheet = await prisma.timesheet.upsert({
+    const timesheet = await prismaClient.timesheet.upsert({
       where: {
         userId_payPeriodId: {
           userId: req.user.id,
@@ -515,7 +505,7 @@ export async function recallTimesheet(req: AuthRequest, res: ExpressResponse) {
     const { id } = req.params;
 
     // Find timesheet
-    const timesheet = await prisma.timesheet.findUnique({
+    const timesheet = await prismaClient.timesheet.findUnique({
       where: { id },
     });
 
@@ -536,7 +526,7 @@ export async function recallTimesheet(req: AuthRequest, res: ExpressResponse) {
     }
 
     // Update status back to DRAFT
-    const updatedTimesheet = await prisma.timesheet.update({
+    const updatedTimesheet = await prismaClient.timesheet.update({
       where: { id },
       data: {
         status: 'DRAFT',

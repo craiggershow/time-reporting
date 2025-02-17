@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { DEFAULT_TIMESHEET_SETTINGS, DEFAULT_HOLIDAYS } from '../src/config/defaults';
 
 const prisma = new PrismaClient();
 
@@ -25,48 +26,38 @@ async function main() {
     console.log('Created admin user');
   }
 
-  // Create test employee if it doesn't exist
-  const employeeEmail = 'employee@example.com';
-  const existingEmployee = await prisma.user.findUnique({
-    where: { email: employeeEmail }
-  });
-
-  if (!existingEmployee) {
-    const hashedPassword = await bcrypt.hash('password123', 10);
-    await prisma.user.create({
-      data: {
-        email: employeeEmail,
-        password: hashedPassword,
-        firstName: 'Test',
-        lastName: 'Employee',
-        role: 'EMPLOYEE',
-        employeeId: '000002',
-      },
-    });
-    console.log('Created employee user');
-  }
-
-  // Create initial pay period setting if it doesn't exist
-  const payPeriodSetting = await prisma.setting.findUnique({
-    where: { key: 'pay_period_start' }
-  });
-
-  if (!payPeriodSetting) {
-    // Set to first Monday of current year
-    const currentYear = new Date().getFullYear();
-    const firstMonday = new Date(currentYear, 0, 1);
-    while (firstMonday.getDay() !== 1) { // 1 is Monday
-      firstMonday.setDate(firstMonday.getDate() + 1);
+  // Create default settings
+  await prisma.settings.upsert({
+    where: { key: 'timesheet_settings' },
+    update: {
+      value: DEFAULT_TIMESHEET_SETTINGS
+    },
+    create: {
+      key: 'timesheet_settings',
+      value: DEFAULT_TIMESHEET_SETTINGS
     }
+  });
 
-    await prisma.setting.create({
-      data: {
-        key: 'pay_period_start',
-        value: firstMonday.toISOString(),
+  console.log('Default settings created/updated');
+
+  // Create holidays
+  for (const holiday of DEFAULT_HOLIDAYS) {
+    await prisma.holiday.upsert({
+      where: {
+        id: `${holiday.date.toISOString().split('T')[0]}_${holiday.name}`
       },
+      update: {
+        date: holiday.date,
+        name: holiday.name
+      },
+      create: {
+        date: holiday.date,
+        name: holiday.name
+      }
     });
-    console.log('Created pay period setting');
   }
+
+  console.log('Default holidays created/updated');
 }
 
 main()

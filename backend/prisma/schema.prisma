@@ -98,14 +98,6 @@ model Notification {
   @@index([timesheetId])
 }
 
-model Setting {
-  id        String   @id @default(uuid())
-  key       String   @unique
-  value     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 model Settings {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -114,12 +106,13 @@ model Settings {
 }
 
 model Holiday {
-  id        String   @id @default(cuid())
-  date      DateTime
-  name      String
-  payRate   Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  date          DateTime
+  name          String
+  hoursDefault  Float?   // Optional override of holidayHoursDefault
+  payMultiplier Float?   // Optional override of holidayPayMultiplier
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 enum UserRole {

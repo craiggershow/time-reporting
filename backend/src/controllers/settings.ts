@@ -1,54 +1,25 @@
-import { Request, Response } from 'express';
+import { Request, Response } from 'express-serve-static-core';
 import { prisma } from '../lib/prisma';
 import { TimesheetSettings } from '../types/settings';
+import { DEFAULT_TIMESHEET_SETTINGS } from '../config/defaults';
 
 export async function getSettings(req: Request, res: Response) {
   try {
-    const settings = await prisma.settings.findFirst({
-      where: { key: 'timesheet_settings' }
-    });
-
+    // Fetch holidays
     const holidays = await prisma.holiday.findMany({
-      orderBy: { date: 'asc' }
+      orderBy: { date: 'asc' },
     });
 
-    // Ensure all settings have default values if not found
-    const defaultSettings: TimesheetSettings = {
-      payPeriodStartDate: new Date(),
-      payPeriodLength: 14,
-      maxDailyHours: 15,
-      maxWeeklyHours: 50,
-      minLunchDuration: 30,
-      maxLunchDuration: 60,
-      overtimeThreshold: 40,
-      doubleTimeThreshold: 60,
-      allowFutureTimeEntry: false,
-      allowPastTimeEntry: true,
-      pastTimeEntryLimit: 14,
-      reminderDaysBefore: 2,
-      reminderDaysAfter: 1,
-      enableEmailReminders: true,
-      reminderEmailTemplate: 'Your timesheet for the period {startDate} to {endDate} is due.',
-      ccAddresses: [],
-      autoApprovalEnabled: false,
-      autoApprovalMaxHours: 40,
-      requiredApprovers: 1,
-      holidayHoursDefault: 8,
-      holidayPayMultiplier: 1.5,
+    // Combine default settings with holidays
+    const settings: TimesheetSettings = {
+      ...DEFAULT_TIMESHEET_SETTINGS,
+      holidays: holidays.map(h => ({
+        ...h,
+        date: new Date(h.date),
+      })),
     };
 
-    // Merge saved settings with defaults
-    const mergedSettings = {
-      ...defaultSettings,
-      ...(settings?.value || {}),
-      holidays,
-      // Convert date strings back to Date objects
-      payPeriodStartDate: settings?.value?.payPeriodStartDate 
-        ? new Date(settings.value.payPeriodStartDate)
-        : defaultSettings.payPeriodStartDate,
-    };
-
-    res.json(mergedSettings);
+    res.json(settings);
   } catch (error) {
     console.error('Error fetching settings:', error);
     res.status(500).json({ error: 'Failed to fetch settings' });
@@ -57,49 +28,31 @@ export async function getSettings(req: Request, res: Response) {
 
 export async function updateSettings(req: Request, res: Response) {
   try {
-    const { holidays, ...otherSettings } = req.body;
+    const { holidays, ...otherSettings } = req.body as TimesheetSettings;
 
-    // Validate settings
-    const settingsToSave: TimesheetSettings = {
-      ...otherSettings,
-      payPeriodStartDate: new Date(otherSettings.payPeriodStartDate),
-      payPeriodLength: Number(otherSettings.payPeriodLength),
-      maxDailyHours: Number(otherSettings.maxDailyHours),
-      maxWeeklyHours: Number(otherSettings.maxWeeklyHours),
-      minLunchDuration: Number(otherSettings.minLunchDuration),
-      maxLunchDuration: Number(otherSettings.maxLunchDuration),
-      overtimeThreshold: Number(otherSettings.overtimeThreshold),
-      doubleTimeThreshold: Number(otherSettings.doubleTimeThreshold),
-      pastTimeEntryLimit: Number(otherSettings.pastTimeEntryLimit),
-      reminderDaysBefore: Number(otherSettings.reminderDaysBefore),
-      reminderDaysAfter: Number(otherSettings.reminderDaysAfter),
-      autoApprovalMaxHours: Number(otherSettings.autoApprovalMaxHours),
-      requiredApprovers: Number(otherSettings.requiredApprovers),
-      holidayHoursDefault: Number(otherSettings.holidayHoursDefault),
-      holidayPayMultiplier: Number(otherSettings.holidayPayMultiplier),
-    };
-
-    // Update general settings
+    // Update main settings
     await prisma.settings.upsert({
       where: { key: 'timesheet_settings' },
-      update: { value: settingsToSave },
+      update: { value: otherSettings },
       create: {
         key: 'timesheet_settings',
-        value: settingsToSave,
-      },
+        value: otherSettings
+      }
     });
 
-    // Update holidays
-    await prisma.holiday.deleteMany();
-
-    if (holidays?.length) {
-      await prisma.holiday.createMany({
-        data: holidays.map((h: any) => ({
-          date: new Date(h.date),
-          name: h.name,
-          payRate: Number(h.payRate),
-        })),
-      });
+    // Update holidays if provided
+    if (holidays) {
+      await prisma.holiday.deleteMany();
+      if (holidays.length > 0) {
+        await prisma.holiday.createMany({
+          data: holidays.map(h => ({
+            date: new Date(h.date),
+            name: h.name,
+            hoursDefault: h.hoursDefault,
+            payMultiplier: h.payMultiplier
+          })),
+        });
+      }
     }
 
     res.json({ message: 'Settings updated successfully' });
