@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express-serve-static-core';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 
@@ -23,37 +23,27 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    console.log('✓ Token found');
-    console.log('Verifying token...');
-    
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
     console.log('✓ Token verified');
     console.log('Decoded payload:', { ...decoded, token: '[REDACTED]' });
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-      },
     });
 
     if (!user) {
-      console.log('❌ User not found in database:', decoded.userId);
       return res.status(401).json({ error: 'User not found' });
     }
 
-    console.log('✓ User found:', { id: user.id, role: user.role });
-    req.user = user;
-    console.log('=== Auth Middleware End ===\n');
+    req.user = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
     next();
   } catch (error) {
-    console.error('=== Auth Middleware Error ===');
-    console.error('Error Type:', error.constructor.name);
-    console.error('Error Message:', error.message);
-    console.error('Error Stack:', error.stack);
-    console.error('=== Auth Middleware End ===\n');
+    console.error('Auth middleware error:', error);
     res.status(401).json({ error: 'Invalid token' });
   }
 }

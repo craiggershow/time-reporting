@@ -1,7 +1,7 @@
 import { Request, Response } from 'express-serve-static-core';
 import { prisma } from '../lib/prisma';
 import bcrypt from 'bcrypt';
-import jwt, { SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
 interface JwtPayload {
   userId: string;
@@ -13,46 +13,46 @@ interface JwtPayload {
 
 export async function login(req: Request, res: Response) {
   try {
-    const { email, password } = req.body;
-
-    // Debug log
-    console.log('Login attempt:', { email });
+    const { email, password, isAdmin } = req.body;
 
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+      },
     });
 
     if (!user) {
-      console.log('User not found:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      console.log('Invalid password for user:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate JWT token
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error('JWT_SECRET not configured');
-      throw new Error('JWT_SECRET is not configured');
+    // Check role if attempting admin login
+    if (isAdmin && user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized for admin access' });
     }
 
-    const payload: JwtPayload = {
-      userId: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-    };
-
-    const token = jwt.sign(payload, jwtSecret, {
-      expiresIn: parseInt(process.env.JWT_EXPIRES_IN || '86400'), // 24 hours in seconds
-    });
+    // Create JWT token
+    const token = jwt.sign(
+      { 
+        userId: user.id,
+        email: user.email,
+        role: user.role 
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
 
     // Set cookie
     res.cookie('auth_token', token, {
@@ -62,18 +62,18 @@ export async function login(req: Request, res: Response) {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
-    // Debug log
-    console.log('Login successful:', { email, userId: user.id });
+    // Send response
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      },
+      token // Include token in response for development/testing
+    });
 
-    const loginResponse = {
-      id: user.id,
-      email: user.email,
-      name: `${user.firstName} ${user.lastName}`,
-      isAdmin: user.role === 'ADMIN',
-      token: token
-    };
-
-    res.json(loginResponse);
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -4,6 +4,7 @@ import { Request, Response } from 'express-serve-static-core';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { getNextEmployeeId } from '../utils/employeeId';
+import { getSettings, updateSettings } from '../controllers/settings';
 
 const router = express.Router();
 
@@ -151,8 +152,7 @@ router.get('/reports', (req: Request, res: Response) => {
   res.json({ message: 'Generate reports - Not implemented' });
 });
 
-router.put('/settings', (req: Request, res: Response) => {
-  res.json({ message: 'Update company settings - Not implemented' });
-});
+router.get('/settings', getSettings);
+router.put('/settings', updateSettings);
 
 export { router as adminRouter }; 
