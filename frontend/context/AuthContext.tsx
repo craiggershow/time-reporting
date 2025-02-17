@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { User, LoginResponse } from '@/types/auth';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { User } from '@/types/auth';
 import { buildApiUrl } from '@/constants/Config';
 
 interface LoginCredentials {
@@ -22,14 +21,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const checkAuth = async () => {
+    try {
+      console.log('Checking auth status...');
+      const response = await fetch(buildApiUrl('CURRENT_USER'), {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Auth check response status:', response.status);
+      
+      if (!response.ok) {
+        console.log('Auth check failed:', response.status);
+        setUser(null);
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Auth check data:', data);
+
+      if (data.user && data.user.role) {
+        const userData = {
+          ...data.user,
+          isAdmin: data.user.role === 'ADMIN'
+        };
+        console.log('Setting user data:', userData);
+        setUser(userData);
+      } else {
+        console.log('No valid user data in response');
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Check auth status on mount
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
   const login = async (credentials: LoginCredentials) => {
     try {
-      console.log('Login attempt:', { ...credentials, password: '[REDACTED]' });
-      
+      console.log('Attempting login...');
       const response = await fetch(buildApiUrl('LOGIN'), {
         method: 'POST',
         credentials: 'include',
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(credentials),
@@ -43,20 +89,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!data.user || !data.user.role) {
-        console.error('Invalid user data:', data);
         throw new Error('Invalid user data received');
       }
 
-      const userData: User = {
-        id: data.user.id,
-        email: data.user.email,
-        firstName: data.user.firstName,
-        lastName: data.user.lastName,
-        role: data.user.role,
+      const userData = {
+        ...data.user,
         isAdmin: data.user.role === 'ADMIN'
       };
-
-      console.log('Processed user data:', userData);
+      console.log('Setting user after login:', userData);
       setUser(userData);
     } catch (error) {
       console.error('Login error:', error);
@@ -66,41 +106,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      console.log('Logging out...');
       await fetch(buildApiUrl('LOGOUT'), {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
       });
-      setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
-      throw error;
-    }
-  };
-
-  // Check auth status on mount
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const response = await fetch(buildApiUrl('CURRENT_USER'), {
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.user && data.user.role) {
-          setUser({
-            ...data.user,
-            isAdmin: data.user.role === 'ADMIN'
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Auth check error:', error);
     } finally {
-      setIsLoading(false);
+      setUser(null);
     }
   };
 

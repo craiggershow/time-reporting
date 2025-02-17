@@ -1,15 +1,17 @@
-const express = require('express');
-import { Request, Response } from 'express-serve-static-core';
-import { login, logout } from '../controllers/auth';
+import { Router } from 'express';
+import { login, logout, getCurrentUser, register } from '../controllers/auth';
+import { authenticate } from '../middleware/auth';
 
-const router = express.Router();
+const router = Router();
 
 router.post('/login', login);
 router.post('/logout', logout);
+router.get('/me', authenticate, getCurrentUser);
+router.post('/register', register);
 
 // Debug endpoint
 router.get('/test', (req: Request, res: Response) => {
   res.json({ message: 'Auth router is working' });
 });
 
-export { router as authRouter }; 
+export const authRouter = router; 

@@ -10,22 +10,18 @@ export default function AuthLayout() {
 
   useEffect(() => {
     if (!isLoading && user) {
-      // Log navigation attempt
-      console.log('Navigating user to:', user.isAdmin ? '/(app)/admin' : '/(app)/timesheet');
-      
-      // Use replace to prevent going back to login
+      // Redirect authenticated users to their appropriate page
       router.replace(user.isAdmin ? '/(app)/admin' : '/(app)/timesheet');
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading]);
 
-  // Show loading spinner while checking auth
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
-  // Only render auth screens if user is not authenticated
+  // Don't render auth screens if user is authenticated
   if (user) {
-    return <LoadingSpinner />;
+    return null;
   }
 
   return (

@@ -5,8 +5,10 @@ import { authenticate, requireAdmin } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { getNextEmployeeId } from '../utils/employeeId';
 import { getSettings, updateSettings } from '../controllers/settings';
+import { Router } from 'express';
+import { createUser } from '../controllers/admin/users';
 
-const router = express.Router();
+const router = Router();
 
 // Debug logging middleware
 router.use((req, res, next) => {
@@ -28,9 +30,12 @@ router.get('/test', (req: Request, res: Response) => {
   res.json({ message: 'Admin router is working' });
 });
 
-// Apply auth middleware to protected routes
+// Protect all admin routes with authentication and admin check
 router.use(authenticate);
 router.use(requireAdmin);
+
+// User management routes
+router.post('/users', createUser);
 
 // Protected routes below
 router.get('/users', async (req: Request, res: Response) => {
@@ -68,41 +73,6 @@ router.get('/users', async (req: Request, res: Response) => {
       error: 'Failed to fetch users',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
-  }
-});
-
-// Create user
-router.post('/users', async (req: Request, res: Response) => {
-  try {
-    const { email, firstName, lastName, password, role, isActive, employeeId } = req.body;
-    
-    // If employeeId is not provided, generate a new one
-    const actualEmployeeId = employeeId || await getNextEmployeeId();
-
-    const user = await prisma.user.create({
-      data: {
-        email,
-        firstName,
-        lastName,
-        password,
-        role,
-        isActive,
-        employeeId: actualEmployeeId,
-      },
-      select: {
-        id: true,
-        employeeId: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isActive: true,
-      },
-    });
-    res.status(201).json(user);
-  } catch (error) {
-    console.error('Error creating user:', error);
-    res.status(500).json({ error: 'Failed to create user' });
   }
 });
 
@@ -155,4 +125,4 @@ router.get('/reports', (req: Request, res: Response) => {
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
 
-export { router as adminRouter }; 
+export const adminRouter = router; 

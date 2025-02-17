@@ -1,6 +1,6 @@
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { ThemedText } from '../ThemedText';
-import { spacing } from '@/styles/common';
+import { colors } from '@/styles/common';
 
 interface LoadingSpinnerProps {
   message?: string;
@@ -9,19 +9,17 @@ interface LoadingSpinnerProps {
 export function LoadingSpinner({ message = 'Loading...' }: LoadingSpinnerProps) {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#2563eb" />
-      <ThemedText style={styles.text}>{message}</ThemedText>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <ThemedText>{message}</ThemedText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.xl,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: spacing.md,
-  },
-  text: {
-    color: '#2563eb',
+    gap: 16,
   },
 }); 

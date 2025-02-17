@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request as ExpressRequest, Response, NextFunction } from 'express-serve-static-core';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 
@@ -7,6 +7,17 @@ interface JwtPayload {
   email: string;
   role: 'ADMIN' | 'EMPLOYEE';
 }
+
+// Extend Express Request type to include user
+interface AuthenticatedRequest extends ExpressRequest {
+  user?: {
+    id: string;
+    email: string;
+    role: 'ADMIN' | 'EMPLOYEE';
+  };
+}
+
+type Request = AuthenticatedRequest;
 
 export async function authenticate(req: Request, res: Response, next: NextFunction) {
   console.log('\n=== Auth Middleware Start ===');
@@ -29,18 +40,20 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+      },
     });
 
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    req.user = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    };
-
+    req.user = user;
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
