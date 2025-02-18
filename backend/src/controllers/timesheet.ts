@@ -167,7 +167,7 @@ export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse
     const payPeriod = await getCurrentPayPeriod();
 
     // Find or create timesheet
-    const timesheet = await prismaClient.timesheet.upsert({
+    const timesheet = await prisma.timesheet.upsert({
       where: {
         userId_payPeriodId: {
           userId: req.user.id,

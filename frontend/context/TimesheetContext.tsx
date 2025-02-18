@@ -1,8 +1,12 @@
-import { createContext, useContext, useReducer } from 'react';
+import { createContext, useContext, useReducer, useEffect } from 'react';
 import { PayPeriod, TimeEntry, DayType } from '@/types/timesheet';
 
 interface TimesheetState {
-  currentPayPeriod: PayPeriod | null;
+  currentPayPeriod: {
+    id: string;
+    startDate: Date;
+    endDate: Date;
+  } | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -14,7 +18,22 @@ type TimesheetAction =
   | { type: 'SET_VACATION_HOURS'; payload: number }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'UPDATE_VACATION_HOURS'; payload: number };
+  | { type: 'UPDATE_VACATION_HOURS'; payload: number }
+  | { type: 'SET_TIMESHEET'; payload: {
+      payPeriod: PayPeriod;
+      weeks: {
+        days: {
+          startTime: string | null;
+          endTime: string | null;
+          lunchStartTime: string | null;
+          lunchEndTime: string | null;
+          dayType: DayType;
+          totalHours: number;
+        }[];
+        extraHours: number;
+        totalHours: number;
+      }[];
+    } };
 
 const initialState: TimesheetState = {
   currentPayPeriod: null,
@@ -119,6 +138,16 @@ function timesheetReducer(state: TimesheetState, action: TimesheetAction): Times
           vacationHours: action.payload
         } : null
       };
+    case 'SET_TIMESHEET':
+      return {
+        ...state,
+        currentPayPeriod: {
+          ...action.payload.payPeriod,
+          startDate: new Date(action.payload.payPeriod.startDate),
+          endDate: new Date(action.payload.payPeriod.endDate),
+        },
+        error: null,
+      };
     default:
       return state;
   }
@@ -131,6 +160,34 @@ const TimesheetContext = createContext<{
 
 export function TimesheetProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(timesheetReducer, initialState);
+
+  useEffect(() => {
+    async function loadTimesheet() {
+      try {
+        const response = await fetch(buildApiUrl('TIMESHEET'), {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch timesheet');
+        
+        const data = await response.json();
+        dispatch({ 
+          type: 'SET_TIMESHEET', 
+          payload: {
+            ...data,
+            payPeriod: {
+              ...data.payPeriod,
+              startDate: new Date(data.payPeriod.startDate)
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error loading timesheet:', error);
+      }
+    }
+
+    loadTimesheet();
+  }, []);
 
   return (
     <TimesheetContext.Provider value={{ state, dispatch }}>

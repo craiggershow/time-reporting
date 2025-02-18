@@ -82,22 +82,30 @@ export default function TimesheetScreen() {
           console.log('Week 2 raw data:', week2Data); // Debug week 2 data
           console.log('Vacation raw data:', data.vacationHours); // Debug week 2 data
 
+          // Split the ISO date string to get just YYYY-MM-DD
+          const dateOnly = data.payPeriod.startDate.split('T')[0];
+          const [year, month, day] = dateOnly.split('-').map(Number);
+          
+          // Create date with explicit year, month (0-based), day
           const processedData = {
-            startDate: new Date(data.payPeriod.startDate),
+            startDate: new Date(year, month - 1, day),
             week1: {
               ...createEmptyWeekData(),
-              ...processWeekData(week1Data), // Changed from week1Data?.data
+              ...processWeekData(week1Data),
             },
             week2: {
               ...createEmptyWeekData(),
-              ...processWeekData(week2Data), // Changed from week2Data?.data
+              ...processWeekData(week2Data),
             },
             vacationHours: Number(data.vacationHours || 0),
             totalHours: Number(data.totalHours || 0),
             status: data.status,
           };
-          console.log('Final processed vacation hours:', processedData.vacationHours);
-          console.log('Final processed timesheet data:', processedData);
+          
+          // Log to verify
+          console.log('Original:', data.payPeriod.startDate);
+          console.log('DateOnly:', dateOnly);
+          console.log('Final date:', processedData.startDate);
           
           dispatch({
             type: 'SET_PAY_PERIOD',

@@ -22,9 +22,15 @@ export function DateTimePicker({ value, onChange, label }: DateTimePickerProps) 
   }, [value, isEditing]);
 
   function formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    // Create a new date using local values to avoid timezone offset
+    const localDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 
@@ -44,8 +50,14 @@ export function DateTimePicker({ value, onChange, label }: DateTimePickerProps) 
   function isValidDate(dateStr: string): boolean {
     const regex = /^\d{4}-\d{2}-\d{2}$/;
     if (!regex.test(dateStr)) return false;
-    const date = new Date(dateStr);
-    return date instanceof Date && !isNaN(date.getTime());
+    const [year, month, day] = dateStr.split('-').map(Number);
+    // Create date in local timezone
+    const date = new Date(year, month - 1, day);
+    return date instanceof Date && 
+           !isNaN(date.getTime()) &&
+           date.getFullYear() === year &&
+           date.getMonth() === month - 1 &&
+           date.getDate() === day;
   }
 
   const handleFocus = () => {
@@ -54,7 +66,6 @@ export function DateTimePicker({ value, onChange, label }: DateTimePickerProps) 
   };
 
   const handleTextChange = (text: string) => {
-    // Only allow numbers and limit to 8 digits
     const formattedText = formatInput(text);
     setRawInput(formattedText);
   };
@@ -62,17 +73,17 @@ export function DateTimePicker({ value, onChange, label }: DateTimePickerProps) 
   const handleBlur = () => {
     setIsEditing(false);
     
-    // Remove hyphens for validation
     const dateStr = rawInput.replace(/-/g, '');
     
     if (dateStr.length === 8) {
-      const year = dateStr.slice(0, 4);
-      const month = dateStr.slice(4, 6);
-      const day = dateStr.slice(6, 8);
-      const fullDateStr = `${year}-${month}-${day}`;
+      const year = parseInt(dateStr.slice(0, 4));
+      const month = parseInt(dateStr.slice(4, 6)) - 1; // 0-based month
+      const day = parseInt(dateStr.slice(6, 8));
+      const fullDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       
       if (isValidDate(fullDateStr)) {
-        const newDate = new Date(fullDateStr);
+        // Create date in local timezone
+        const newDate = new Date(year, month, day);
         onChange(newDate);
         setDisplayValue(formatDate(newDate));
       } else {
@@ -87,7 +98,13 @@ export function DateTimePicker({ value, onChange, label }: DateTimePickerProps) 
   const handlePickerChange = (event: any, selectedDate?: Date) => {
     setShowPicker(false);
     if (selectedDate) {
-      onChange(selectedDate);
+      // Ensure we keep the local date values
+      const localDate = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate()
+      );
+      onChange(localDate);
       setIsEditing(false);
     }
   };
@@ -104,7 +121,7 @@ export function DateTimePicker({ value, onChange, label }: DateTimePickerProps) 
           onBlur={handleBlur}
           placeholder="YYYY-MM-DD"
           keyboardType="numeric"
-          maxLength={10} // Account for hyphens
+          maxLength={10}
         />
         <Pressable 
           style={styles.button}
