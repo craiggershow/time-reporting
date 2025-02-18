@@ -1,10 +1,15 @@
+// Helper to create date without timezone issues
+function createLocalDate(year: number, month: number, day: number): Date {
+  return new Date(year, month - 1, day);
+}
+
 export const DEFAULT_TIMESHEET_SETTINGS = {
   // Company Info
   companyName: 'KV Dental',
   companyLogo: '/path/to/logo.png',
 
   // Pay Period Settings
-  payPeriodStartDate: new Date('2024-01-01'),
+  payPeriodStartDate: createLocalDate(2024, 1, 1),
   payPeriodLength: 14,
 
   // Time Entry Rules
@@ -41,14 +46,14 @@ export const DEFAULT_TIMESHEET_SETTINGS = {
 };
 
 export const DEFAULT_HOLIDAYS = [
-  { date: new Date('2024-01-01'), name: 'New Year\'s Day' },
-  { date: new Date('2024-02-19'), name: 'Family Day' },
-  { date: new Date('2024-03-29'), name: 'Good Friday' },
-  { date: new Date('2024-05-20'), name: 'Victoria Day' },
-  { date: new Date('2024-07-01'), name: 'Canada Day' },
-  { date: new Date('2024-08-05'), name: 'Civic Holiday' },
-  { date: new Date('2024-09-02'), name: 'Labour Day' },
-  { date: new Date('2024-10-14'), name: 'Thanksgiving' },
-  { date: new Date('2024-12-25'), name: 'Christmas Day' },
-  { date: new Date('2024-12-26'), name: 'Boxing Day' }
+  { date: createLocalDate(2024, 1, 1), name: 'New Year\'s Day' },
+  { date: createLocalDate(2024, 2, 19), name: 'Family Day' },
+  { date: createLocalDate(2024, 3, 29), name: 'Good Friday' },
+  { date: createLocalDate(2024, 5, 20), name: 'Victoria Day' },
+  { date: createLocalDate(2024, 7, 1), name: 'Canada Day' },
+  { date: createLocalDate(2024, 8, 5), name: 'Civic Holiday' },
+  { date: createLocalDate(2024, 9, 2), name: 'Labour Day' },
+  { date: createLocalDate(2024, 10, 14), name: 'Thanksgiving' },
+  { date: createLocalDate(2024, 12, 25), name: 'Christmas Day' },
+  { date: createLocalDate(2024, 12, 26), name: 'Boxing Day' }
 ]; 

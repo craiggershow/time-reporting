@@ -103,14 +103,13 @@ async function createEmptyTimesheet(userId: string, payPeriodId: string) {
   return timesheet;
 }
 
-interface PayPeriod {
+interface PayPeriodDates {
   startDate: Date;
   endDate: Date;
 }
 
-async function getCurrentPayPeriod(): Promise<PayPeriod> {
+async function getCurrentPayPeriod(): Promise<{ id: string; startDate: Date; endDate: Date }> {
   try {
-    // Get settings from database
     const settings = await prisma.settings.findUnique({
       where: { key: 'timesheet_settings' }
     });
@@ -121,26 +120,36 @@ async function getCurrentPayPeriod(): Promise<PayPeriod> {
 
     const { payPeriodStartDate } = settings.value as { payPeriodStartDate: string };
     const baseStartDate = new Date(payPeriodStartDate);
+    baseStartDate.setHours(0, 0, 0, 0); // Set to midnight but keep date only for comparisons
     
-    // Get current date
     const now = new Date();
+    now.setHours(0, 0, 0, 0); // Set to midnight for date-only comparison
     
-    // Calculate the most recent pay period start date
     const currentStartDate = new Date(baseStartDate);
     while (currentStartDate <= now) {
-      currentStartDate.setDate(currentStartDate.getDate() + 14); // Assuming 2-week pay periods
+      currentStartDate.setDate(currentStartDate.getDate() + 14);
     }
-    currentStartDate.setDate(currentStartDate.getDate() - 14); // Go back one period
+    currentStartDate.setDate(currentStartDate.getDate() - 14);
     
-    // Calculate end date (13 days after start date, as the 14th day starts new period)
     const endDate = new Date(currentStartDate);
     endDate.setDate(endDate.getDate() + 13);
-    endDate.setHours(23, 59, 59, 999);
 
-    return {
-      startDate: currentStartDate,
-      endDate: endDate
-    };
+    // Find or create pay period
+    const payPeriod = await prisma.payPeriod.upsert({
+      where: {
+        startDate_endDate: {
+          startDate: currentStartDate,
+          endDate: endDate
+        }
+      },
+      create: {
+        startDate: currentStartDate,
+        endDate: endDate
+      },
+      update: {}
+    });
+
+    return payPeriod;
   } catch (error) {
     console.error('Error getting pay period:', error);
     throw error;

@@ -48,11 +48,15 @@ async function main() {
       },
       update: {
         date: holiday.date,
-        name: holiday.name
+        name: holiday.name,
+        hoursDefault: 8,
+        payMultiplier: 1.5
       },
       create: {
         date: holiday.date,
-        name: holiday.name
+        name: holiday.name,
+        hoursDefault: 8,
+        payMultiplier: 1.5
       }
     });
   }

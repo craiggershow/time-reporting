@@ -43,9 +43,9 @@ model Timesheet {
 }
 
 model PayPeriod {
-  id         String      @id @default(uuid())
-  startDate  DateTime
-  endDate    DateTime
+  id         String      @id @default(cuid())
+  startDate  DateTime    @db.Date  // Stores only date portion, no time/timezone
+  endDate    DateTime    @db.Date  // Stores only date portion, no time/timezone
   timesheets Timesheet[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
@@ -106,13 +106,13 @@ model Settings {
 }
 
 model Holiday {
-  id            String   @id @default(cuid())
-  date          DateTime
+  id            String    @id @default(cuid())
+  date          DateTime  @db.Date  // Stores only date portion, no time/timezone
   name          String
-  hoursDefault  Float?   // Optional override of holidayHoursDefault
-  payMultiplier Float?   // Optional override of holidayPayMultiplier
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  hoursDefault  Float?
+  payMultiplier Float?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 enum UserRole {

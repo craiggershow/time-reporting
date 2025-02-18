@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Holiday" ALTER COLUMN "date" SET DATA TYPE DATE;
+
+-- AlterTable
+ALTER TABLE "PayPeriod" ALTER COLUMN "startDate" SET DATA TYPE DATE,
+ALTER COLUMN "endDate" SET DATA TYPE DATE;

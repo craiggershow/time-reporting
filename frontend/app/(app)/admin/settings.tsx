@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { Header } from '@/components/layout/Header';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import { DateTimePicker } from '@/components/DateTimePicker';
 import { colors, spacing } from '@/styles/common';
 import { buildApiUrl } from '@/constants/Config';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -152,6 +152,12 @@ export default function AdminSettings() {
     setSettings(s => ({ ...s, holidays: updatedHolidays }));
   };
 
+  const handleDateChange = (date: Date) => {
+    // Ensure we're working with a clean date object without time components
+    const cleanDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    setSettings(s => ({ ...s, payPeriodStartDate: cleanDate }));
+  };
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -165,8 +171,8 @@ export default function AdminSettings() {
           <View style={styles.settingGroup}>
             <DateTimePicker
               label="Pay Period Start Date"
-              value={settings.payPeriodStartDate}
-              onChange={(date) => setSettings(s => ({ ...s, payPeriodStartDate: date }))}
+              value={new Date(settings.payPeriodStartDate)}
+              onChange={handleDateChange}
             />
             <Input
               label="Pay Period Length (days)"

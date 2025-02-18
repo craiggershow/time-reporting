@@ -30,6 +30,14 @@ export async function updateSettings(req: Request, res: Response) {
   try {
     const { holidays, ...otherSettings } = req.body as TimesheetSettings;
 
+    // Ensure payPeriodStartDate is stored as UTC midnight
+    if (otherSettings.payPeriodStartDate) {
+      const date = new Date(otherSettings.payPeriodStartDate);
+      // Create new date at UTC midnight for the local date
+      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      otherSettings.payPeriodStartDate = localDate;
+    }
+
     // Update main settings
     await prisma.settings.upsert({
       where: { key: 'timesheet_settings' },
@@ -40,17 +48,21 @@ export async function updateSettings(req: Request, res: Response) {
       }
     });
 
-    // Update holidays if provided
+    // Update holidays with proper date handling
     if (holidays) {
       await prisma.holiday.deleteMany();
       if (holidays.length > 0) {
         await prisma.holiday.createMany({
-          data: holidays.map(h => ({
-            date: new Date(h.date),
-            name: h.name,
-            hoursDefault: h.hoursDefault,
-            payMultiplier: h.payMultiplier
-          })),
+          data: holidays.map(h => {
+            const date = new Date(h.date);
+            const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            return {
+              date: localDate,
+              name: h.name,
+              hoursDefault: h.hoursDefault,
+              payMultiplier: h.payMultiplier
+            };
+          }),
         });
       }
     }
