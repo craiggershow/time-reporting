@@ -1,17 +1,19 @@
-import { Router } from 'express';
-import { login, logout, getCurrentUser, register } from '../controllers/auth';
-import { authenticate } from '../middleware/auth';
+import express from 'express';
+import type { Router } from 'express';
+import { loginUser, logoutUser, getCurrentUser } from '../controllers/auth';
+import { requireAuth } from '../middleware/auth';
 
-const router = Router();
+const router: Router = express.Router();
 
-router.post('/login', login);
-router.post('/logout', logout);
-router.get('/me', authenticate, getCurrentUser);
-router.post('/register', register);
+console.log('Mounting auth routes...');
 
-// Debug endpoint
-router.get('/test', (req: Request, res: Response) => {
-  res.json({ message: 'Auth router is working' });
-});
+// Public routes
+router.post('/login', loginUser);
+router.post('/logout', logoutUser);
 
-export const authRouter = router; 
+// Protected routes
+router.get('/me', requireAuth, getCurrentUser);
+
+console.log('✓ Auth routes mounted');
+
+export default router; 

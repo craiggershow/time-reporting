@@ -1,4 +1,5 @@
-export type DayType = 'regular' | 'vacation' | 'sick' | 'holiday';
+export type DayType = 'REGULAR' | 'VACATION' | 'SICK' | 'HOLIDAY';
+export type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY';
 
 export interface TimeEntry {
   startTime: string | null;
@@ -21,10 +22,12 @@ export interface WeekData {
 
 export interface TimesheetData {
   startDate: Date;
+  endDate: Date;
+  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+  submittedAt?: Date;
   week1: WeekData;
   week2: WeekData;
   vacationHours: number;
-  totalHours: number;
 }
 
 export interface TimesheetResponse {
@@ -39,5 +42,42 @@ export interface TimesheetResponse {
     data: WeekData;
   }[];
   vacationHours: number;
+  totalHours: number;
+}
+
+export interface PayPeriod {
+  id: string;
+  startDate: Date;
+  endDate: Date;
+}
+
+export interface Timesheet {
+  id: string;
+  userId: string;
+  payPeriodId: string;
+  payPeriod: PayPeriod;
+  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+  weeks: Week[];
+  vacationHours: number;
+  submittedAt?: Date;
+}
+
+export interface Week {
+  id: string;
+  weekNumber: number;
+  timesheetId: string;
+  extraHours: number;
+  days: Day[];
+}
+
+export interface Day {
+  id: string;
+  weekId: string;
+  dayOfWeek: DayOfWeek;
+  dayType: DayType;
+  startTime: string | null;
+  endTime: string | null;
+  lunchStartTime: string | null;
+  lunchEndTime: string | null;
   totalHours: number;
 } 

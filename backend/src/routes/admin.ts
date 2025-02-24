@@ -1,12 +1,11 @@
-//import express from 'express';
-const express = require('express');
+import express from 'express';
 import { Request, Response } from 'express-serve-static-core';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { getNextEmployeeId } from '../utils/employeeId';
 import { getSettings, updateSettings } from '../controllers/settings';
 import { Router } from 'express';
-import { createUser } from '../controllers/admin/users';
+import { createUser, updateUser, deleteUser } from '../controllers/admin/users';
 
 const router = Router();
 
@@ -35,9 +34,6 @@ router.use(authenticate);
 router.use(requireAdmin);
 
 // User management routes
-router.post('/users', createUser);
-
-// Protected routes below
 router.get('/users', async (req: Request, res: Response) => {
   console.log('\n=== Admin Users Route Start ===');
   console.log('User:', { id: req.user?.id, role: req.user?.role });
@@ -76,41 +72,12 @@ router.get('/users', async (req: Request, res: Response) => {
   }
 });
 
-// Update user
-router.put('/users/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { email, firstName, lastName, role, isActive } = req.body;
-    const user = await prisma.user.update({
-      where: { id },
-      data: {
-        email,
-        firstName,
-        lastName,
-        role,
-        isActive,
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isActive: true,
-      },
-    });
-    res.json(user);
-  } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ error: 'Failed to update user' });
-  }
-});
-
-router.delete('/users/:id', (req: Request, res: Response) => {
-  res.json({ message: 'Delete user - Not implemented' });
-});
+router.post('/users', createUser);
+router.put('/users/:id', updateUser);
+router.delete('/users/:id', deleteUser);
 
 router.get('/timesheets', (req: Request, res: Response) => {
+  console.log('Hit admin timesheets route');
   res.json({ message: 'List timesheets - Not implemented' });
 });
 

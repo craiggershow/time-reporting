@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Button } from './ui/Button';
 
 interface Props {
   children: React.ReactNode;
@@ -7,29 +8,29 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error?: Error;
+  error: Error | null;
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
-  }
+  state = { hasError: false, error: null };
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       return (
         <View style={styles.container}>
-          <Text style={styles.text}>Something went wrong.</Text>
+          <Text style={styles.title}>Something went wrong</Text>
           <Text style={styles.error}>{this.state.error?.message}</Text>
+          <Button onPress={() => this.setState({ hasError: false })}>
+            Try again
+          </Button>
         </View>
       );
     }
@@ -45,12 +46,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  text: {
-    fontSize: 18,
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
     marginBottom: 10,
   },
   error: {
     color: 'red',
-    fontSize: 14,
+    marginBottom: 20,
   },
 }); 

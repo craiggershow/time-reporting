@@ -4,6 +4,8 @@ import { prisma } from '../lib/prisma';
 
 const router = express.Router();
 
+console.log('Executing routes/client.ts');
+
 // Client routes
 router.get('/timesheets', async (req: ExpressRequest, res: ExpressResponse) => {
   try {

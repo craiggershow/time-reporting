@@ -16,7 +16,7 @@ export function timeToMinutes(time: string): number {
   return hours * 60 + minutes;
 }
 
-export function calculateTotalHours(entry: TimeEntry): number {
+export function calculateTotalRegularHours(entry: TimeEntry): number {
   if (!entry.startTime || !entry.endTime) return 0;
 
   const startMinutes = timeToMinutes(entry.startTime);

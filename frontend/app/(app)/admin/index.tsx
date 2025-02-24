@@ -5,16 +5,17 @@ import { AdminMenu } from '@/components/admin/AdminMenu';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { commonStyles, colors } from '@/styles/common';
+import { commonStyles } from '@/styles/common';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { unstable_settings } from '@/app/_layout';
 
 export default function AdminPortal() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !user?.isAdmin) {
+    const isAdmin = user?.role === 'ADMIN';
+    if (!isLoading && !isAdmin) {
+      console.log('admin/index.tsx: Redirecting to timesheet. User role:', user?.role);
       router.replace('/(app)/timesheet');
       return;
     }
@@ -30,7 +31,8 @@ export default function AdminPortal() {
   }
 
   // Don't render anything while redirecting
-  if (!user?.isAdmin) {
+  const isAdmin = user?.role === 'ADMIN';
+  if (!isAdmin) {
     return null;
   }
 

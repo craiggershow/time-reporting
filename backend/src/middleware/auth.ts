@@ -1,4 +1,4 @@
-import { Request as ExpressRequest, Response, NextFunction } from 'express-serve-static-core';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 
@@ -9,7 +9,7 @@ interface JwtPayload {
 }
 
 // Extend Express Request type to include user
-interface AuthenticatedRequest extends ExpressRequest {
+interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
@@ -61,17 +61,38 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   }
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  console.log('\n=== Admin Check Start ===');
-  console.log('User:', req.user);
-  
-  if (req.user?.role !== 'ADMIN') {
-    console.log('❌ Access denied - not admin');
-    console.log('User role:', req.user?.role);
-    return res.status(403).json({ error: 'Admin access required' });
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  try {
+    const token = req.cookies.auth_token;
+    if (!token) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as jwt.JwtPayload;
+    if (!decoded || !decoded.userId) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, role: true }
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    res.status(401).json({ message: 'Authentication failed' });
   }
-  
-  console.log('✓ Admin access granted');
-  console.log('=== Admin Check End ===\n');
+}
+
+export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
   next();
 } 

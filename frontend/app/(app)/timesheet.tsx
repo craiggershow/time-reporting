@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useTimesheet } from '@/context/TimesheetContext';
 import { WeekData, TimeEntry, DayType, TimesheetData } from '@/types/timesheet';
-import { calculateTotalHours } from '../../utils/timeCalculations';
-import { createEmptyWeekData } from '@/context/TimesheetContext';
+import { calculateTotalRegularHours } from '../../utils/timeCalculations';
+import { createEmptyWeekData, calculateWeekTotalHours } from '@/context/TimesheetContext';
 import { Header } from '@/components/layout/Header';
 import { useTheme } from '@/context/ThemeContext';
 import { API_BASE_URL, buildApiUrl, API_ENDPOINTS } from '@/constants/Config';
@@ -20,6 +20,9 @@ import { convertTo24Hour, convertTo12Hour } from '../../utils/time';
 import { validateTimeEntry, validateWeeklyHours } from '@/utils/timeValidation';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Ionicons } from '@expo/vector-icons';
+import { useSettings } from '@/context/SettingsContext';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 interface DayData {
   startTime: string | null;
@@ -31,19 +34,30 @@ interface DayData {
 }
 
 interface WeekData {
+  id: string;
   weekNumber: number;
   extraHours: number;
-  monday: DayData;
-  tuesday: DayData;
-  wednesday: DayData;
-  thursday: DayData;
-  friday: DayData;
+  days: Array<{
+    id: string;
+    dayOfWeek: DayOfWeek;
+    dayType: DayType;
+    startTime: string | null;
+    endTime: string | null;
+    lunchStartTime: string | null;
+    lunchEndTime: string | null;
+    totalHours: number;
+  }>;
 }
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
 
 export default function TimesheetScreen() {
-  const { state, dispatch } = useTimesheet();
+  const { 
+    currentTimesheet, 
+    isLoading: timesheetLoading, 
+    error: timesheetError, 
+    fetchCurrentTimesheet 
+  } = useTimesheet();
   const { colors } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
@@ -56,88 +70,10 @@ export default function TimesheetScreen() {
   } | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const { settings, isLoading: settingsLoading } = useSettings();
 
   useEffect(() => {
-    const fetchTimesheet = async () => {
-      try {
-        dispatch({ type: 'SET_LOADING', payload: true });
-
-        const response = await fetch(buildApiUrl('CURRENT_TIMESHEET'), {
-          credentials: 'include',
-        });
-
-        if (!response.ok) {
-          throw new Error(`Server error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('Raw timesheet data:', data); // Debug full raw data
-        
-        if (data) {
-          // Find the weeks
-          const week1Data = data.weeks.find((w: any) => w.weekNumber === 1);
-          const week2Data = data.weeks.find((w: any) => w.weekNumber === 2);
-          
-          console.log('Week 1 raw data:', week1Data); // Debug week 1 data
-          console.log('Week 2 raw data:', week2Data); // Debug week 2 data
-          console.log('Vacation raw data:', data.vacationHours); // Debug week 2 data
-
-          // Split the ISO date string to get just YYYY-MM-DD
-          const dateOnly = data.payPeriod.startDate.split('T')[0];
-          const [year, month, day] = dateOnly.split('-').map(Number);
-          
-          // Create date with explicit year, month (0-based), day
-          const processedData = {
-            startDate: new Date(year, month - 1, day),
-            week1: {
-              ...createEmptyWeekData(),
-              ...processWeekData(week1Data),
-            },
-            week2: {
-              ...createEmptyWeekData(),
-              ...processWeekData(week2Data),
-            },
-            vacationHours: Number(data.vacationHours || 0),
-            totalHours: Number(data.totalHours || 0),
-            status: data.status,
-          };
-          
-          // Log to verify
-          console.log('Original:', data.payPeriod.startDate);
-          console.log('DateOnly:', dateOnly);
-          console.log('Final date:', processedData.startDate);
-          
-          dispatch({
-            type: 'SET_PAY_PERIOD',
-            payload: processedData
-          });
-
-          setIsSubmitted(data.status === 'SUBMITTED');
-        } else {
-          // Handle case where no timesheet exists
-          dispatch({
-            type: 'SET_PAY_PERIOD',
-            payload: {
-              startDate: new Date(),
-              week1: createEmptyWeekData(),
-              week2: createEmptyWeekData(),
-              vacationHours: 0,
-              totalHours: 0,
-            },
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching timesheet:', error);
-        dispatch({ 
-          type: 'SET_ERROR', 
-          payload: error instanceof Error ? error.message : 'Failed to load timesheet' 
-        });
-      } finally {
-        dispatch({ type: 'SET_LOADING', payload: false });
-      }
-    };
-
-    fetchTimesheet();
+    fetchCurrentTimesheet();
   }, []);
 
   useEffect(() => {
@@ -299,14 +235,14 @@ export default function TimesheetScreen() {
 
       const response = await fetch(buildApiUrl('SUBMIT_TIMESHEET'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
         body: JSON.stringify(submitData),
-      });
+        });
 
-      if (!response.ok) {
+        if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to submit timesheet');
       }
@@ -319,22 +255,22 @@ export default function TimesheetScreen() {
         'Timesheet submitted successfully',
         [{ text: 'OK', onPress: () => router.replace('/(app)') }]
       );
-    } catch (error) {
+      } catch (error) {
       console.error('Auto-submit error:', error);
       setAutoSubmitStatus({
         isError: true,
         message: error instanceof Error ? error.message : 'Failed to submit timesheet'
-      });
-    } finally {
+        });
+      } finally {
       setIsSaving(false);
-    }
-  };
+      }
+    };
 
   const handleTimeUpdate = (week: 1 | 2, day: keyof WeekData, field: keyof TimeEntry, value: string | null) => {
-    if (!state.currentPayPeriod) return;
+    if (!currentTimesheet) return;
 
     const weekKey = `week${week}` as const;
-    const currentEntry = state.currentPayPeriod[weekKey][day];
+    const currentEntry = currentTimesheet[weekKey][day];
     
     console.log('Updating time entry:', { 
       week, 
@@ -343,19 +279,19 @@ export default function TimesheetScreen() {
       value, 
       currentEntry,
       weekKey,
-      currentState: state.currentPayPeriod[weekKey]
+      currentState: currentTimesheet[weekKey]
     });
     
     const updatedEntry: TimeEntry = {
       ...currentEntry,
       [field]: value,
-      totalHours: calculateTotalHours({
+      totalHours: calculateTotalRegularHours({
         ...currentEntry,
         [field]: value,
       }),
     };
 
-    dispatch({
+    fetchCurrentTimesheet({
       type: 'UPDATE_TIME_ENTRY',
       payload: { 
         week, 
@@ -367,7 +303,7 @@ export default function TimesheetScreen() {
     // Verify state update
     console.log('After dispatch:', {
       updatedEntry,
-      currentState: state.currentPayPeriod[weekKey][day]
+      currentState: currentTimesheet[weekKey][day]
     });
 
     // Clear existing timeout
@@ -377,17 +313,17 @@ export default function TimesheetScreen() {
 
     // Set new timeout for auto-submit
     saveTimeoutRef.current = setTimeout(() => {
-      autoSubmit(state.currentPayPeriod!);
+      autoSubmit(currentTimesheet!);
     }, 2000);
   };
 
   const handleDayTypeChange = (week: 1 | 2, day: keyof WeekData, type: DayType) => {
-    if (!state.currentPayPeriod) return;
+    if (!currentTimesheet) return;
 
     const weekKey = `week${week}` as const;
-    const currentEntry = state.currentPayPeriod[weekKey][day];
+    const currentEntry = currentTimesheet[weekKey][day];
     
-    dispatch({
+    fetchCurrentTimesheet({
       type: 'UPDATE_TIME_ENTRY',
       payload: {
         week,
@@ -398,7 +334,7 @@ export default function TimesheetScreen() {
   };
 
   const handleExtraHoursChange = (week: 1 | 2, hours: number) => {
-    dispatch({
+    fetchCurrentTimesheet({
       type: 'SET_EXTRA_HOURS',
       payload: { week, hours },
     });
@@ -406,7 +342,7 @@ export default function TimesheetScreen() {
 
   const handleVacationHoursChange = (value: string) => {
     const hours = parseFloat(value) || 0;
-    dispatch({
+    fetchCurrentTimesheet({
       type: 'UPDATE_VACATION_HOURS',
       payload: hours
     });
@@ -446,54 +382,54 @@ export default function TimesheetScreen() {
     };
   }
 
-  // Add a function to check if the timesheet is valid
+  // Don't validate until settings are loaded
   const hasValidationErrors = () => {
-    if (!state.currentPayPeriod) return true;
+    if (!currentTimesheet || settingsLoading) return false;
 
-    // Check each day in both weeks
     const weeks = ['week1', 'week2'] as const;
     for (const week of weeks) {
       for (const day of DAYS) {
-        const entry = state.currentPayPeriod[week][day];
-        const validation = validateTimeEntry(entry);
+        const entry = currentTimesheet[week][day];
+        console.log('hasValidationErrors - entry:', entry);
+        const validation = validateTimeEntry(entry, settings);
         if (!validation.isValid) return true;
       }
 
-      // Check weekly total
       const weekTotal = DAYS.reduce(
-        (sum, day) => sum + state.currentPayPeriod![week][day].totalHours,
-        state.currentPayPeriod[week].extraHours || 0
+        (sum, day) => sum + currentTimesheet![week][day].totalHours,
+        currentTimesheet[week].extraHours || 0
       );
-      const weekValidation = validateWeeklyHours(weekTotal);
+      const weekValidation = validateWeeklyHours(weekTotal, settings);
       if (!weekValidation.isValid) return true;
     }
-
     return false;
   };
 
   // Add a function to collect all validation errors
   const getValidationErrors = () => {
-    if (!state.currentPayPeriod) return ['No timesheet data available'];
+    if (!currentTimesheet) return ['No timesheet data available'];
     
     const errors: string[] = [];
     const weeks = ['week1', 'week2'] as const;
-    
-    weeks.forEach((week, weekIndex) => {
+    console.log('getValidationErrors - currentTimesheet:', currentTimesheet);
+    weeks.forEach((week) => {
       // Check each day in the week
       DAYS.forEach(day => {
-        const entry = state.currentPayPeriod![week][day];
-        const validation = validateTimeEntry(entry);
+        const entry = currentTimesheet?.[week]?.days?.[day];
+        console.log('getValidationErrors - entry:', entry);
+        const validation = validateTimeEntry(entry, settings);
         if (!validation.isValid && validation.message) {
           errors.push(`Week ${weekIndex + 1} - ${day.charAt(0).toUpperCase() + day.slice(1)}: ${validation.message}`);
         }
       });
 
       // Check weekly total
-      const weekTotal = DAYS.reduce(
-        (sum, day) => sum + state.currentPayPeriod![week][day].totalHours,
-        state.currentPayPeriod[week].extraHours || 0
-      );
-      const weekValidation = validateWeeklyHours(weekTotal);
+      //const weekTotal = DAYS.reduce(
+      //  (sum, day) => sum + currentTimesheet![week][day].totalHours,
+      //  currentTimesheet[week].extraHours || 0
+      //);
+      const weekTotal = calculateWeekTotalHours(currentTimesheet[week])
+      const weekValidation = validateWeeklyHours(weekTotal, settings);
       if (!weekValidation.isValid && weekValidation.message) {
         errors.push(`Week ${weekIndex + 1}: ${weekValidation.message}`);
       }
@@ -524,7 +460,7 @@ export default function TimesheetScreen() {
 
       console.log('No validation errors, proceeding with submit');
 
-      if (!state.currentPayPeriod) {
+      if (!currentTimesheet) {
         setIsSubmitting(false);
         Alert.alert('Error', 'No timesheet data available');
         return;
@@ -551,94 +487,94 @@ export default function TimesheetScreen() {
       // Format data to match current timesheet structure
       const submitData = {
         payPeriodId: currentTimesheet.payPeriod.id,
-        vacationHours: state.currentPayPeriod.vacationHours,
+        vacationHours: currentTimesheet.vacationHours,
         weeks: [
           {
             weekNumber: 1,
-            extraHours: state.currentPayPeriod.week1.extraHours || 0,
+            extraHours: currentTimesheet.week1.extraHours || 0,
             monday: {
-              startTime: convertTo24Hour(state.currentPayPeriod.week1.monday.startTime),
-              endTime: convertTo24Hour(state.currentPayPeriod.week1.monday.endTime),
-              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week1.monday.lunchStartTime),
-              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week1.monday.lunchEndTime),
-              dayType: state.currentPayPeriod.week1.monday.dayType.toUpperCase(),
-              totalHours: state.currentPayPeriod.week1.monday.totalHours,
+              startTime: convertTo24Hour(currentTimesheet.week1.monday.startTime),
+              endTime: convertTo24Hour(currentTimesheet.week1.monday.endTime),
+              lunchStartTime: convertTo24Hour(currentTimesheet.week1.monday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(currentTimesheet.week1.monday.lunchEndTime),
+              dayType: currentTimesheet.week1.monday.dayType.toUpperCase(),
+              totalHours: currentTimesheet.week1.monday.totalHours,
             },
             tuesday: {
-              startTime: convertTo24Hour(state.currentPayPeriod.week1.tuesday.startTime),
-              endTime: convertTo24Hour(state.currentPayPeriod.week1.tuesday.endTime),
-              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week1.tuesday.lunchStartTime),
-              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week1.tuesday.lunchEndTime),
-              dayType: state.currentPayPeriod.week1.tuesday.dayType.toUpperCase(),
-              totalHours: state.currentPayPeriod.week1.tuesday.totalHours,
+              startTime: convertTo24Hour(currentTimesheet.week1.tuesday.startTime),
+              endTime: convertTo24Hour(currentTimesheet.week1.tuesday.endTime),
+              lunchStartTime: convertTo24Hour(currentTimesheet.week1.tuesday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(currentTimesheet.week1.tuesday.lunchEndTime),
+              dayType: currentTimesheet.week1.tuesday.dayType.toUpperCase(),
+              totalHours: currentTimesheet.week1.tuesday.totalHours,
             },
             wednesday: {
-              startTime: convertTo24Hour(state.currentPayPeriod.week1.wednesday.startTime),
-              endTime: convertTo24Hour(state.currentPayPeriod.week1.wednesday.endTime),
-              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week1.wednesday.lunchStartTime),
-              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week1.wednesday.lunchEndTime),
-              dayType: state.currentPayPeriod.week1.wednesday.dayType.toUpperCase(),
-              totalHours: state.currentPayPeriod.week1.wednesday.totalHours,
+              startTime: convertTo24Hour(currentTimesheet.week1.wednesday.startTime),
+              endTime: convertTo24Hour(currentTimesheet.week1.wednesday.endTime),
+              lunchStartTime: convertTo24Hour(currentTimesheet.week1.wednesday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(currentTimesheet.week1.wednesday.lunchEndTime),
+              dayType: currentTimesheet.week1.wednesday.dayType.toUpperCase(),
+              totalHours: currentTimesheet.week1.wednesday.totalHours,
             },
             thursday: {
-              startTime: convertTo24Hour(state.currentPayPeriod.week1.thursday.startTime),
-              endTime: convertTo24Hour(state.currentPayPeriod.week1.thursday.endTime),
-              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week1.thursday.lunchStartTime),
-              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week1.thursday.lunchEndTime),
-              dayType: state.currentPayPeriod.week1.thursday.dayType.toUpperCase(),
-              totalHours: state.currentPayPeriod.week1.thursday.totalHours,
+              startTime: convertTo24Hour(currentTimesheet.week1.thursday.startTime),
+              endTime: convertTo24Hour(currentTimesheet.week1.thursday.endTime),
+              lunchStartTime: convertTo24Hour(currentTimesheet.week1.thursday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(currentTimesheet.week1.thursday.lunchEndTime),
+              dayType: currentTimesheet.week1.thursday.dayType.toUpperCase(),
+              totalHours: currentTimesheet.week1.thursday.totalHours,
             },
             friday: {
-              startTime: convertTo24Hour(state.currentPayPeriod.week1.friday.startTime),
-              endTime: convertTo24Hour(state.currentPayPeriod.week1.friday.endTime),
-              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week1.friday.lunchStartTime),
-              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week1.friday.lunchEndTime),
-              dayType: state.currentPayPeriod.week1.friday.dayType.toUpperCase(),
-              totalHours: state.currentPayPeriod.week1.friday.totalHours,
+              startTime: convertTo24Hour(currentTimesheet.week1.friday.startTime),
+              endTime: convertTo24Hour(currentTimesheet.week1.friday.endTime),
+              lunchStartTime: convertTo24Hour(currentTimesheet.week1.friday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(currentTimesheet.week1.friday.lunchEndTime),
+              dayType: currentTimesheet.week1.friday.dayType.toUpperCase(),
+              totalHours: currentTimesheet.week1.friday.totalHours,
             },
           },
           {
             weekNumber: 2,
-            extraHours: state.currentPayPeriod.week2.extraHours || 0,
+            extraHours: currentTimesheet.week2.extraHours || 0,
             monday: {
-              startTime: convertTo24Hour(state.currentPayPeriod.week2.monday.startTime),
-              endTime: convertTo24Hour(state.currentPayPeriod.week2.monday.endTime),
-              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week2.monday.lunchStartTime),
-              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week2.monday.lunchEndTime),
-              dayType: state.currentPayPeriod.week2.monday.dayType.toUpperCase(),
-              totalHours: state.currentPayPeriod.week2.monday.totalHours,
+              startTime: convertTo24Hour(currentTimesheet.week2.monday.startTime),
+              endTime: convertTo24Hour(currentTimesheet.week2.monday.endTime),
+              lunchStartTime: convertTo24Hour(currentTimesheet.week2.monday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(currentTimesheet.week2.monday.lunchEndTime),
+              dayType: currentTimesheet.week2.monday.dayType.toUpperCase(),
+              totalHours: currentTimesheet.week2.monday.totalHours,
             },
             tuesday: {
-              startTime: convertTo24Hour(state.currentPayPeriod.week2.tuesday.startTime),
-              endTime: convertTo24Hour(state.currentPayPeriod.week2.tuesday.endTime),
-              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week2.tuesday.lunchStartTime),
-              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week2.tuesday.lunchEndTime),
-              dayType: state.currentPayPeriod.week2.tuesday.dayType.toUpperCase(),
-              totalHours: state.currentPayPeriod.week2.tuesday.totalHours,
+              startTime: convertTo24Hour(currentTimesheet.week2.tuesday.startTime),
+              endTime: convertTo24Hour(currentTimesheet.week2.tuesday.endTime),
+              lunchStartTime: convertTo24Hour(currentTimesheet.week2.tuesday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(currentTimesheet.week2.tuesday.lunchEndTime),
+              dayType: currentTimesheet.week2.tuesday.dayType.toUpperCase(),
+              totalHours: currentTimesheet.week2.tuesday.totalHours,
             },
             wednesday: {
-              startTime: convertTo24Hour(state.currentPayPeriod.week2.wednesday.startTime),
-              endTime: convertTo24Hour(state.currentPayPeriod.week2.wednesday.endTime),
-              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week2.wednesday.lunchStartTime),
-              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week2.wednesday.lunchEndTime),
-              dayType: state.currentPayPeriod.week2.wednesday.dayType.toUpperCase(),
-              totalHours: state.currentPayPeriod.week2.wednesday.totalHours,
+              startTime: convertTo24Hour(currentTimesheet.week2.wednesday.startTime),
+              endTime: convertTo24Hour(currentTimesheet.week2.wednesday.endTime),
+              lunchStartTime: convertTo24Hour(currentTimesheet.week2.wednesday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(currentTimesheet.week2.wednesday.lunchEndTime),
+              dayType: currentTimesheet.week2.wednesday.dayType.toUpperCase(),
+              totalHours: currentTimesheet.week2.wednesday.totalHours,
             },
             thursday: {
-              startTime: convertTo24Hour(state.currentPayPeriod.week2.thursday.startTime),
-              endTime: convertTo24Hour(state.currentPayPeriod.week2.thursday.endTime),
-              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week2.thursday.lunchStartTime),
-              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week2.thursday.lunchEndTime),
-              dayType: state.currentPayPeriod.week2.thursday.dayType.toUpperCase(),
-              totalHours: state.currentPayPeriod.week2.thursday.totalHours,
+              startTime: convertTo24Hour(currentTimesheet.week2.thursday.startTime),
+              endTime: convertTo24Hour(currentTimesheet.week2.thursday.endTime),
+              lunchStartTime: convertTo24Hour(currentTimesheet.week2.thursday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(currentTimesheet.week2.thursday.lunchEndTime),
+              dayType: currentTimesheet.week2.thursday.dayType.toUpperCase(),
+              totalHours: currentTimesheet.week2.thursday.totalHours,
             },
             friday: {
-              startTime: convertTo24Hour(state.currentPayPeriod.week2.friday.startTime),
-              endTime: convertTo24Hour(state.currentPayPeriod.week2.friday.endTime),
-              lunchStartTime: convertTo24Hour(state.currentPayPeriod.week2.friday.lunchStartTime),
-              lunchEndTime: convertTo24Hour(state.currentPayPeriod.week2.friday.lunchEndTime),
-              dayType: state.currentPayPeriod.week2.friday.dayType.toUpperCase(),
-              totalHours: state.currentPayPeriod.week2.friday.totalHours,
+              startTime: convertTo24Hour(currentTimesheet.week2.friday.startTime),
+              endTime: convertTo24Hour(currentTimesheet.week2.friday.endTime),
+              lunchStartTime: convertTo24Hour(currentTimesheet.week2.friday.lunchStartTime),
+              lunchEndTime: convertTo24Hour(currentTimesheet.week2.friday.lunchEndTime),
+              dayType: currentTimesheet.week2.friday.dayType.toUpperCase(),
+              totalHours: currentTimesheet.week2.friday.totalHours,
             },
           },
         ],
@@ -692,21 +628,21 @@ export default function TimesheetScreen() {
   };
 
   const handleCopyWeek = () => {
-    if (!state.currentPayPeriod?.week1) return;
+    if (!currentTimesheet?.week1) return;
     
-    dispatch({
+    fetchCurrentTimesheet({
       type: 'SET_PAY_PERIOD',
       payload: {
-        ...state.currentPayPeriod,
-        week2: { ...state.currentPayPeriod.week1 },
+        ...currentTimesheet,
+        week2: { ...currentTimesheet.week1 },
       },
     });
   };
 
   const handleCopyPrevious = (week: 1 | 2, day: keyof WeekData) => {
-    if (!state.currentPayPeriod) return;
+    if (!currentTimesheet) return;
 
-    const weekData = state.currentPayPeriod[`week${week}`];
+    const weekData = currentTimesheet[`week${week}`];
     const days = Object.keys(weekData) as (keyof WeekData)[];
     const currentDayIndex = days.indexOf(day);
     
@@ -715,7 +651,7 @@ export default function TimesheetScreen() {
     const previousDay = days[currentDayIndex - 1];
     const previousEntry = weekData[previousDay];
     
-    dispatch({
+    fetchCurrentTimesheet({
       type: 'UPDATE_TIME_ENTRY',
       payload: {
         week,
@@ -729,120 +665,122 @@ export default function TimesheetScreen() {
     // TODO: Implement recall logic
   };
 
-  if (state.isLoading) {
+  if (timesheetLoading) {
     return (
       <View style={styles.container}>
         <Header />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <ThemedText style={styles.loadingText}>Loading timesheet...</ThemedText>
-        </View>
+        <LoadingSpinner />
       </View>
     );
   }
 
-  if (state.error) {
+  if (timesheetError) {
     return (
       <View style={styles.container}>
         <Header />
-        <View style={styles.errorContainer}>
-          <ThemedText style={styles.errorText}>{state.error}</ThemedText>
-          <Button 
-            onPress={() => window.location.reload()} 
-            style={styles.retryButton}
-          >
-            Retry
-          </Button>
-        </View>
+        <ErrorMessage message={timesheetError} />
       </View>
     );
   }
 
-  if (!state.currentPayPeriod) {
+  if (!currentTimesheet) {
     return (
       <View style={styles.container}>
-        <ThemedText>Loading...</ThemedText>
+        <Header />
+        <ErrorMessage message="No timesheet found for current pay period" />
       </View>
     );
   }
 
-  const week1Total = calculateWeekTotal(state.currentPayPeriod.week1);
-  const week2Total = calculateWeekTotal(state.currentPayPeriod.week2);
-  const periodTotal = week1Total + week2Total + state.currentPayPeriod.vacationHours;
+  // Calculate totals based on the new structure
+  //const week1 = currentTimesheet.weeks.find(w => w.weekNumber === 1);
+  //const week2 = currentTimesheet.weeks.find(w => w.weekNumber === 2);
+  const week1 = currentTimesheet.week1;
+  //console.log('week1Total:', week1);
+  const week2 = currentTimesheet.week2;
+  console.log('week2Total:', week2);
+
+  const week1Total = calculateWeekTotal(week1);
+  console.log('week1Total:', week1Total);
+  const week2Total = calculateWeekTotal(week2);
+  console.log('week2Total:', week2Total);
+
+  const periodTotal = week1Total + week2Total + (currentTimesheet.vacationHours || 0);
+  console.log('periodTotal:', periodTotal);
 
   return (
     <View style={styles.container}>
       <Header />
       <ScrollView style={styles.content}>
         <View style={styles.contentCard}>
-          <View style={styles.header}>
-          </View>
+        <View style={styles.header}>
+        </View>
 
-          <WeekTable
-            data={state.currentPayPeriod.week1}
-            weekNumber={1}
-            startDate={state.currentPayPeriod.startDate}
-            onUpdate={(day, field, value) => handleTimeUpdate(1, day, field, value)}
-            onDayTypeChange={(day, type) => handleDayTypeChange(1, day, type)}
-            onExtraHoursChange={(hours) => handleExtraHoursChange(1, hours)}
-            onCopyPrevious={(day) => handleCopyPrevious(1, day)}
-          />
+        <WeekTable
+            data={currentTimesheet.week1}
+          weekNumber={1}
+            startDate={currentTimesheet.startDate}
+          onUpdate={(day, field, value) => handleTimeUpdate(1, day, field, value)}
+          onDayTypeChange={(day, type) => handleDayTypeChange(1, day, type)}
+          onExtraHoursChange={(hours) => handleExtraHoursChange(1, hours)}
+          onCopyPrevious={(day) => handleCopyPrevious(1, day)}
+        />
 
-          <View style={styles.weekActions}>
-            <Button variant="secondary" onPress={handleCopyWeek}>
-              Copy to Week 2
-            </Button>
-          </View>
+        <View style={styles.weekActions}>
+          <Button variant="secondary" onPress={handleCopyWeek}>
+            Copy to Week 2
+          </Button>
+        </View>
 
-          <WeekTable
-            data={state.currentPayPeriod.week2}
-            weekNumber={2}
-            startDate={addWeeks(state.currentPayPeriod.startDate, 1)}
-            onUpdate={(day, field, value) => handleTimeUpdate(2, day, field, value)}
-            onDayTypeChange={(day, type) => handleDayTypeChange(2, day, type)}
-            onExtraHoursChange={(hours) => handleExtraHoursChange(2, hours)}
-            onCopyPrevious={(day) => handleCopyPrevious(2, day)}
-          />
+        <WeekTable
+            data={currentTimesheet.week2}
+          weekNumber={2}
+            startDate={addWeeks(currentTimesheet.startDate, 1)}
+          onUpdate={(day, field, value) => handleTimeUpdate(2, day, field, value)}
+          onDayTypeChange={(day, type) => handleDayTypeChange(2, day, type)}
+          onExtraHoursChange={(hours) => handleExtraHoursChange(2, hours)}
+          onCopyPrevious={(day) => handleCopyPrevious(2, day)}
+        />
 
           <View style={[styles.summary, { backgroundColor: colors.background.input }]}>
-            <ThemedText type="subtitle">Summary</ThemedText>
+          <ThemedText type="subtitle">Summary</ThemedText>
             <View style={[styles.summaryRow, { backgroundColor: colors.background.card }]}>
-              <ThemedText>Week 1 Total:</ThemedText>
-              <ThemedText>{week1Total.toFixed(2)} hours</ThemedText>
-            </View>
-            <View style={[styles.summaryRow, { backgroundColor: colors.background.card }]}>
-              <ThemedText>Week 2 Total:</ThemedText>
-              <ThemedText>{week2Total.toFixed(2)} hours</ThemedText>
-            </View>
-            <View style={[styles.vacationHours, { backgroundColor: colors.background.card }]}>
-              <ThemedText>Vacation Hours:</ThemedText>
-              <Input
-                label=""
-                value={state.currentPayPeriod?.vacationHours?.toString() || '0'}
-                onChangeText={handleVacationHoursChange}
-                style={styles.vacationInput}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={[styles.summaryRow, { backgroundColor: colors.background.card }]}>
-              <ThemedText type="defaultSemiBold">Pay Period Total:</ThemedText>
-              <ThemedText type="defaultSemiBold">{periodTotal.toFixed(2)} hours</ThemedText>
-            </View>
+            <ThemedText>Week 1 Total:</ThemedText>
+            <ThemedText>{week1Total.toFixed(2)} hours</ThemedText>
           </View>
+            <View style={[styles.summaryRow, { backgroundColor: colors.background.card }]}>
+            <ThemedText>Week 2 Total:</ThemedText>
+            <ThemedText>{week2Total.toFixed(2)} hours</ThemedText>
+          </View>
+            <View style={[styles.vacationHours, { backgroundColor: colors.background.card }]}>
+            <ThemedText>Vacation Hours:</ThemedText>
+            <Input
+              label=""
+                value={currentTimesheet?.vacationHours?.toString() || '0'}
+              onChangeText={handleVacationHoursChange}
+                style={styles.vacationInput}
+              keyboardType="numeric"
+            />
+          </View>
+            <View style={[styles.summaryRow, { backgroundColor: colors.background.card }]}>
+            <ThemedText type="defaultSemiBold">Pay Period Total:</ThemedText>
+            <ThemedText type="defaultSemiBold">{periodTotal.toFixed(2)} hours</ThemedText>
+          </View>
+        </View>
 
-          <View style={styles.actions}>
+        <View style={styles.actions}>
             <SubmitButton
               onPress={handleSubmit}
               isSubmitting={isSubmitting}
               validationErrors={getValidationErrors()}
             />
-            <Button 
-              variant="secondary" 
-              onPress={handleRecall}
-              style={styles.recallButton}
-            >
-              Recall Previous Submission
-            </Button>
+          <Button 
+            variant="secondary" 
+            onPress={handleRecall}
+            style={styles.recallButton}
+          >
+            Recall Previous Submission
+          </Button>
           </View>
         </View>
       </ScrollView>
@@ -850,12 +788,23 @@ export default function TimesheetScreen() {
   );
 }
 
-function calculateWeekTotal(weekData: WeekData): number {
-  const daysTotal = Object.values(weekData)
-    .filter(day => typeof day === 'object' && 'totalHours' in day)
-    .reduce((sum, day) => sum + (day as TimeEntry).totalHours, 0);
-  return daysTotal + (weekData.extraHours || 0);
+function calculateWeekTotal(week: WeekData | undefined): number {
+  console.log('calculateWeekTotal - weekData:', week);
+  
+  if (!week) {
+    console.log('calculateWeekTotal - weekData is undefined, returning 0');
+    return 0;
+  }
+
+  console.log('calculateWeekTotal - Week Data:', week);
+  
+  const total = week.days.totalHours + (week.extraHours || 0);
+  console.log('calculateWeekTotal - final total:', total);
+
+  return total;
 }
+
+
 
 // Helper function to process week data
 function processWeekData(weekData: any) {
@@ -916,6 +865,7 @@ function processWeekData(weekData: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#ffffff',
   },
   content: {
     flex: 1,

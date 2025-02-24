@@ -1,28 +1,14 @@
 import { TimeEntry } from '@/types/timesheet';
+import { timeToMinutes } from './timeUtils';
+import { TimesheetSettings } from '@/types/settings';
 
 interface ValidationResult {
   isValid: boolean;
   message?: string;
 }
 
-function timeToMinutes(timeStr: string): number {
-  // Split time and period
-  const [time, period] = timeStr.split(' ');
-  const [hours, minutes] = time.split(':').map(Number);
-  
-  // Convert to 24-hour format
-  let totalMinutes = hours * 60 + minutes;
-  
-  if (period === 'PM' && hours !== 12) {
-    totalMinutes += 12 * 60;
-  } else if (period === 'AM' && hours === 12) {
-    totalMinutes = minutes;
-  }
 
-  return totalMinutes;
-}
-
-export function validateTimeEntry(entry: TimeEntry): ValidationResult {
+export function validateTimeEntry(entry: TimeEntry, settings: TimesheetSettings): ValidationResult {
   // Check for incomplete pairs
   if (entry.startTime && !entry.endTime) {
     return {
@@ -57,33 +43,26 @@ export function validateTimeEntry(entry: TimeEntry): ValidationResult {
     return { isValid: true };
   }
 
-  const startMinutes = timeToMinutes(entry.startTime);
-  const endMinutes = timeToMinutes(entry.endTime);
-  const sevenAM = 7 * 60;  // 420 minutes
-  const eightPM = 20 * 60; // 1200 minutes
+  // Only validate times if they exist
+  if (entry.startTime && entry.endTime) {
+    const startMinutes = timeToMinutes(entry.startTime);
+    const endMinutes = timeToMinutes(entry.endTime);
 
-  // First check if end time is before start time
-  if (endMinutes < startMinutes) {
-    return {
-      isValid: false,
-      message: 'End time must be after start time'
-    };
-  }
+    // Check start time is after minimum
+    if (startMinutes < settings.minStartTime) {
+      return {
+        isValid: false,
+        message: `Start time must be after ${convertTo12Hour(minutesToTime(settings.minStartTime))}`
+      };
+    }
 
-  // Check start time is after 7am
-  if (startMinutes < sevenAM) {
-    return {
-      isValid: false,
-      message: 'Start time must be after 7:00 AM'
-    };
-  }
-
-  // Check end time is before 8pm
-  if (endMinutes > eightPM) {
-    return {
-      isValid: false,
-      message: 'End time must be before 8:00 PM'
-    };
+    // Check end time is before maximum
+    if (endMinutes > settings.maxEndTime) {
+      return {
+        isValid: false,
+        message: `End time must be before ${convertTo12Hour(minutesToTime(settings.maxEndTime))}`
+      };
+    }
   }
 
   // Check lunch times if both are present

@@ -1,196 +1,103 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
-import { PayPeriod, TimeEntry, DayType } from '@/types/timesheet';
+import { createContext, useContext, useState, useCallback } from 'react';
+import { router } from 'expo-router';
+import { buildApiUrl } from '@/constants/Config';
+import { WeekData, TimeEntry, DayType, TimesheetData } from '@/types/timesheet';
 
-interface TimesheetState {
-  currentPayPeriod: {
-    id: string;
-    startDate: Date;
-    endDate: Date;
-  } | null;
+interface TimesheetContextType {
+  currentTimesheet: TimesheetData | null;
   isLoading: boolean;
   error: string | null;
+  fetchCurrentTimesheet: () => Promise<void>;
+  updateTimeEntry: (action: any) => void;
 }
 
-type TimesheetAction =
-  | { type: 'SET_PAY_PERIOD'; payload: PayPeriod }
-  | { type: 'UPDATE_TIME_ENTRY'; payload: { week: 1 | 2; day: keyof WeekData; entry: TimeEntry } }
-  | { type: 'SET_EXTRA_HOURS'; payload: { week: 1 | 2; hours: number } }
-  | { type: 'SET_VACATION_HOURS'; payload: number }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'UPDATE_VACATION_HOURS'; payload: number }
-  | { type: 'SET_TIMESHEET'; payload: {
-      payPeriod: PayPeriod;
-      weeks: {
-        days: {
-          startTime: string | null;
-          endTime: string | null;
-          lunchStartTime: string | null;
-          lunchEndTime: string | null;
-          dayType: DayType;
-          totalHours: number;
-        }[];
-        extraHours: number;
-        totalHours: number;
-      }[];
-    } };
-
-const initialState: TimesheetState = {
-  currentPayPeriod: null,
-  isLoading: false,
-  error: null,
-};
-
-export function createEmptyTimeEntry(): TimeEntry {
-  return {
-    startTime: null,
-    endTime: null,
-    lunchStartTime: null,
-    lunchEndTime: null,
-    dayType: 'regular',
-    totalHours: 0,
-  };
+// Helper function to calculate total hours for a week
+export function calculateWeekTotalHours(week: WeekData): number {
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
+  
+  return days.reduce((total, day) => {
+    const entry = week.days[day];
+    if (!entry) return total;
+    return total + (entry.totalHours || 0);
+  }, 0);
 }
 
-export function createEmptyWeekData(): WeekData {
-  return {
-    monday: createEmptyTimeEntry(),
-    tuesday: createEmptyTimeEntry(),
-    wednesday: createEmptyTimeEntry(),
-    thursday: createEmptyTimeEntry(),
-    friday: createEmptyTimeEntry(),
-    extraHours: 0,
-    totalHours: 0,
-  };
-}
-
-function timesheetReducer(state: TimesheetState, action: TimesheetAction): TimesheetState {
-  switch (action.type) {
-    case 'SET_PAY_PERIOD':
-      return {
-        ...state,
-        currentPayPeriod: action.payload,
-        error: null,
-      };
-    case 'UPDATE_TIME_ENTRY': {
-      const { week, day, entry } = action.payload;
-      if (!state.currentPayPeriod) return state;
-
-      const weekKey = `week${week}` as const;
-      
-      console.log('Reducer Update:', {
-        week,
-        weekKey,
-        day,
-        entry,
-        currentState: state.currentPayPeriod[weekKey]
-      });
-
-      return {
-        ...state,
-        currentPayPeriod: {
-          ...state.currentPayPeriod,
-          [weekKey]: {
-            ...state.currentPayPeriod[weekKey],
-            [day]: entry,
-          },
-        },
-      };
-    }
-    case 'SET_EXTRA_HOURS':
-      if (!state.currentPayPeriod) return state;
-      const week = `week${action.payload.week}` as keyof PayPeriod;
-      return {
-        ...state,
-        currentPayPeriod: {
-          ...state.currentPayPeriod,
-          [week]: {
-            ...state.currentPayPeriod[week],
-            extraHours: action.payload.hours,
-          },
-        },
-      };
-    case 'SET_VACATION_HOURS':
-      if (!state.currentPayPeriod) return state;
-      return {
-        ...state,
-        currentPayPeriod: {
-          ...state.currentPayPeriod,
-          vacationHours: action.payload,
-        },
-      };
-    case 'SET_LOADING':
-      return {
-        ...state,
-        isLoading: action.payload,
-      };
-    case 'SET_ERROR':
-      return {
-        ...state,
-        error: action.payload,
-        isLoading: false,
-      };
-    case 'UPDATE_VACATION_HOURS':
-      return {
-        ...state,
-        currentPayPeriod: state.currentPayPeriod ? {
-          ...state.currentPayPeriod,
-          vacationHours: action.payload
-        } : null
-      };
-    case 'SET_TIMESHEET':
-      return {
-        ...state,
-        currentPayPeriod: {
-          ...action.payload.payPeriod,
-          startDate: new Date(action.payload.payPeriod.startDate),
-          endDate: new Date(action.payload.payPeriod.endDate),
-        },
-        error: null,
-      };
-    default:
-      return state;
-  }
-}
-
-const TimesheetContext = createContext<{
-  state: TimesheetState;
-  dispatch: React.Dispatch<TimesheetAction>;
-} | null>(null);
+const TimesheetContext = createContext<TimesheetContextType | null>(null);
 
 export function TimesheetProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(timesheetReducer, initialState);
+  const [currentTimesheet, setCurrentTimesheet] = useState<TimesheetData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadTimesheet() {
-      try {
-        const response = await fetch(buildApiUrl('TIMESHEET'), {
-          credentials: 'include'
-        });
-        
-        if (!response.ok) throw new Error('Failed to fetch timesheet');
-        
-        const data = await response.json();
-        dispatch({ 
-          type: 'SET_TIMESHEET', 
-          payload: {
-            ...data,
-            payPeriod: {
-              ...data.payPeriod,
-              startDate: new Date(data.payPeriod.startDate)
-            }
-          }
-        });
-      } catch (error) {
-        console.error('Error loading timesheet:', error);
+  const fetchCurrentTimesheet = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await fetch(buildApiUrl('TIMESHEETS_CURRENT'), {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch timesheet');
       }
-    }
 
-    loadTimesheet();
+      const data = await response.json();
+      
+      // Transform the data to match our frontend structure
+      const transformedData: TimesheetData = {
+        id: data.id,
+        userId: data.userId,
+        status: data.status,
+        payPeriod: data.payPeriod,
+        vacationHours: data.vacationHours,
+        submittedAt: data.submittedAt,
+        week1: {
+          days: {
+            monday: data.weeks.week1.days.monday || null,
+            tuesday: data.weeks.week1.days.tuesday || null,
+            wednesday: data.weeks.week1.days.wednesday || null,
+            thursday: data.weeks.week1.days.thursday || null,
+            friday: data.weeks.week1.days.friday || null,
+          },
+          totalHours: calculateWeekTotalHours(data.weeks.week1)
+        },
+        week2: {
+          days: {
+            monday: data.weeks.week2.days.monday || null,
+            tuesday: data.weeks.week2.days.tuesday || null,
+            wednesday: data.weeks.week2.days.wednesday || null,
+            thursday: data.weeks.week2.days.thursday || null,
+            friday: data.weeks.week2.days.friday || null,
+          },
+          totalHours: calculateWeekTotalHours(data.weeks.week2)
+        }
+      };
+
+      setCurrentTimesheet(transformedData);
+    } catch (error) {
+      console.error('Error fetching timesheet:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch timesheet');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const updateTimeEntry = useCallback((action: any) => {
+    // Implementation of updateTimeEntry
+    // ...
   }, []);
 
   return (
-    <TimesheetContext.Provider value={{ state, dispatch }}>
+    <TimesheetContext.Provider 
+      value={{ 
+        currentTimesheet, 
+        isLoading, 
+        error,
+        fetchCurrentTimesheet,
+        updateTimeEntry
+      }}
+    >
       {children}
     </TimesheetContext.Provider>
   );

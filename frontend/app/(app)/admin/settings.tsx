@@ -5,19 +5,18 @@ import { Header } from '@/components/layout/Header';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { DateTimePicker } from '@/components/DateTimePicker';
-import { colors, spacing } from '@/styles/common';
+import { colors, spacing, commonStyles } from '@/styles/common';
 import { buildApiUrl } from '@/constants/Config';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { HolidayManagementModal } from '@/components/admin/HolidayManagementModal';
+import { convertTo12Hour, minutesToTime, timeToMinutes, convertTo24Hour } from '@/utils/timeUtils';
 
 interface Settings {
-  // Pay Period Settings
   payPeriodStartDate: Date;
-  payPeriodLength: number; // in days, typically 14
+  payPeriodLength: number;
 
-  // Time Validation Settings
   maxDailyHours: number;
   maxWeeklyHours: number;
   minLunchDuration: number; // in minutes
@@ -58,43 +57,42 @@ interface Settings {
   }[];
   holidayHoursDefault: number;
   holidayPayMultiplier: number;
+
+  // Time Restrictions
+  minStartTime: number; // In minutes from midnight (e.g., 420 for 7:00 AM)
+  maxEndTime: number;   // In minutes from midnight (e.g., 1200 for 8:00 PM)
 }
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<Settings>({
     payPeriodStartDate: new Date(),
     payPeriodLength: 14,
-    maxDailyHours: 15,
+    maxDailyHours: 2,
     maxWeeklyHours: 50,
     minLunchDuration: 30,
     maxLunchDuration: 60,
     overtimeThreshold: 40,
     doubleTimeThreshold: 60,
-    allowFutureTimeEntry: false,
+    allowFutureTimeEntry: true,
     allowPastTimeEntry: true,
     pastTimeEntryLimit: 14,
-    reminderDaysBefore: 2,
-    reminderDaysAfter: 1,
-
-    // Email Notification Settings
     enableEmailReminders: true,
-    reminderEmailTemplate: 'Your timesheet for the period {startDate} to {endDate} is due.',
+    reminderEmailTemplate: 'Please submit your timesheet for the period ending {endDate}.',
     ccAddresses: [],
-    
-    // Approval Settings
-    autoApprovalEnabled: false,
+    autoApprovalEnabled: true,
     autoApprovalMaxHours: 40,
     requiredApprovers: 1,
     approvalChain: [],
-    
-    // Holiday Settings
     holidays: [],
-    holidayHoursDefault: 8,
+    holidayHoursDefault: 6,
     holidayPayMultiplier: 1.5,
+    minStartTime: 420,
+    maxEndTime: 1200,
   });
+
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showHolidayModal, setShowHolidayModal] = useState(false);
 
   useEffect(() => {
@@ -102,6 +100,7 @@ export default function AdminSettings() {
   }, []);
 
   const loadSettings = async () => {
+
     try {
       setIsLoading(true);
       const response = await fetch(buildApiUrl('SETTINGS'), {
@@ -109,12 +108,13 @@ export default function AdminSettings() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to load settings');
+        throw new Error('Failed to fetch settings');
       }
 
       const data = await response.json();
       setSettings(data);
     } catch (error) {
+      console.error('Settings load error:', error);
       setError(error instanceof Error ? error.message : 'Failed to load settings');
     } finally {
       setIsLoading(false);
@@ -138,9 +138,6 @@ export default function AdminSettings() {
       if (!response.ok) {
         throw new Error('Failed to save settings');
       }
-
-      // Show success message
-      // You might want to add a success notification here
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to save settings');
     } finally {
@@ -159,8 +156,9 @@ export default function AdminSettings() {
   };
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner message="Loading settings..." />;
   }
+
 
   return (
     <View style={styles.container}>
@@ -176,8 +174,8 @@ export default function AdminSettings() {
             />
             <Input
               label="Pay Period Length (days)"
-              value={settings.payPeriodLength.toString()}
-              onChangeText={(value) => setSettings(s => ({ ...s, payPeriodLength: parseInt(value) || 14 }))}
+              value={settings.payPeriodLength?.toString()}
+              onChangeText={(value) => setSettings(s => ({ ...s, payPeriodLength: parseInt(value) }))}
               keyboardType="numeric"
             />
           </View>
@@ -188,25 +186,25 @@ export default function AdminSettings() {
           <View style={styles.settingGroup}>
             <Input
               label="Maximum Daily Hours"
-              value={settings.maxDailyHours.toString()}
+              value={settings.maxDailyHours?.toString()}
               onChangeText={(value) => setSettings(s => ({ ...s, maxDailyHours: parseInt(value) || 15 }))}
               keyboardType="numeric"
             />
             <Input
               label="Maximum Weekly Hours"
-              value={settings.maxWeeklyHours.toString()}
+              value={settings.maxWeeklyHours?.toString()}
               onChangeText={(value) => setSettings(s => ({ ...s, maxWeeklyHours: parseInt(value) || 50 }))}
               keyboardType="numeric"
             />
             <Input
               label="Minimum Lunch Duration (minutes)"
-              value={settings.minLunchDuration.toString()}
+              value={settings.minLunchDuration?.toString()}
               onChangeText={(value) => setSettings(s => ({ ...s, minLunchDuration: parseInt(value) || 30 }))}
               keyboardType="numeric"
             />
             <Input
               label="Maximum Lunch Duration (minutes)"
-              value={settings.maxLunchDuration.toString()}
+              value={settings.maxLunchDuration?.toString()}
               onChangeText={(value) => setSettings(s => ({ ...s, maxLunchDuration: parseInt(value) || 60 }))}
               keyboardType="numeric"
             />
@@ -218,13 +216,13 @@ export default function AdminSettings() {
           <View style={styles.settingGroup}>
             <Input
               label="Overtime Threshold (hours/week)"
-              value={settings.overtimeThreshold.toString()}
+              value={settings.overtimeThreshold?.toString()}
               onChangeText={(value) => setSettings(s => ({ ...s, overtimeThreshold: parseInt(value) || 40 }))}
               keyboardType="numeric"
             />
             <Input
               label="Double Time Threshold (hours/week)"
-              value={settings.doubleTimeThreshold.toString()}
+              value={settings.doubleTimeThreshold?.toString()}
               onChangeText={(value) => setSettings(s => ({ ...s, doubleTimeThreshold: parseInt(value) || 60 }))}
               keyboardType="numeric"
             />
@@ -251,7 +249,7 @@ export default function AdminSettings() {
             />
             <Input
               label="CC Email Addresses (comma-separated)"
-              value={settings.ccAddresses.join(', ')}
+              value={settings.ccAddresses?.join(', ') || ''}
               onChangeText={(value) => setSettings(s => ({ 
                 ...s, 
                 ccAddresses: value.split(',').map(email => email.trim()).filter(Boolean)
@@ -273,14 +271,14 @@ export default function AdminSettings() {
             </View>
             <Input
               label="Auto-Approval Maximum Hours"
-              value={settings.autoApprovalMaxHours.toString()}
+              value={settings.autoApprovalMaxHours?.toString()}
               onChangeText={(value) => setSettings(s => ({ ...s, autoApprovalMaxHours: parseInt(value) || 40 }))}
               keyboardType="numeric"
               disabled={!settings.autoApprovalEnabled}
             />
             <Input
               label="Required Approvers"
-              value={settings.requiredApprovers.toString()}
+              value={settings.requiredApprovers?.toString()}
               onChangeText={(value) => setSettings(s => ({ ...s, requiredApprovers: parseInt(value) || 1 }))}
               keyboardType="numeric"
             />
@@ -298,13 +296,13 @@ export default function AdminSettings() {
           <View style={styles.settingGroup}>
             <Input
               label="Default Holiday Hours"
-              value={settings.holidayHoursDefault.toString()}
+              value={settings.holidayHoursDefault?.toString()}
               onChangeText={(value) => setSettings(s => ({ ...s, holidayHoursDefault: parseInt(value) || 8 }))}
               keyboardType="numeric"
             />
             <Input
               label="Holiday Pay Multiplier"
-              value={settings.holidayPayMultiplier.toString()}
+              value={settings.holidayPayMultiplier?.toString()}
               onChangeText={(value) => setSettings(s => ({ ...s, holidayPayMultiplier: parseFloat(value) || 1.5 }))}
               keyboardType="decimal-pad"
             />
@@ -312,8 +310,38 @@ export default function AdminSettings() {
               onPress={() => setShowHolidayModal(true)}
               variant="secondary"
             >
-              Manage Holidays ({settings.holidays.length})
+              Manage Holidays ({settings.holidays?.length || 0})
             </Button>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Time Restrictions</ThemedText>
+          <View style={styles.inputGroup}>
+            <Input
+              label="Earliest Start Time"
+              value={convertTo12Hour(minutesToTime(settings.minStartTime))}
+              onChangeText={(value) => {
+                // Only update if it's a valid 12-hour time
+                if (value.match(/^(1[0-2]|0?[1-9]):[0-5][0-9] (AM|PM)$/)) {
+                  const minutes = timeToMinutes(value);
+                  setSettings(s => ({ ...s, minStartTime: minutes }));
+                }
+              }}
+              placeholder="7:00 AM"
+            />
+            <Input
+              label="Latest End Time"
+              value={convertTo12Hour(minutesToTime(settings.maxEndTime))}
+              onChangeText={(value) => {
+                // Only update if it's a valid 12-hour time
+                if (value.match(/^(1[0-2]|0?[1-9]):[0-5][0-9] (AM|PM)$/)) {
+                  const minutes = timeToMinutes(value);
+                  setSettings(s => ({ ...s, maxEndTime: minutes }));
+                }
+              }}
+              placeholder="8:00 PM"
+            />
           </View>
         </View>
 
@@ -365,5 +393,11 @@ const styles = StyleSheet.create({
   },
   checkboxContainer: {
     marginBottom: spacing.sm,
+  },
+  sectionTitle: {
+    marginBottom: spacing.md,
+  },
+  inputGroup: {
+    gap: spacing.md,
   },
 }); 

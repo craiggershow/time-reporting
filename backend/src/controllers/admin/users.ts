@@ -1,6 +1,7 @@
 import { Request, Response } from 'express-serve-static-core';
 import { prisma } from '../../lib/prisma';
 import bcrypt from 'bcrypt';
+import { getNextEmployeeId } from '../../utils/employeeId';
 
 export async function createUser(req: Request, res: Response) {
   try {
@@ -48,6 +49,59 @@ export async function createUser(req: Request, res: Response) {
   } catch (error) {
     console.error('Create user error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export async function updateUser(req: Request, res: Response) {
+  console.log('\n=== Admin Update User Route ===');
+  console.log('Request Params:', req.params);
+  console.log('Request Body:', req.body);
+  
+  try {
+    const { id } = req.params;
+    const { email, firstName, lastName, role, isActive } = req.body;
+    
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        email,
+        firstName,
+        lastName,
+        role,
+        isActive,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+      },
+    });
+    
+    res.json(user);
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+}
+
+export async function deleteUser(req: Request, res: Response) {
+  console.log('\n=== Admin Delete User Route ===');
+  console.log('Request Params:', req.params);
+  
+  try {
+    const { id } = req.params;
+    
+    await prisma.user.delete({
+      where: { id }
+    });
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
   }
 }
 

@@ -13,14 +13,18 @@ export const DEFAULT_TIMESHEET_SETTINGS = {
   payPeriodLength: 14,
 
   // Time Entry Rules
-  maxDailyHours: 12,
-  maxWeeklyHours: 44,
+  maxDailyHours: 15,
+  maxWeeklyHours: 50,
   minLunchDuration: 30,
-  maxLunchDuration: 120,
+  maxLunchDuration: 60,
+
+  // Time Restrictions
+  minStartTime: 420, // In minutes from midnight (e.g., 420 for 7:00 AM)
+  maxEndTime: 1200,   // In minutes from midnight (e.g., 1200 for 8:00 PM)
 
   // Overtime Settings
-  overtimeThreshold: 8,
-  doubleTimeThreshold: 12,
+  overtimeThreshold: 40,
+  doubleTimeThreshold: 60,
 
   // Holiday Settings
   holidayHoursDefault: 8,

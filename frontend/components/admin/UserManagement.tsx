@@ -70,6 +70,7 @@ export function UserManagement() {
 
       const data = await response.json();
       console.log('=== Success Response ===');
+      console.log('UserData', data);
       console.log('Users Count:', data.length);
       setUsers(data);
     } catch (error) {

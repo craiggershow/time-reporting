@@ -11,23 +11,39 @@ import { useTheme } from '@/hooks/useTheme';
 import { buildApiUrl } from '@/constants/Config';
 import { useAuth } from '@/context/AuthContext';
 import { colors as commonColors } from '@/styles/common';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+/**
+ * LoginScreen Component
+ * 
+ * Handles user authentication through a login form interface.
+ * Manages email/password input, "remember me" functionality, and login state.
+ */
 export default function LoginScreen() {
+  // Theme and navigation hooks
   const { colors: themeColors } = useTheme();
   const { login } = useAuth();
+  const router = useRouter();
+
+  // Form state management
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const [loginType, setLoginType] = useState<'employee' | 'admin'>('employee');
 
+  /**
+   * Effect to load remembered email on component mount
+   * Retrieves previously saved email if "remember me" was enabled
+   */
   useEffect(() => {
-    // Load remembered email on mount
     loadRememberedEmail();
   }, []);
 
+  /**
+   * Loads the remembered email from storage if it exists
+   * Updates form state accordingly
+   */
   async function loadRememberedEmail() {
     const savedEmail = await getRememberedEmail();
     if (savedEmail) {
@@ -36,31 +52,61 @@ export default function LoginScreen() {
     }
   }
 
-  const handleLogin = async () => {
+  /**
+   * Handles the login form submission
+   * Validates input, makes API request, and manages login state
+   */
+  async function handleLogin() {
     try {
       setIsLoading(true);
       setError(null);
-      
-      await login({ 
-        email, 
-        password,
-        isAdmin: loginType === 'admin'
+
+      // Input validation
+      if (!email || !password) {
+        throw new Error('Please enter both email and password');
+      }
+
+      // Make login request
+      const response = await fetch(buildApiUrl('LOGIN'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
       });
 
-      // AuthLayout will handle navigation
+      // Handle response
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Login failed');
+      }
+
+      const data = await response.json();
+
+      // Handle "remember me" functionality
+      if (rememberMe) {
+        await saveRememberedEmail(email);
+      } else {
+        await clearRememberedEmail();
+      }
+
+      // Update auth context and redirect
+      await login(data);
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Login error:', err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  const handleSubmit = () => {
-    if (!isLoading) {
-      handleLogin();
-    }
-  };
-
+  /**
+   * Main render method
+   * Displays login form with email/password inputs, remember me checkbox,
+   * and login button. Shows error message if login fails.
+   */
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={styles.content}>
@@ -69,7 +115,6 @@ export default function LoginScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        <ThemedText type="title">Time Sheet Portal</ThemedText>
         
         <View style={styles.formContainer}>
           <View style={styles.form}>
@@ -77,39 +122,38 @@ export default function LoginScreen() {
               label="Email"
               value={email}
               onChangeText={setEmail}
-              placeholder="Enter your email"
-              keyboardType="email-address"
               autoCapitalize="none"
-              editable={!isLoading}
-              returnKeyType="next"
+              keyboardType="email-address"
+              autoComplete="email"
             />
-            
+
             <Input
               label="Password"
               value={password}
               onChangeText={setPassword}
-              placeholder="Enter your password"
               secureTextEntry
-              editable={!isLoading}
-              returnKeyType="go"
-              onSubmitEditing={handleSubmit}
+              autoComplete="password"
             />
+
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Checkbox
+                checked={rememberMe}
+                onValueChange={setRememberMe}
+                label="Remember me"
+                labelStyle={styles.rememberMeText}
+              />
+            </View>
 
             {error && (
-              <ThemedText style={styles.error}>{error}</ThemedText>
+              <ThemedText style={styles.error}>
+                {error}
+              </ThemedText>
             )}
 
-            <Checkbox
-              checked={rememberMe}
-              onValueChange={() => setRememberMe(!rememberMe)}
-              label="Remember my email"
-              labelStyle={styles.rememberMeText}
-            />
-
-            <Button 
-              onPress={handleLogin} 
-              style={styles.loginButton}
+            <Button
+              onPress={handleLogin}
               disabled={isLoading}
+              loading={isLoading}
             >
               {isLoading ? 'Logging in...' : 'Login'}
             </Button>
@@ -120,6 +164,10 @@ export default function LoginScreen() {
   );
 }
 
+/**
+ * Component styles
+ * Defines layout and appearance for the login screen and its elements
+ */
 const styles = StyleSheet.create({
   container: {
     flex: 1,

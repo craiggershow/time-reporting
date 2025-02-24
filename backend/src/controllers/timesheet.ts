@@ -158,11 +158,6 @@ async function getCurrentPayPeriod(): Promise<{ id: string; startDate: Date; end
 
 export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse) {
   try {
-    if (!req.user?.id) {
-      console.log('No user ID in request');
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     // Get or create the pay period
     const payPeriod = await getCurrentPayPeriod();
 
@@ -170,14 +165,14 @@ export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse
     const timesheet = await prisma.timesheet.upsert({
       where: {
         userId_payPeriodId: {
-          userId: req.user.id,
-          payPeriodId: payPeriod.id,
+          userId: req.user?.id || '',
+          payPeriodId: payPeriod.id
         }
       },
       create: {
-        userId: req.user.id,
+        userId: req.user?.id || '',
         payPeriodId: payPeriod.id,
-        status: TimesheetStatus.DRAFT,
+        status: 'DRAFT',
         vacationHours: 0,
         weeks: {
           create: [
@@ -221,9 +216,43 @@ export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse
       }
     });
 
-    res.json(timesheet);
+    if (!timesheet) {
+      return res.status(404).json({ error: 'No current timesheet found' });
+    }
+
+    // Transform the data structure while preserving pay period info
+    const transformedTimesheet = {
+      id: timesheet.id,
+      userId: timesheet.userId,
+      status: timesheet.status,
+      payPeriod: timesheet.payPeriod,
+      vacationHours: timesheet.vacationHours,
+      submittedAt: timesheet.submittedAt,
+      weeks: {
+        week1: {
+          days: {
+            monday: timesheet.weeks.find(w => w.weekNumber === 1)?.days.find(d => d.dayOfWeek === 'MONDAY') || null,
+            tuesday: timesheet.weeks.find(w => w.weekNumber === 1)?.days.find(d => d.dayOfWeek === 'TUESDAY') || null,
+            wednesday: timesheet.weeks.find(w => w.weekNumber === 1)?.days.find(d => d.dayOfWeek === 'WEDNESDAY') || null,
+            thursday: timesheet.weeks.find(w => w.weekNumber === 1)?.days.find(d => d.dayOfWeek === 'THURSDAY') || null,
+            friday: timesheet.weeks.find(w => w.weekNumber === 1)?.days.find(d => d.dayOfWeek === 'FRIDAY') || null,
+          }
+        },
+        week2: {
+          days: {
+            monday: timesheet.weeks.find(w => w.weekNumber === 2)?.days.find(d => d.dayOfWeek === 'MONDAY') || null,
+            tuesday: timesheet.weeks.find(w => w.weekNumber === 2)?.days.find(d => d.dayOfWeek === 'TUESDAY') || null,
+            wednesday: timesheet.weeks.find(w => w.weekNumber === 2)?.days.find(d => d.dayOfWeek === 'WEDNESDAY') || null,
+            thursday: timesheet.weeks.find(w => w.weekNumber === 2)?.days.find(d => d.dayOfWeek === 'THURSDAY') || null,
+            friday: timesheet.weeks.find(w => w.weekNumber === 2)?.days.find(d => d.dayOfWeek === 'FRIDAY') || null,
+          }
+        }
+      }
+    };
+
+    res.json(transformedTimesheet);
   } catch (error) {
-    console.error('Error getting current timesheet:', error);
+    console.error('Get current timesheet error:', error);
     res.status(500).json({ error: 'Failed to get current timesheet' });
   }
 }
@@ -409,6 +438,7 @@ function formatDateToTimeString(date: Date | null): string | null {
 }
 
 export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
+  console.log('\n=== Submit Timesheet ===');
   try {
     const { payPeriodId, weeks, vacationHours } = req.body as TimesheetSubmitData;
 
@@ -547,6 +577,28 @@ export async function recallTimesheet(req: AuthRequest, res: ExpressResponse) {
   } catch (error) {
     console.error('Error recalling timesheet:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export async function getAllTimesheets(req: AuthRequest, res: ExpressResponse) {
+  console.log('\n=== Get All Timesheets ===');
+  try {
+    // Implementation
+    res.json({ message: 'Get all timesheets' });
+  } catch (error) {
+    console.error('Get all timesheets error:', error);
+    res.status(500).json({ error: 'Failed to get timesheets' });
+  }
+}
+
+export async function approveTimesheet(req: AuthRequest, res: ExpressResponse) {
+  console.log('\n=== Approve Timesheet ===');
+  try {
+    // Implementation
+    res.json({ message: 'Approve timesheet' });
+  } catch (error) {
+    console.error('Approve timesheet error:', error);
+    res.status(500).json({ error: 'Failed to approve timesheet' });
   }
 }
 

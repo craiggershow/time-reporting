@@ -4,8 +4,9 @@ import { ThemedText } from './ThemedText';
 import { Button } from './ui/Button';
 import { WeekTable } from './timesheet/WeekTable';
 import { TimesheetData, WeekData, TimeEntry, DayType } from '@/types/timesheet';
-import { calculateTotalHours } from '@/utils/timeCalculations';
+import { calculateTotalRegularHours } from '@/utils/timeCalculations';
 import { startOfWeek, addWeeks } from 'date-fns';
+import { createEmptyWeekData } from '@/context/TimesheetContext';
 
 interface TimesheetFormProps {
   onSubmit: (data: TimesheetData) => void;

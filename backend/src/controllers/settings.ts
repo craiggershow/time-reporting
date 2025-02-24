@@ -5,20 +5,18 @@ import { DEFAULT_TIMESHEET_SETTINGS } from '../config/defaults';
 
 export async function getSettings(req: Request, res: Response) {
   try {
-    // Fetch holidays
     const holidays = await prisma.holiday.findMany({
-      orderBy: { date: 'asc' },
-    });
+      orderBy: {date: 'asc'},
+    });  
 
-    // Combine default settings with holidays
     const settings: TimesheetSettings = {
       ...DEFAULT_TIMESHEET_SETTINGS,
       holidays: holidays.map(h => ({
         ...h,
-        date: new Date(h.date),
+        date: new Date(h.date),  
       })),
     };
-
+    
     res.json(settings);
   } catch (error) {
     console.error('Error fetching settings:', error);

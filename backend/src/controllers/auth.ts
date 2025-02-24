@@ -1,4 +1,4 @@
-import { Request, Response } from 'express-serve-static-core';
+import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -11,79 +11,96 @@ interface JwtPayload {
   role: 'ADMIN' | 'EMPLOYEE';
 }
 
-export async function login(req: Request, res: Response) {
-  try {
-    const { email, password, isAdmin } = req.body;
+export async function loginUser(req: Request, res: Response) {
+  console.log('\n=== Login Request ===');
+  console.log('Headers:', {
+    ...req.headers,
+    authorization: req.headers.authorization ? '[PRESENT]' : '[NONE]',
+    cookie: req.headers.cookie ? '[PRESENT]' : '[NONE]'
+  });
+  console.log('Body:', { ...req.body, password: '[REDACTED]' });
+  console.log('Content-Type:', req.headers['content-type']);
 
-    // Find user
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      console.log('❌ Missing credentials:', { 
+        hasEmail: !!email, 
+        hasPassword: !!password,
+        body: req.body
+      });
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase() },
       select: {
         id: true,
         email: true,
         password: true,
+        role: true,
         firstName: true,
         lastName: true,
-        role: true,
-      },
+      }
     });
 
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    console.log('User lookup result:', user ? {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      hasPassword: !!user.password
+    } : 'Not found');
+
+    if (!user || !user.password) {
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    const isValid = await bcrypt.compare(password, user.password);
+    console.log('Password validation:', isValid ? '✓ Valid' : '❌ Invalid');
+
+    if (!isValid) {
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Check role if attempting admin login
-    if (isAdmin && user.role !== 'ADMIN') {
-      return res.status(403).json({ error: 'Not authorized for admin access' });
-    }
-
-    // Create JWT token
     const token = jwt.sign(
-      { 
-        userId: user.id,
-        email: user.email,
-        role: user.role 
-      },
+      { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET!,
-      { 
-        // Convert string to number and ensure it's in seconds
-        expiresIn: Number(process.env.JWT_EXPIRES_IN )
-      }
+      { expiresIn: '24h' }
     );
 
-    // Set cookie with matching expiration
+    console.log('✓ Token generated');
+
     res.cookie('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: Number(process.env.JWT_EXPIRES_IN ) * 1000, // Convert seconds to milliseconds
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
-    // Send response
-    res.json({
+    console.log('✓ Cookie set');
+    console.log('Response headers:', res.getHeaders());
+
+    const response = {
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
         role: user.role,
-      },
-      token // Include token in response for development/testing
-    });
+        firstName: user.firstName,
+        lastName: user.lastName
+      }
+    };
+
+    console.log('✓ Sending response:', { ...response, token: '[REDACTED]' });
+    res.json(response);
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ message: 'An error occurred during login' });
   }
 }
 
-export async function logout(req: Request, res: Response) {
+export async function logoutUser(req: Request, res: Response) {
   res.clearCookie('auth_token');
   res.json({ message: 'Logged out successfully' });
 }
@@ -94,39 +111,12 @@ interface ResetRequest extends Request {
   };
 }
 
-export async function resetPassword(req: ResetRequest, res: Response) {
-  const { email } = req.body;
-
-  try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      // Still return success to prevent email enumeration
-      return res.json({ message: 'If your email exists, you will receive reset instructions' });
-    }
-
-    // TODO: Implement password reset email functionality
-    // For development:
-    if (email === 'admin@kvdental.ca') {
-      await prisma.user.update({
-        where: { email },
-        data: { password: await bcrypt.hash('password', 10) }
-      });
-    }
-
-    res.json({ message: 'If your email exists, you will receive reset instructions' });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-}
-
 export async function getCurrentUser(req: Request, res: Response) {
   try {
-    // The user object is already attached by the authenticate middleware
     if (!req.user) {
-      return res.status(401).json({ error: 'Not authenticated' });
+      return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    // Fetch fresh user data from database
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: {
@@ -139,13 +129,13 @@ export async function getCurrentUser(req: Request, res: Response) {
     });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ message: 'User not found' });
     }
 
     res.json({ user });
   } catch (error) {
     console.error('Get current user error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ message: 'Failed to get user information' });
   }
 }
 

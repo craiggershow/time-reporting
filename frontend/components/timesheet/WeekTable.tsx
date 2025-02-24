@@ -16,12 +16,12 @@ import { convertTo12Hour } from '@/utils/time';
 
 interface WeekTableProps {
   data: WeekData;
-  weekNumber: 1 | 2;
+  weekNumber: number;
   startDate: Date;
-  onUpdate: (day: keyof WeekData, field: keyof TimeEntry, value: string | null) => void;
-  onDayTypeChange: (day: keyof WeekData, type: DayType) => void;
+  onUpdate: (day: DayOfWeek, field: keyof DayData, value: string) => void;
+  onDayTypeChange: (day: DayOfWeek, type: DayType) => void;
   onExtraHoursChange: (hours: number) => void;
-  onCopyPrevious: (day: keyof WeekData) => void;
+  onCopyPrevious: (day: DayOfWeek) => void;
 }
 
 const DAYS: (keyof WeekData)[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
@@ -54,8 +54,13 @@ export function WeekTable({
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const [hoveredLock, setHoveredLock] = useState<string | null>(null);
 
+  console.log('WeekTable - data:', data);
   // Calculate weekly total
-  const weeklyTotal = DAYS.reduce((sum, day) => sum + data[day].totalHours, 0) + (data.extraHours || 0);
+  const weeklyTotal = DAYS.reduce((sum, day) => {
+    const dayData = data.days;
+    console.log('WeekTable - dayData:', dayData);
+      return sum + (dayData?.totalhours || 0);
+  }, 0) + (data.extraHours || 0);
 
   // Calculate if any day in this week is in the future
   const today = new Date();

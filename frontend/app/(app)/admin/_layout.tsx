@@ -1,19 +1,46 @@
 import { Stack } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
+import { useEffect } from 'react';
+import { useRouter, useSegments } from 'expo-router';
 import { colors } from '@/styles/common';
 
 export const unstable_settings = {
   initialRouteName: 'index',
 };
 
+function useProtectedRoute() {
+  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/(auth)/login');
+      return;
+    }
+
+    if (user?.role !== 'ADMIN') {
+      router.replace('/(app)/timesheet');
+      return;
+    }
+  }, [isAuthenticated, user]);
+}
+
+
 export default function AdminLayout() {
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: colors.adminBackground },
+        contentStyle: { backgroundColor: colors.background.page },
       }}
     >
-      <Stack.Screen name="index" />
+      <Stack.Screen 
+        name="index" 
+        options={{ 
+          title: 'Admin Dashboard',
+          headerShown: false 
+        }} 
+      />
       <Stack.Screen name="employees" />
       <Stack.Screen name="pay-periods" />
       <Stack.Screen name="reports" />
