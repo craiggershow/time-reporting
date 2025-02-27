@@ -13,8 +13,13 @@ export const unstable_settings = {
 export default function AppLayout() {
   const { user, isAuthenticated, isLoading } = useAuth();
 
+  // Show loading spinner while checking authentication
   if (isLoading) {
-    return <LoadingSpinner message="Loading..." />;
+    return (
+      <View style={styles.container}>
+        <LoadingSpinner message="Loading..." />
+      </View>
+    );
   }
 
   // Not authenticated - redirect to login
@@ -31,6 +36,12 @@ export default function AppLayout() {
             headerShown: false,
           }}
         >
+          <Stack.Screen 
+            name="index" 
+            options={{
+              title: 'Home',
+            }}
+          />
           <Stack.Screen 
             name="timesheet"
             options={{

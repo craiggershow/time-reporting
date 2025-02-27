@@ -1,7 +1,10 @@
 import { Stack } from 'expo-router';
+import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'expo-router';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { Redirect } from 'expo-router';
+import { View, StyleSheet } from 'react-native';
+import { colors } from '@/styles/common';
 /**
  * AuthLayout component handles authentication-related routing and layout
  * 
@@ -12,32 +15,47 @@ import { Redirect } from 'expo-router';
  * 4. Renders auth-related screens (login, etc.) for unauthenticated users
  */
 export default function AuthLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const router = useRouter();
 
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      // User is already authenticated, redirect to the appropriate page
+      if (user?.role === 'ADMIN') {
+        router.replace('/(app)/admin');
+      } else {
+        router.replace('/(app)/timesheet');
+      }
+    }
+  }, [isLoading, isAuthenticated, user, router]);
+
+  // Show loading while checking auth status
   if (isLoading) {
-    return <LoadingSpinner />;
+    return (
+      <View style={styles.container}>
+        <LoadingSpinner message="Checking authentication..." />
+      </View>
+    );
   }
 
-  // Redirect authenticated users
-  if (isAuthenticated) {
-    return <Redirect href="/(app)" />;
+  // Only render auth screens for unauthenticated users
+  if (!isAuthenticated) {
+    return (
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="login" options={{ title: 'Login' }} />
+      </Stack>
+    );
   }
 
-  /**
-   * Render auth-related screens for unauthenticated users
-   * 
-   * Stack configuration:
-   * - Headers are hidden
-   * - Only login screen is available in auth stack
-   */
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen 
-        name="login" 
-        options={{ 
-          title: 'Login',
-        }} 
-      />
-    </Stack>
-  );
-} 
+  // Return null while redirecting
+  return null;
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.page,
+  },
+}); 

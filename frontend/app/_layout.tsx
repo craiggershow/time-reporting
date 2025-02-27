@@ -11,8 +11,7 @@ import { View, StyleSheet } from 'react-native';
 import { colors } from '@/styles/common';
 import { globalStyles } from '@/styles/global';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { useRouter } from 'expo-router';
-import { useProtectedRoute } from '@/hooks/useProtectedRoute';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 // Prevent splash screen from auto-hiding before we're ready
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -39,27 +38,23 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [loaded, error] = useFonts({
     // Add custom fonts here if needed
   });
 
+  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
-    async function prepare() {
-      try {
-        await Promise.all([/* other setup tasks */]);
-      } catch (e) {
-        console.warn(e);
-      } finally {
-        if (fontsLoaded) {
-          await SplashScreen.hideAsync();
-        }
-      }
-    }
-    prepare();
-  }, [fontsLoaded]);
+    if (error) throw error;
+  }, [error]);
 
-  if (!fontsLoaded) {
-    return null;
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded]);
+
+  if (!loaded) {
+    return <LoadingSpinner message="Loading app..." />;
   }
 
   return (
@@ -80,16 +75,15 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  useProtectedRoute();
-  
   return (
     <Stack
       screenOptions={{
         headerShown: false,
       }}
     >
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(app)" />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(app)" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
     </Stack>
   );
 }

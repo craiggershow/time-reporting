@@ -51,9 +51,9 @@ check_port() {
     for i in {1..30}; do
       if ! lsof -i :$PORT > /dev/null; then
         echo "Port $PORT is now available"
-        return 0
-      fi
-      sleep 1
+            return 0
+        fi
+        sleep 1
     done
     
     echo "Failed to free up port $PORT after 30 seconds"

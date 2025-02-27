@@ -57,10 +57,10 @@ export function WeekTable({
   console.log('WeekTable - data:', data);
   // Calculate weekly total
   const weeklyTotal = DAYS.reduce((sum, day) => {
-    const dayData = data.days;
-    console.log('WeekTable - dayData:', dayData);
-      return sum + (dayData?.totalhours || 0);
+    return sum + (data.days[day]?.totalHours || 0);
   }, 0) + (data.extraHours || 0);
+
+  console.log('WeekTable - weeklyTotal:', weeklyTotal);
 
   // Calculate if any day in this week is in the future
   const today = new Date();
@@ -68,13 +68,13 @@ export function WeekTable({
 
   // Calculate validation for a day
   const validateDay = (day: keyof WeekData) => {
-    const entry = data[day];
+    const entry = data.days[day];
     return validateTimeEntry(entry);
   };
 
   // Separate weekly validation
   const validateWeeklyTotal = () => {
-    const weekTotal = DAYS.reduce((sum, d) => sum + data[d].totalHours, 0) + (data.extraHours || 0);
+    const weekTotal = DAYS.reduce((sum, d) => sum + (data.days[d]?.totalHours || 0), 0) + (data.extraHours || 0);
     return validateWeeklyHours(weekTotal);
   };
 
@@ -87,9 +87,9 @@ export function WeekTable({
       {DAYS.map((day) => {
         const validation = validationState[day];
         const shouldShow = showValidation[day];
-        const entry = data[day];
-        const isMissingEndTime = entry.startTime && !entry.endTime;
-        const isMissingLunchEndTime = entry.lunchStartTime && !entry.lunchEndTime;
+        const entry = data.days[day];
+        const isMissingEndTime = entry?.startTime && !entry?.endTime;
+        const isMissingLunchEndTime = entry?.lunchStartTime && !entry?.lunchEndTime;
         const showWarning = !validation?.isValid && !(isMissingEndTime || isMissingLunchEndTime);
         const isHovered = hoveredDay === day;
 
@@ -147,7 +147,7 @@ export function WeekTable({
 
   useEffect(() => {
     DAYS.forEach(day => {
-      if (data[day].startTime || data[day].endTime) {
+      if (data.days[day]?.startTime || data.days[day]?.endTime) {
         const validation = validateDay(day);
         setValidationState(prev => ({
           ...prev,
@@ -165,37 +165,37 @@ export function WeekTable({
   const hasFieldError = (day: keyof WeekData, field: keyof TimeEntry) => {
     if (!validationState[day] || validationState[day].isValid) return false;
     
-    const entry = data[day];
+    const entry = data.days[day];
 
     // Only highlight end time fields for incomplete pairs
     switch (field) {
       case 'endTime':
-        if (!entry.startTime && entry.endTime) return true;  // Missing start time
-        if (entry.startTime && !entry.endTime) return false; // Don't highlight missing end time
+        if (!entry?.startTime && entry?.endTime) return true;  // Missing start time
+        if (entry?.startTime && !entry?.endTime) return false; // Don't highlight missing end time
         break;
       case 'lunchEndTime':
-        if (!entry.lunchStartTime && entry.lunchEndTime) return true;  // Missing lunch start time
-        if (entry.lunchStartTime && !entry.lunchEndTime) return false; // Don't highlight missing lunch end time
+        if (!entry?.lunchStartTime && entry?.lunchEndTime) return true;  // Missing lunch start time
+        if (entry?.lunchStartTime && !entry?.lunchEndTime) return false; // Don't highlight missing lunch end time
         break;
     }
 
     // If we have both times in a pair, check their values
-    if (!entry.startTime || !entry.endTime) return false;
+    if (!entry?.startTime || !entry?.endTime) return false;
 
-    const startMinutes = timeToMinutes(entry.startTime);
-    const endMinutes = timeToMinutes(entry.endTime);
+    const startMinutes = timeToMinutes(entry?.startTime);
+    const endMinutes = timeToMinutes(entry?.endTime);
     
     switch (field) {
       case 'endTime':
         return endMinutes < startMinutes;
       case 'lunchStartTime':
-        if (!entry.lunchStartTime) return false;
-        const lunchStartMin = timeToMinutes(entry.lunchStartTime);
+        if (!entry?.lunchStartTime) return false;
+        const lunchStartMin = timeToMinutes(entry?.lunchStartTime);
         return lunchStartMin < startMinutes || lunchStartMin > endMinutes;
       case 'lunchEndTime':
-        if (!entry.lunchEndTime || !entry.lunchStartTime) return false;
-        const lunchStartMinutes = timeToMinutes(entry.lunchStartTime);
-        const lunchEndMinutes = timeToMinutes(entry.lunchEndTime);
+        if (!entry?.lunchEndTime || !entry?.lunchStartTime) return false;
+        const lunchStartMinutes = timeToMinutes(entry?.lunchStartTime);
+        const lunchEndMinutes = timeToMinutes(entry?.lunchEndTime);
         return lunchEndMinutes < startMinutes || 
                lunchEndMinutes > endMinutes || 
                lunchEndMinutes <= lunchStartMinutes;
@@ -277,7 +277,7 @@ export function WeekTable({
                   ]}>
                     <View style={styles.inputContainer}>
                       <TimeInput
-                        value={formatTimeForDisplay(data[day][fieldName])}
+                        value={formatTimeForDisplay(data.days[day][fieldName])}
                         onChange={(value) => handleTimeUpdate(day, fieldName, value)}
                         disabled={disabled}
                         onBlur={() => handleBlur(day)}
@@ -325,7 +325,7 @@ export function WeekTable({
                 <View key={day} style={[styles.cell, disabled && styles.disabledCell]}>
                   <View style={styles.inputContainer}>
                     <DayTypeSelect
-                      value={data[day].dayType}
+                      value={data.days[day].dayType}
                       onChange={(type) => onDayTypeChange(day, type)}
                       disabled={disabled}
                     />
@@ -359,7 +359,7 @@ export function WeekTable({
                 validationState[day] && !validationState[day].isValid && styles.errorCell
               ]}>
                 <ThemedText style={styles.totalHours}>
-                  {data[day].totalHours.toFixed(2)}
+                  {data.days[day].totalHours.toFixed(2)}
                 </ThemedText>
               </View>
             ))}
