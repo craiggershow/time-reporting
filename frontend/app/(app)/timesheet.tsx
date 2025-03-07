@@ -924,21 +924,18 @@ export default function TimesheetScreen() {
     );
   }
 
-  // Calculate totals based on the new structure
-  //const week1 = currentTimesheet.weeks.find(w => w.weekNumber === 1);
-  //const week2 = currentTimesheet.weeks.find(w => w.weekNumber === 2);
-  const week1 = currentTimesheet.week1;
-  //console.log('week1Total:', week1);
-  const week2 = currentTimesheet.week2;
-  console.log('week2Total:', week2);
-
-  const week1Total = calculateWeekTotal(week1);
-  console.log('week1Total:', week1Total);
-  const week2Total = calculateWeekTotal(week2);
-  console.log('week2Total:', week2Total);
+  // Calculate totals for summary
+  console.log('🔢 currentTimesheet structure:', JSON.stringify(currentTimesheet, null, 2));
+  
+  // Use the totalHours property directly from the WeekData structure
+  const week1Total = currentTimesheet.week1.totalHours || 0;
+  const week2Total = currentTimesheet.week2.totalHours || 0;
+  
+  console.log('🔢 week1Total (using totalHours directly):', week1Total);
+  console.log('🔢 week2Total (using totalHours directly):', week2Total);
 
   const periodTotal = week1Total + week2Total + (currentTimesheet.vacationHours || 0);
-  console.log('periodTotal:', periodTotal);
+  console.log('🔢 periodTotal:', periodTotal);
 
   return (
     <View style={styles.container}>
