@@ -1,10 +1,10 @@
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { useTheme } from '@/context/ThemeContext';
-import { WeekData, TimeEntry, DayType } from '@/types/timesheet';
+import { WeekData, TimeEntry, DayType, DayOfWeek } from '@/types/timesheet';
 import { TimeInput } from './TimeInput';
 import { DayTypeSelect } from './DayTypeSelect';
-import { format, addDays } from 'date-fns';
+import { format, addDays, isValid } from 'date-fns';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { validateTimeEntry, validateWeeklyHours } from '@/utils/timeValidation';
@@ -57,6 +57,10 @@ export function WeekTable({
   console.log('WeekTable - data:', data);
   // Calculate weekly total
   const weeklyTotal = DAYS.reduce((sum, day) => {
+    if (!data || !data.days || !data.days[day]) {
+      console.warn(`Missing data for day: ${day}`);
+      return sum;
+    }
     return sum + (data.days[day]?.totalHours || 0);
   }, 0) + (data.extraHours || 0);
 
@@ -66,22 +70,37 @@ export function WeekTable({
   const today = new Date();
   const isFutureDate = (date: Date) => date > today;
 
+  // Add a safety check for startDate
+  const safeStartDate = isValid(startDate) ? startDate : new Date();
+
   // Calculate validation for a day
   const validateDay = (day: keyof WeekData) => {
+    if (!data || !data.days || !data.days[day]) {
+      console.warn(`Missing data for day: ${day}`);
+      return { isValid: false, message: 'Missing data' };
+    }
+    
     const entry = data.days[day];
     return validateTimeEntry(entry);
   };
 
   // Separate weekly validation
   const validateWeeklyTotal = () => {
-    const weekTotal = DAYS.reduce((sum, d) => sum + (data.days[d]?.totalHours || 0), 0) + (data.extraHours || 0);
+    const weekTotal = DAYS.reduce((sum, d) => {
+      if (!data || !data.days || !data.days[d]) {
+        console.warn(`Missing data for day: ${d}`);
+        return sum;
+      }
+      return sum + (data.days[d]?.totalHours || 0);
+    }, 0) + (data.extraHours || 0);
+    
     return validateWeeklyHours(weekTotal);
   };
 
   // Add validation status row after total hours
   const renderValidationRow = () => (
     <View style={styles.row}>
-      <View style={[styles.labelCell, { backgroundColor: colors.inputBackground }]}>
+      <View style={[styles.labelCell, { backgroundColor: colors.background.input }]}>
         <ThemedText>Status</ThemedText>
       </View>
       {DAYS.map((day) => {
@@ -205,7 +224,8 @@ export function WeekTable({
   };
 
   const handleTimeUpdate = (day: keyof WeekData, field: keyof TimeEntry, value: string | null) => {
-    onUpdate(day, field, value);
+    console.log('handleTimeUpdate:', { day, field, value });
+    onUpdate(day as any, field as any, value);
   };
 
   return (
@@ -213,7 +233,7 @@ export function WeekTable({
       <View style={styles.headerRow}>
         <ThemedText type="subtitle">Week {weekNumber}</ThemedText>
         <ThemedText style={styles.dateRange}>
-          {format(startDate, 'MMM d')} - {format(addDays(startDate, 4), 'MMM d, yyyy')}
+          {format(safeStartDate, 'MMM d')} - {format(addDays(safeStartDate, 4), 'MMM d, yyyy')}
         </ThemedText>
       </View>
       
@@ -225,10 +245,10 @@ export function WeekTable({
             {DAYS.map((day, index) => (
               <View key={day} style={styles.headerCell}>
                 <ThemedText style={[styles.dayName, { color: colors.text }]}>
-                  {format(addDays(startDate, index), 'EEE')}
+                  {format(addDays(safeStartDate, index), 'EEE')}
                 </ThemedText>
                 <ThemedText style={[styles.date, { color: colors.text }]}>
-                  {format(addDays(startDate, index), 'MMM d')}
+                  {format(addDays(safeStartDate, index), 'MMM d')}
                 </ThemedText>
                 {index > 0 && (
                   <Button
@@ -256,7 +276,7 @@ export function WeekTable({
                 <ThemedText>{label}</ThemedText>
               </View>
               {DAYS.map((day) => {
-                const dayDate = addDays(startDate, DAYS.indexOf(day));
+                const dayDate = addDays(safeStartDate, DAYS.indexOf(day));
                 const disabled = isFutureDate(dayDate);
                 
                 const fieldMap = {
@@ -319,7 +339,7 @@ export function WeekTable({
               <ThemedText>Type</ThemedText>
             </View>
             {DAYS.map((day) => {
-              const dayDate = addDays(startDate, DAYS.indexOf(day));
+              const dayDate = addDays(safeStartDate, DAYS.indexOf(day));
               const disabled = isFutureDate(dayDate);
               return (
                 <View key={day} style={[styles.cell, disabled && styles.disabledCell]}>

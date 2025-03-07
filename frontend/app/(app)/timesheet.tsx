@@ -1,6 +1,6 @@
 import { View, StyleSheet, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
-import { startOfWeek, addWeeks } from 'date-fns';
+import { startOfWeek, addWeeks, format, isValid, parseISO, addDays } from 'date-fns';
 import { ThemedText } from '@/components/ThemedText';
 import { WeekTable } from '@/components/timesheet/WeekTable';
 import { Button } from '@/components/ui/Button';
@@ -23,6 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSettings } from '@/context/SettingsContext';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { logDebug } from '@/utils/debug';
 
 interface DayData {
   startTime: string | null;
@@ -51,12 +52,24 @@ interface WeekData {
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
 
+function debugDate(label: string, date: any) {
+  console.log(`[DEBUG] ${label}:`, {
+    value: date,
+    type: typeof date, 
+    isDate: date instanceof Date,
+    isValid: date instanceof Date && isValid(date),
+    toString: date ? date.toString() : 'null',
+    timeValue: date instanceof Date ? date.getTime() : 'null'
+  });
+}
+
 export default function TimesheetScreen() {
   const { 
     currentTimesheet, 
     isLoading: timesheetLoading, 
     error: timesheetError, 
-    fetchCurrentTimesheet 
+    fetchCurrentTimesheet,
+    updateTimesheetState
   } = useTimesheet();
   const { colors } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,6 +84,11 @@ export default function TimesheetScreen() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { settings, isLoading: settingsLoading } = useSettings();
+  const [startDate, setStartDate] = useState<Date>(() => {
+    // Default to current date if no date is provided
+    const today = new Date();
+    return startOfWeek(today, { weekStartsOn: 1 }); // Start on Monday
+  });
 
   useEffect(() => {
     fetchCurrentTimesheet();
@@ -89,11 +107,60 @@ export default function TimesheetScreen() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
+  useEffect(() => {
+    if (!currentTimesheet) return;
+    
+    try {
+      let periodStartDate: Date;
+      
+      console.log('Settings value:', settings?.settings?.value);
+      
+      // First try to use the pay period from the timesheet itself
+      if (currentTimesheet.payPeriod?.startDate) {
+        console.log('Using pay period start date from timesheet:', currentTimesheet.payPeriod.startDate);
+        periodStartDate = parseISO(currentTimesheet.payPeriod.startDate);
+      }
+      // Then try to use the settings
+      else if (typeof settings?.settings?.value?.payPeriodStartDate === 'string') {
+        console.log('Using pay period start date from settings (string):', settings.settings.value.payPeriodStartDate);
+        periodStartDate = parseISO(settings.settings.value.payPeriodStartDate);
+      } else if (settings?.settings?.value?.payPeriodStartDate instanceof Date) {
+        console.log('Using pay period start date from settings (Date):', settings.settings.value.payPeriodStartDate);
+        periodStartDate = settings.settings.value.payPeriodStartDate;
+      } else {
+        console.log('Using default pay period start date (Monday of current week)');
+        periodStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
+      }
+      
+      debugDate('Period Start Date (raw)', periodStartDate);
+      
+      const weekStartDate = addWeeks(periodStartDate, 0);
+      debugDate('Week Start Date (calculated)', weekStartDate);
+      
+      if (!(weekStartDate instanceof Date) || !isValid(weekStartDate)) {
+        console.error('Invalid weekStartDate calculated', weekStartDate);
+        setStartDate(new Date());
+      } else {
+        setStartDate(weekStartDate);
+      }
+      
+      debugDate('startDate (final state)', startDate);
+    } catch (error) {
+      console.error('Error calculating start date:', error);
+      setStartDate(new Date());
+    }
+  }, [currentTimesheet, settings]);
+
   const autoSubmit = async (newState: TimesheetData) => {
     // First check if this is a start time without an end time
+
+    console.log('autoSubmit - newState:', newState);
     const weekKey = Object.keys(newState).find(key => key.startsWith('week')) as 'week1' | 'week2';
+    
+    // Use the correct structure with .days to access the day entries
     const dayKey = DAYS.find(day => {
-      const entry = newState[weekKey][day];
+      const entry = newState[weekKey].days[day];
+      console.log('autoSubmit - entry:', entry);
       return (entry.startTime && !entry.endTime) || (entry.lunchStartTime && !entry.lunchEndTime);
     });
 
@@ -105,7 +172,7 @@ export default function TimesheetScreen() {
     // Now check if we have any complete pairs to submit
     const hasCompletePairs = ['week1', 'week2'].some(weekKey => {
       return DAYS.some(day => {
-        const entry = newState[weekKey as 'week1' | 'week2'][day];
+        const entry = newState[weekKey as 'week1' | 'week2'].days[day];
         return (
           (entry.startTime && entry.endTime) || // Complete work time pair
           (entry.lunchStartTime && entry.lunchEndTime) // Complete lunch time pair
@@ -266,13 +333,60 @@ export default function TimesheetScreen() {
       }
     };
 
+  const updateTimeEntry = (week: 1 | 2, day: string, field: keyof TimeEntry, value: string | null) => {
+    console.log('🔄 updateTimeEntry called:', { week, day, field, value });
+    
+    // Ensure value is converted to proper 24-hour format if it's a time value
+    const processedValue = ['startTime', 'endTime', 'lunchStartTime', 'lunchEndTime'].includes(field)
+      ? convertTo24Hour(value)
+      : value;
+    
+    console.log('🔄 Processed value:', processedValue);
+      
+    const weekKey = `week${week}` as const;
+    
+    // Create a deep copy of the current timesheet
+    const updatedTimesheet = JSON.parse(JSON.stringify(currentTimesheet));
+    
+    // Update the specific field
+    if (updatedTimesheet[weekKey]?.days?.[day]) {
+      updatedTimesheet[weekKey].days[day][field] = processedValue;
+      
+      // Recalculate total hours for this day
+      updatedTimesheet[weekKey].days[day].totalHours = calculateTotalRegularHours(
+        updatedTimesheet[weekKey].days[day]
+      );
+      
+      console.log('🔄 Updated entry:', updatedTimesheet[weekKey].days[day]);
+      
+      // Update the timesheet state
+      console.log('🔄 Calling fetchCurrentTimesheet with action:', {
+        type: 'UPDATE_TIME_ENTRY',
+        payload: { 
+          week, 
+          day, 
+          entry: updatedTimesheet[weekKey].days[day] 
+        }
+      });
+      
+      updateTimesheetState({
+        type: 'UPDATE_TIME_ENTRY',
+        payload: { 
+          week, 
+          day, 
+          entry: updatedTimesheet[weekKey].days[day] 
+        },
+      });
+    }
+  };
+
   const handleTimeUpdate = (week: 1 | 2, day: keyof WeekData, field: keyof TimeEntry, value: string | null) => {
     if (!currentTimesheet) return;
 
     const weekKey = `week${week}` as const;
     const currentEntry = currentTimesheet[weekKey][day];
     
-    console.log('Updating time entry:', { 
+    console.log('📝 handleTimeUpdate called:', { 
       week, 
       day, 
       field, 
@@ -291,7 +405,16 @@ export default function TimesheetScreen() {
       }),
     };
 
-    fetchCurrentTimesheet({
+    console.log('📝 Calling fetchCurrentTimesheet with action:', {
+      type: 'UPDATE_TIME_ENTRY',
+      payload: { 
+        week, 
+        day, 
+        entry: updatedEntry 
+      }
+    });
+
+    updateTimesheetState({
       type: 'UPDATE_TIME_ENTRY',
       payload: { 
         week, 
@@ -301,7 +424,7 @@ export default function TimesheetScreen() {
     });
 
     // Verify state update
-    console.log('After dispatch:', {
+    console.log('📝 After dispatch:', {
       updatedEntry,
       currentState: currentTimesheet[weekKey][day]
     });
@@ -313,6 +436,7 @@ export default function TimesheetScreen() {
 
     // Set new timeout for auto-submit
     saveTimeoutRef.current = setTimeout(() => {
+      console.log('📝 Auto-submit triggered');
       autoSubmit(currentTimesheet!);
     }, 2000);
   };
@@ -323,7 +447,7 @@ export default function TimesheetScreen() {
     const weekKey = `week${week}` as const;
     const currentEntry = currentTimesheet[weekKey][day];
     
-    fetchCurrentTimesheet({
+    updateTimesheetState({
       type: 'UPDATE_TIME_ENTRY',
       payload: {
         week,
@@ -334,7 +458,7 @@ export default function TimesheetScreen() {
   };
 
   const handleExtraHoursChange = (week: 1 | 2, hours: number) => {
-    fetchCurrentTimesheet({
+    updateTimesheetState({
       type: 'SET_EXTRA_HOURS',
       payload: { week, hours },
     });
@@ -342,7 +466,7 @@ export default function TimesheetScreen() {
 
   const handleVacationHoursChange = (value: string) => {
     const hours = parseFloat(value) || 0;
-    fetchCurrentTimesheet({
+    updateTimesheetState({
       type: 'UPDATE_VACATION_HOURS',
       payload: hours
     });
@@ -407,31 +531,27 @@ export default function TimesheetScreen() {
 
   // Add a function to collect all validation errors
   const getValidationErrors = () => {
-    if (!currentTimesheet) return ['No timesheet data available'];
-    
+    if (!currentTimesheet || settingsLoading) return [];
+
     const errors: string[] = [];
     const weeks = ['week1', 'week2'] as const;
-    console.log('getValidationErrors - currentTimesheet:', currentTimesheet);
-    weeks.forEach((week) => {
+    
+    weeks.forEach((week, index) => {
       // Check each day in the week
       DAYS.forEach(day => {
         const entry = currentTimesheet?.[week]?.days?.[day];
         console.log('getValidationErrors - entry:', entry);
         const validation = validateTimeEntry(entry, settings);
         if (!validation.isValid && validation.message) {
-          errors.push(`Week ${weekIndex + 1} - ${day.charAt(0).toUpperCase() + day.slice(1)}: ${validation.message}`);
+          errors.push(`Week ${index + 1} - ${day.charAt(0).toUpperCase() + day.slice(1)}: ${validation.message}`);
         }
       });
 
-      // Check weekly total
-      //const weekTotal = DAYS.reduce(
-      //  (sum, day) => sum + currentTimesheet![week][day].totalHours,
-      //  currentTimesheet[week].extraHours || 0
-      //);
+      // Check weekly hours
       const weekTotal = calculateWeekTotalHours(currentTimesheet[week])
       const weekValidation = validateWeeklyHours(weekTotal, settings);
       if (!weekValidation.isValid && weekValidation.message) {
-        errors.push(`Week ${weekIndex + 1}: ${weekValidation.message}`);
+        errors.push(`Week ${index + 1}: ${weekValidation.message}`);
       }
     });
 
@@ -630,7 +750,7 @@ export default function TimesheetScreen() {
   const handleCopyWeek = () => {
     if (!currentTimesheet?.week1) return;
     
-    fetchCurrentTimesheet({
+    updateTimesheetState({
       type: 'SET_PAY_PERIOD',
       payload: {
         ...currentTimesheet,
@@ -651,7 +771,7 @@ export default function TimesheetScreen() {
     const previousDay = days[currentDayIndex - 1];
     const previousEntry = weekData[previousDay];
     
-    fetchCurrentTimesheet({
+    updateTimesheetState({
       type: 'UPDATE_TIME_ENTRY',
       payload: {
         week,
@@ -711,6 +831,7 @@ export default function TimesheetScreen() {
   return (
     <View style={styles.container}>
       <Header />
+      {debugDate('startDate before passing to WeekTable', startDate)}
       <ScrollView style={styles.content}>
         <View style={styles.contentCard}>
         <View style={styles.header}>
@@ -719,8 +840,10 @@ export default function TimesheetScreen() {
         <WeekTable
             data={currentTimesheet.week1}
           weekNumber={1}
-            startDate={currentTimesheet.startDate}
-          onUpdate={(day, field, value) => handleTimeUpdate(1, day, field, value)}
+            startDate={startDate}
+          onUpdate={(day, field, value) => {
+            updateTimeEntry(1, day, field, value);
+          }}
           onDayTypeChange={(day, type) => handleDayTypeChange(1, day, type)}
           onExtraHoursChange={(hours) => handleExtraHoursChange(1, hours)}
           onCopyPrevious={(day) => handleCopyPrevious(1, day)}
@@ -735,8 +858,10 @@ export default function TimesheetScreen() {
         <WeekTable
             data={currentTimesheet.week2}
           weekNumber={2}
-            startDate={addWeeks(currentTimesheet.startDate, 1)}
-          onUpdate={(day, field, value) => handleTimeUpdate(2, day, field, value)}
+            startDate={addDays(startDate, 7)}
+          onUpdate={(day, field, value) => {
+            updateTimeEntry(2, day, field, value);
+          }}
           onDayTypeChange={(day, type) => handleDayTypeChange(2, day, type)}
           onExtraHoursChange={(hours) => handleExtraHoursChange(2, hours)}
           onCopyPrevious={(day) => handleCopyPrevious(2, day)}

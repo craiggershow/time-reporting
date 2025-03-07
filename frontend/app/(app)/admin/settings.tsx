@@ -169,7 +169,7 @@ export default function AdminSettings() {
           <View style={styles.settingGroup}>
             <DateTimePicker
               label="Pay Period Start Date"
-              value={new Date(settings.payPeriodStartDate)}
+              value={settings.payPeriodStartDate instanceof Date ? settings.payPeriodStartDate : new Date(settings.payPeriodStartDate)}
               onChange={handleDateChange}
             />
             <Input

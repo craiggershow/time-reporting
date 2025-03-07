@@ -5,7 +5,8 @@ import {
   getCurrentTimesheet,
   submitTimesheet,
   approveTimesheet,
-  getAllTimesheets
+  getAllTimesheets,
+  updateTimeEntry
 } from '../controllers/timesheet';
 
 const router = express.Router();
@@ -26,6 +27,9 @@ router.get('/current', getCurrentTimesheet);
 
 // Submit timesheet
 router.post('/submit', submitTimesheet);
+
+// Update time entry
+router.post('/entry', updateTimeEntry);
 
 // Admin routes
 router.get('/all', getAllTimesheets);

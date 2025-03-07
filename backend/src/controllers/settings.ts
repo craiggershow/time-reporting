@@ -5,17 +5,30 @@ import { DEFAULT_TIMESHEET_SETTINGS } from '../config/defaults';
 
 export async function getSettings(req: Request, res: Response) {
   try {
+    // Get settings from database
+    const dbSettings = await prisma.settings.findUnique({
+      where: { key: 'timesheet_settings' }
+    });
+
+    // Get holidays from database
     const holidays = await prisma.holiday.findMany({
       orderBy: {date: 'asc'},
     });  
 
+    // Merge database settings with defaults (for any missing fields)
     const settings: TimesheetSettings = {
       ...DEFAULT_TIMESHEET_SETTINGS,
+      ...(dbSettings?.value as TimesheetSettings || {}),
       holidays: holidays.map(h => ({
         ...h,
         date: new Date(h.date),  
       })),
     };
+    
+    console.log('Retrieved settings:', {
+      payPeriodStartDate: settings.payPeriodStartDate,
+      fromDB: dbSettings?.value ? 'yes' : 'no (using defaults)'
+    });
     
     res.json(settings);
   } catch (error) {

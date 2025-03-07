@@ -10,7 +10,7 @@ interface TimeInputProps {
   disabled?: boolean;
   hasError?: boolean;
   onKeyDown?: (e: KeyboardEvent) => void;
-  tabIndex?: number;
+  tabIndex?: 0 | -1;
 }
 
 const parseTimeInput = (input: string): string | null => {
@@ -72,6 +72,53 @@ const parseTimeInput = (input: string): string | null => {
   return null;
 };
 
+// Simple function to format time for display
+function formatTimeForDisplay(time: string | null): string {
+  if (!time) return '';
+  
+  // Check if the time is already in 12-hour format
+  if (time.includes('AM') || time.includes('PM')) {
+    return time;
+  }
+  
+  // Format time from 24-hour to 12-hour format
+  try {
+    // Handle simple hour format (e.g., "8" -> "8:00 AM")
+    if (/^\d{1,2}$/.test(time)) {
+      const hours = parseInt(time, 10);
+      if (hours >= 0 && hours <= 23) {
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const hours12 = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
+        return `${hours12}:00 ${period}`;
+      }
+    }
+    
+    // Handle HH:MM format
+    if (/^\d{1,2}:\d{2}$/.test(time)) {
+      const [hours24, minutes] = time.split(':');
+      const hours = parseInt(hours24, 10);
+      
+      // Special handling for noon and midnight
+      if (hours === 0) {
+        return `12:${minutes} AM`; // Midnight
+      } else if (hours === 12) {
+        return `12:${minutes} PM`; // Noon
+      }
+      
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const hours12 = hours > 12 ? hours - 12 : hours;
+      
+      return `${hours12}:${minutes} ${period}`;
+    }
+    
+    // If we can't parse it, return as is
+    return time;
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return time; // Return original if parsing fails
+  }
+}
+
 export function TimeInput({ 
   value,
   onChange,
@@ -81,60 +128,98 @@ export function TimeInput({
   onKeyDown,
   tabIndex,
 }: TimeInputProps) {
-  const [localValue, setLocalValue] = useState(value || '');
+  // Initialize localValue from the value prop
+  const [localValue, setLocalValue] = useState(value ? formatTimeForDisplay(value) : '');
   const [isEditing, setIsEditing] = useState(false);
   
+  // Update localValue when value prop changes and we're not editing
   useEffect(() => {
     if (!isEditing) {
-      setLocalValue(value || '');
+      console.log('TimeInput - updating localValue from prop:', { value, localValue });
+      setLocalValue(value ? formatTimeForDisplay(value) : '');
     }
   }, [value, isEditing]);
 
+  useEffect(() => {
+    console.log('TimeInput value changed:', { value, localValue, isEditing });
+  }, [value, localValue, isEditing]);
+
   const handleChange = (text: string) => {
+    console.log('⌚ TimeInput handleChange:', text);
+    
+    // Store the raw input value
     setLocalValue(text);
     
-    // Clear value if empty or placeholder
+    // Only clear value if empty or placeholder
     if (!text || text === '--:--') {
+      console.log('⌚ TimeInput clearing value');
       onChange(null);
-      return;
     }
-    
-    // Only try to parse and convert if it looks like a complete time
-    if (text.match(/^\d{1,2}(:\d{2})?\s*(AM|PM|A|P)?$/i)) {
-      const time24h = convertTo24Hour(text);
-      onChange(time24h);
-    }
+    // Don't process the time yet, just store the local value
+    // We'll process it on blur
   };
 
   const handleInputBlur = () => {
+    console.log('⌚ TimeInput handleInputBlur - before:', { localValue, value });
     setIsEditing(false);
     
     // Clear value if empty or placeholder
     if (!localValue || localValue === '--:--') {
+      console.log('⌚ TimeInput clearing value on blur');
       onChange(null);
       setLocalValue('');
       onBlur?.();
       return;
     }
 
-    const time24h = convertTo24Hour(localValue);
+    // Now process the time when the user is done typing
+    // Try to convert the input to 24-hour format
+    let time24h = convertTo24Hour(localValue);
+    console.log('⌚ TimeInput processing time on blur:', { localValue, time24h });
+    
     if (time24h) {
+      // Successfully converted to 24-hour format
+      console.log('⌚ TimeInput successfully converted time:', time24h);
       onChange(time24h);
     } else {
-      // If parsing fails, keep the previous valid value
-      setLocalValue(value || '');
+      // If direct conversion fails, try to parse it as a simple number (e.g., "8" -> "08:00")
+      const simpleNumberMatch = localValue.match(/^(\d{1,2})$/);
+      if (simpleNumberMatch) {
+        const hours = parseInt(simpleNumberMatch[1], 10);
+        if (hours >= 0 && hours <= 23) {
+          time24h = `${hours.toString().padStart(2, '0')}:00`;
+          console.log('⌚ TimeInput parsed simple number input:', { localValue, time24h });
+          onChange(time24h);
+        } else {
+          // Invalid hours
+          console.log('⌚ TimeInput invalid hours, reverting to previous value');
+          setLocalValue(value ? formatTimeForDisplay(value) : '');
+        }
+      } else {
+        // If parsing fails, keep the previous valid value
+        console.log('⌚ TimeInput parsing failed, reverting to previous value');
+        setLocalValue(value ? formatTimeForDisplay(value) : '');
+      }
     }
+    
     onBlur?.();
+    console.log('⌚ TimeInput handleInputBlur - after:', { localValue, value, time24h });
   };
 
   const handleInputFocus = () => {
+    console.log('handleInputFocus:', { localValue, value });
     setIsEditing(true);
   };
+
+  // Use localValue when editing, otherwise use formatted value from props
+  // IMPORTANT: Always show the value from props when not editing to ensure consistency
+  const displayValue = isEditing ? localValue : (value ? formatTimeForDisplay(value) : '');
+  console.log('Rendering TimeInput with displayValue:', displayValue);
 
   return (
     <Input
       label=""
-      value={localValue}
+      value={displayValue}
       onChangeText={handleChange}
       onBlur={handleInputBlur}
       onFocus={handleInputFocus}
@@ -142,7 +227,6 @@ export function TimeInput({
       style={[styles.input, hasError && styles.errorInput]}
       editable={!disabled}
       maxLength={8} // "12:45 PM" is 8 characters
-      onKeyDown={onKeyDown}
       tabIndex={tabIndex}
     />
   );

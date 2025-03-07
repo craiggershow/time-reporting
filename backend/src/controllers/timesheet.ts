@@ -602,4 +602,84 @@ export async function approveTimesheet(req: AuthRequest, res: ExpressResponse) {
   }
 }
 
+// Add the updateTimeEntry function
+export async function updateTimeEntry(req: AuthRequest, res: ExpressResponse) {
+  try {
+    const { timesheetId, week, day, entry } = req.body;
+    console.log(`[updateTimeEntry] Updating time entry for timesheet ${timesheetId}, week ${week}, day ${day}`);
+    console.log(`[updateTimeEntry] Entry data:`, entry);
+
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Validate the entry
+    if (!entry) {
+      console.error('[updateTimeEntry] No entry data provided');
+      return res.status(400).json({ error: 'No entry data provided' });
+    }
+
+    // Find the timesheet
+    const timesheet = await prisma.timesheet.findFirst({
+      where: {
+        id: timesheetId,
+        userId: req.user.id,
+      },
+      include: {
+        weeks: {
+          where: {
+            weekNumber: week,
+          },
+          include: {
+            days: {
+              where: {
+                dayOfWeek: day.toUpperCase(),
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!timesheet) {
+      console.error('[updateTimeEntry] Timesheet not found');
+      return res.status(404).json({ error: 'Timesheet not found' });
+    }
+
+    if (timesheet.weeks.length === 0) {
+      console.error('[updateTimeEntry] Week not found');
+      return res.status(404).json({ error: 'Week not found' });
+    }
+
+    const weekData = timesheet.weeks[0];
+    if (weekData.days.length === 0) {
+      console.error('[updateTimeEntry] Day not found');
+      return res.status(404).json({ error: 'Day not found' });
+    }
+
+    const dayData = weekData.days[0];
+
+    // Update the day entry
+    const updatedDay = await prisma.day.update({
+      where: {
+        id: dayData.id,
+      },
+      data: {
+        startTime: entry.startTime,
+        endTime: entry.endTime,
+        lunchStartTime: entry.lunchStartTime,
+        lunchEndTime: entry.lunchEndTime,
+        dayType: entry.dayType,
+        totalHours: entry.totalHours,
+      },
+    });
+
+    console.log(`[updateTimeEntry] Day updated successfully:`, updatedDay);
+    return res.json(updatedDay);
+  } catch (error) {
+    console.error('[updateTimeEntry] Error:', error);
+    return res.status(500).json({ error: 'Failed to update time entry' });
+  }
+}
+
 // ... implement other timesheet controller functions ... 
