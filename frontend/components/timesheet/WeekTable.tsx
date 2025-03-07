@@ -379,7 +379,9 @@ export function WeekTable({
                 validationState[day] && !validationState[day].isValid && styles.errorCell
               ]}>
                 <ThemedText style={styles.totalHours}>
-                  {data.days[day].totalHours.toFixed(2)}
+                  {(data.days[day].totalHours !== undefined && data.days[day].totalHours !== null) 
+                    ? data.days[day].totalHours.toFixed(2) 
+                    : '0.00'}
                 </ThemedText>
               </View>
             ))}

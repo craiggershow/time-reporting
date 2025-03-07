@@ -1,5 +1,5 @@
 import { TimeEntry } from '@/types/timesheet';
-import { timeToMinutes } from './timeUtils';
+import { timeToMinutes, minutesToTime, convertTo12Hour } from './timeUtils';
 import { TimesheetSettings } from '@/types/settings';
 
 interface ValidationResult {
@@ -8,7 +8,10 @@ interface ValidationResult {
 }
 
 
-export function validateTimeEntry(entry: TimeEntry, settings: TimesheetSettings): ValidationResult {
+export function validateTimeEntry(entry: TimeEntry, settings?: TimesheetSettings): ValidationResult {
+  console.log('⚙️ validateTimeEntry called with settings:', settings);
+  console.log('⚙️ validateTimeEntry entry:', entry);
+  
   // Check for incomplete pairs
   if (entry.startTime && !entry.endTime) {
     return {
@@ -48,16 +51,16 @@ export function validateTimeEntry(entry: TimeEntry, settings: TimesheetSettings)
     const startMinutes = timeToMinutes(entry.startTime);
     const endMinutes = timeToMinutes(entry.endTime);
 
-    // Check start time is after minimum
-    if (startMinutes < settings.minStartTime) {
+    // Check start time is after minimum (if settings are provided)
+    if (settings?.minStartTime !== undefined && startMinutes < settings.minStartTime) {
       return {
         isValid: false,
         message: `Start time must be after ${convertTo12Hour(minutesToTime(settings.minStartTime))}`
       };
     }
 
-    // Check end time is before maximum
-    if (endMinutes > settings.maxEndTime) {
+    // Check end time is before maximum (if settings are provided)
+    if (settings?.maxEndTime !== undefined && endMinutes > settings.maxEndTime) {
       return {
         isValid: false,
         message: `End time must be before ${convertTo12Hour(minutesToTime(settings.maxEndTime))}`
@@ -71,33 +74,45 @@ export function validateTimeEntry(entry: TimeEntry, settings: TimesheetSettings)
     const lunchEndMinutes = timeToMinutes(entry.lunchEndTime);
 
     // Check lunch start time constraints
-    if (lunchStartMinutes < startMinutes) {
-      return {
-        isValid: false,
-        message: 'Lunch start time must be after start time'
-      };
+    if (entry.startTime) {
+      const startMinutes = timeToMinutes(entry.startTime);
+      if (lunchStartMinutes < startMinutes) {
+        return {
+          isValid: false,
+          message: 'Lunch start time must be after start time'
+        };
+      }
     }
 
-    if (lunchStartMinutes > endMinutes) {
-      return {
-        isValid: false,
-        message: 'Lunch start time must be before end time'
-      };
+    if (entry.endTime) {
+      const endMinutes = timeToMinutes(entry.endTime);
+      if (lunchStartMinutes > endMinutes) {
+        return {
+          isValid: false,
+          message: 'Lunch start time must be before end time'
+        };
+      }
     }
 
     // Check lunch end time constraints
-    if (lunchEndMinutes < startMinutes) {
-      return {
-        isValid: false,
-        message: 'Lunch end time must be after start time'
-      };
+    if (entry.startTime) {
+      const startMinutes = timeToMinutes(entry.startTime);
+      if (lunchEndMinutes < startMinutes) {
+        return {
+          isValid: false,
+          message: 'Lunch end time must be after start time'
+        };
+      }
     }
 
-    if (lunchEndMinutes > endMinutes) {
-      return {
-        isValid: false,
-        message: 'Lunch end time must be before end time'
-      };
+    if (entry.endTime) {
+      const endMinutes = timeToMinutes(entry.endTime);
+      if (lunchEndMinutes > endMinutes) {
+        return {
+          isValid: false,
+          message: 'Lunch end time must be before end time'
+        };
+      }
     }
 
     // Check lunch end is after lunch start
@@ -120,12 +135,20 @@ export function validateTimeEntry(entry: TimeEntry, settings: TimesheetSettings)
   return { isValid: true };
 }
 
-export function validateWeeklyHours(weekTotal: number): ValidationResult {
-  if (weekTotal > 50) {
+export function validateWeeklyHours(weekTotal: number, settings?: TimesheetSettings): ValidationResult {
+  console.log('⚙️ validateWeeklyHours called with weekTotal:', weekTotal, 'settings:', settings);
+  
+  if (!settings) {
+    console.log('⚙️ No settings provided to validateWeeklyHours, skipping validation');
+    return { isValid: true };
+  }
+
+  if (settings.maxWeeklyHours !== undefined && weekTotal > settings.maxWeeklyHours) {
     return {
       isValid: false,
-      message: 'Total hours cannot exceed 50 hours per week'
+      message: `Weekly hours must not exceed ${settings.maxWeeklyHours}`
     };
   }
+
   return { isValid: true };
 } 

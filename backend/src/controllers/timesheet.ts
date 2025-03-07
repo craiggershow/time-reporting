@@ -603,20 +603,28 @@ export async function approveTimesheet(req: AuthRequest, res: ExpressResponse) {
 }
 
 // Add the updateTimeEntry function
-export async function updateTimeEntry(req: AuthRequest, res: ExpressResponse) {
+export const updateTimeEntry = async (req: AuthRequest, res: ExpressResponse) => {
   try {
     const { timesheetId, week, day, entry } = req.body;
     console.log(`[updateTimeEntry] Updating time entry for timesheet ${timesheetId}, week ${week}, day ${day}`);
     console.log(`[updateTimeEntry] Entry data:`, entry);
 
-    if (!req.user?.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    // Validate that dayType is a valid enum value
+    if (entry.dayType && !Object.values(DayType).includes(entry.dayType)) {
+      console.error(`[updateTimeEntry] Invalid day type: ${entry.dayType}`);
+      return res.status(400).json({ error: `Invalid day type: ${entry.dayType}` });
     }
 
-    // Validate the entry
-    if (!entry) {
-      console.error('[updateTimeEntry] No entry data provided');
-      return res.status(400).json({ error: 'No entry data provided' });
+    // For special day types, ensure time entries are cleared
+    if (entry.dayType === DayType.VACATION || entry.dayType === DayType.SICK || entry.dayType === DayType.HOLIDAY) {
+      entry.startTime = null;
+      entry.endTime = null;
+      entry.lunchStartTime = null;
+      entry.lunchEndTime = null;
+    }
+
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     // Find the timesheet
@@ -628,7 +636,7 @@ export async function updateTimeEntry(req: AuthRequest, res: ExpressResponse) {
       include: {
         weeks: {
           where: {
-            weekNumber: week,
+            weekNumber: parseInt(week),
           },
           include: {
             days: {
@@ -680,6 +688,6 @@ export async function updateTimeEntry(req: AuthRequest, res: ExpressResponse) {
     console.error('[updateTimeEntry] Error:', error);
     return res.status(500).json({ error: 'Failed to update time entry' });
   }
-}
+};
 
 // ... implement other timesheet controller functions ... 

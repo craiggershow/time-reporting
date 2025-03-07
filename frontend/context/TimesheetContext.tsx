@@ -176,7 +176,24 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
     if (!currentTimesheet) return;
     
     try {
-      console.log('💾 Saving time entry to database:', { week, day, entry });
+      // Ensure dayType is uppercase for the API
+      const processedEntry = { ...entry };
+      
+      // Convert dayType to uppercase if it exists
+      if (processedEntry.dayType) {
+        processedEntry.dayType = processedEntry.dayType.toUpperCase();
+        console.log('💾 Ensuring dayType is uppercase:', processedEntry.dayType);
+        
+        // For special day types, ensure time entries are cleared
+        if (['VACATION', 'SICK', 'HOLIDAY'].includes(processedEntry.dayType)) {
+          processedEntry.startTime = null;
+          processedEntry.endTime = null;
+          processedEntry.lunchStartTime = null;
+          processedEntry.lunchEndTime = null;
+        }
+      }
+      
+      console.log('💾 Saving time entry to database:', { week, day, entry: processedEntry });
       
       const response = await fetch(buildApiUrl('UPDATE_TIME_ENTRY'), {
         method: 'POST',
@@ -188,7 +205,7 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
           timesheetId: currentTimesheet.id,
           week,
           day,
-          entry,
+          entry: processedEntry,
         }),
       });
       
@@ -198,9 +215,9 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
       }
       
       const updatedDay = await response.json();
-      console.log('💾 Time entry saved successfully:', updatedDay);
+      console.log('💾 Time entry updated successfully:', updatedDay);
     } catch (error) {
-      console.error('💾 Error saving time entry to database:', error);
+      console.error('💾 Error saving time entry:', error);
     }
   };
 

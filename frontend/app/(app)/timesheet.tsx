@@ -6,7 +6,7 @@ import { WeekTable } from '@/components/timesheet/WeekTable';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useTimesheet } from '@/context/TimesheetContext';
-import { WeekData, TimeEntry, DayType, TimesheetData } from '@/types/timesheet';
+import { WeekData as ImportedWeekData, TimeEntry, DayType, TimesheetData, DayOfWeek } from '@/types/timesheet';
 import { calculateTotalRegularHours } from '../../utils/timeCalculations';
 import { createEmptyWeekData, calculateWeekTotalHours } from '@/context/TimesheetContext';
 import { Header } from '@/components/layout/Header';
@@ -447,12 +447,46 @@ export default function TimesheetScreen() {
     const weekKey = `week${week}` as const;
     const currentEntry = currentTimesheet[weekKey][day];
     
+    // For special day types (VACATION, SICK, HOLIDAY), clear time entries
+    const updatedEntry = { ...currentEntry, dayType: type };
+    
+    if (type === 'VACATION' || type === 'SICK' || type === 'HOLIDAY') {
+      console.log(`📅 Setting day type to ${type}, clearing time entries`);
+      updatedEntry.startTime = null;
+      updatedEntry.endTime = null;
+      updatedEntry.lunchStartTime = null;
+      updatedEntry.lunchEndTime = null;
+      // For special day types, set a default of 8 hours or use the configured value
+      updatedEntry.totalHours = 8; // Default to 8 hours for special day types
+    } else if (type === 'REGULAR') {
+      // For regular days, recalculate hours based on time entries
+      if (!updatedEntry.startTime || !updatedEntry.endTime) {
+        updatedEntry.totalHours = 0;
+      } else {
+        // Calculate hours based on start and end times
+        const startMinutes = timeToMinutes(updatedEntry.startTime);
+        const endMinutes = timeToMinutes(updatedEntry.endTime);
+        let lunchMinutes = 0;
+        
+        if (updatedEntry.lunchStartTime && updatedEntry.lunchEndTime) {
+          const lunchStartMinutes = timeToMinutes(updatedEntry.lunchStartTime);
+          const lunchEndMinutes = timeToMinutes(updatedEntry.lunchEndTime);
+          lunchMinutes = lunchEndMinutes - lunchStartMinutes;
+        }
+        
+        const totalMinutes = endMinutes - startMinutes - lunchMinutes;
+        updatedEntry.totalHours = Math.max(0, totalMinutes / 60);
+      }
+    }
+    
+    console.log(`📅 Updated entry:`, updatedEntry);
+    
     updateTimesheetState({
       type: 'UPDATE_TIME_ENTRY',
       payload: {
         week,
         day,
-        entry: { ...currentEntry, dayType: type },
+        entry: updatedEntry,
       },
     });
   };
@@ -748,28 +782,106 @@ export default function TimesheetScreen() {
   };
 
   const handleCopyWeek = () => {
-    if (!currentTimesheet?.week1) return;
+    if (!currentTimesheet?.week1) {
+      console.log('📋 No week1 data found');
+      return;
+    }
     
-    updateTimesheetState({
-      type: 'SET_PAY_PERIOD',
-      payload: {
-        ...currentTimesheet,
-        week2: { ...currentTimesheet.week1 },
-      },
+    if (!currentTimesheet?.week2) {
+      console.log('📋 No week2 data found');
+      return;
+    }
+    
+    console.log('📋 Copying week 1 to week 2');
+    
+    // Get the array of day names in lowercase
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
+    
+    // For each day, copy from week1 to week2
+    days.forEach(dayKey => {
+      // Try to get the entry directly from the weekData object
+      let week1Entry = currentTimesheet.week1[dayKey];
+      
+      // If that didn't work, try to get it from weekData.days if it's an object
+      if (!week1Entry && currentTimesheet.week1.days && typeof currentTimesheet.week1.days === 'object') {
+        week1Entry = currentTimesheet.week1.days[dayKey];
+      }
+      
+      if (week1Entry) {
+        console.log(`📋 Copying day ${dayKey} from week 1 to week 2:`, week1Entry);
+        
+        // Update the timesheet state for this day
+        updateTimesheetState({
+          type: 'UPDATE_TIME_ENTRY',
+          payload: {
+            week: 2,
+            day: dayKey.toUpperCase() as DayOfWeek, // Convert to uppercase for the API
+            entry: { ...week1Entry },
+          },
+        });
+      }
     });
+    
+    // Also copy extra hours if they exist
+    if (currentTimesheet.week1.extraHours) {
+      updateTimesheetState({
+        type: 'SET_EXTRA_HOURS',
+        payload: {
+          week: 2,
+          hours: currentTimesheet.week1.extraHours
+        }
+      });
+    }
   };
 
-  const handleCopyPrevious = (week: 1 | 2, day: keyof WeekData) => {
-    if (!currentTimesheet) return;
+  const handleCopyPrevious = (week: 1 | 2, day: DayOfWeek) => {
+    if (!currentTimesheet) {
+      console.log('📋 No currentTimesheet found');
+      return;
+    }
+    console.log('📋 handleCopyPrevious called with:', { week, day });
 
-    const weekData = currentTimesheet[`week${week}`];
-    const days = Object.keys(weekData) as (keyof WeekData)[];
-    const currentDayIndex = days.indexOf(day);
+    const weekKey = `week${week}`;
+    const weekData = currentTimesheet[weekKey];
     
-    if (currentDayIndex <= 0) return;
+    if (!weekData) {
+      console.log(`📋 No weekData found for week${week}`);
+      return;
+    }
     
-    const previousDay = days[currentDayIndex - 1];
-    const previousEntry = weekData[previousDay];
+    // Convert day to lowercase for object access
+    const dayLowerCase = day.toLowerCase();
+    
+    // Get the array of day names in lowercase
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
+    const currentDayIndex = days.indexOf(dayLowerCase as any);
+    
+    if (currentDayIndex <= 0) {
+      console.log('📋 Cannot copy - this is the first day or day not found');
+      return; // Can't copy if it's the first day or not found
+    }
+    
+    // Get the previous day key
+    const previousDayKey = days[currentDayIndex - 1];
+    
+    // Try to get the previous day's entry directly from the weekData object
+    let previousEntry = weekData[previousDayKey];
+    
+    // If that didn't work, try to get it from weekData.days if it's an object
+    if (!previousEntry && weekData.days && typeof weekData.days === 'object') {
+      previousEntry = weekData.days[previousDayKey];
+    }
+    
+    if (!previousEntry) {
+      console.log('📋 No previous entry found');
+      return;
+    }
+    
+    console.log('📋 Copying from previous day:', { 
+      from: previousDayKey,
+      to: dayLowerCase,
+      entry: previousEntry
+    });
     
     updateTimesheetState({
       type: 'UPDATE_TIME_ENTRY',
@@ -912,7 +1024,6 @@ export default function TimesheetScreen() {
     </View>
   );
 }
-
 function calculateWeekTotal(week: WeekData | undefined): number {
   console.log('calculateWeekTotal - weekData:', week);
   
@@ -986,7 +1097,6 @@ function processWeekData(weekData: any) {
   console.log('Final processed week data:', result);
   return result;
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1102,3 +1212,4 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
 }); 
+
