@@ -77,6 +77,7 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
             thursday: data.weeks.week1.days.thursday || null,
             friday: data.weeks.week1.days.friday || null,
           },
+          extraHours: data.weeks.week1.extraHours || 0,
           totalHours: calculateWeekTotalHours(data.weeks.week1)
         },
         week2: {
@@ -87,6 +88,7 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
             thursday: data.weeks.week2.days.thursday || null,
             friday: data.weeks.week2.days.friday || null,
           },
+          extraHours: data.weeks.week2.extraHours || 0,
           totalHours: calculateWeekTotalHours(data.weeks.week2)
         }
       };

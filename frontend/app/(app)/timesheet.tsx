@@ -1022,8 +1022,6 @@ export default function TimesheetScreen() {
   );
 }
 function calculateWeekTotal(week: any): number {
-  console.log('calculateWeekTotal - weekData:', week);
-  
   if (!week) {
     console.log('calculateWeekTotal - weekData is undefined, returning 0');
     return 0;

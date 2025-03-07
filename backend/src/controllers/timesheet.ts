@@ -230,6 +230,7 @@ export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse
       submittedAt: timesheet.submittedAt,
       weeks: {
         week1: {
+          extraHours: timesheet.weeks.find(w => w.weekNumber === 1)?.extraHours || 0,
           days: {
             monday: timesheet.weeks.find(w => w.weekNumber === 1)?.days.find(d => d.dayOfWeek === 'MONDAY') || null,
             tuesday: timesheet.weeks.find(w => w.weekNumber === 1)?.days.find(d => d.dayOfWeek === 'TUESDAY') || null,
@@ -239,6 +240,7 @@ export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse
           }
         },
         week2: {
+          extraHours: timesheet.weeks.find(w => w.weekNumber === 2)?.extraHours || 0,
           days: {
             monday: timesheet.weeks.find(w => w.weekNumber === 2)?.days.find(d => d.dayOfWeek === 'MONDAY') || null,
             tuesday: timesheet.weeks.find(w => w.weekNumber === 2)?.days.find(d => d.dayOfWeek === 'TUESDAY') || null,
@@ -251,6 +253,7 @@ export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse
     };
 
     res.json(transformedTimesheet);
+    console.log(transformedTimesheet);
   } catch (error) {
     console.error('Get current timesheet error:', error);
     res.status(500).json({ error: 'Failed to get current timesheet' });
