@@ -690,4 +690,58 @@ export const updateTimeEntry = async (req: AuthRequest, res: ExpressResponse) =>
   }
 };
 
+export const updateExtraHours = async (req: AuthRequest, res: ExpressResponse) => {
+  try {
+    const { timesheetId, week, hours } = req.body;
+    console.log(`[updateExtraHours] Updating extra hours for timesheet ${timesheetId}, week ${week}`);
+    console.log(`[updateExtraHours] Hours: ${hours}`);
+
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Find the timesheet
+    const timesheet = await prisma.timesheet.findUnique({
+      where: {
+        id: timesheetId,
+      },
+      include: {
+        weeks: {
+          where: {
+            weekNumber: parseInt(week),
+          },
+        },
+      },
+    });
+
+    if (!timesheet) {
+      console.error('[updateExtraHours] Timesheet not found');
+      return res.status(404).json({ error: 'Timesheet not found' });
+    }
+
+    if (timesheet.weeks.length === 0) {
+      console.error('[updateExtraHours] Week not found');
+      return res.status(404).json({ error: 'Week not found' });
+    }
+
+    const weekData = timesheet.weeks[0];
+
+    // Update the extra hours
+    const updatedWeek = await prisma.week.update({
+      where: {
+        id: weekData.id,
+      },
+      data: {
+        extraHours: hours,
+      },
+    });
+
+    console.log(`[updateExtraHours] Week updated successfully:`, updatedWeek);
+    return res.json(updatedWeek);
+  } catch (error) {
+    console.error('[updateExtraHours] Error:', error);
+    return res.status(500).json({ error: 'Failed to update extra hours' });
+  }
+};
+
 // ... implement other timesheet controller functions ... 

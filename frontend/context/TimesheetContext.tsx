@@ -21,11 +21,20 @@ export type TimesheetAction =
 export function calculateWeekTotalHours(week: WeekData): number {
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
   
-  return days.reduce((total, day) => {
+  // Calculate the sum of hours from each day
+  const daysTotal = days.reduce((total, day) => {
     const entry = week.days[day];
     if (!entry) return total;
     return total + (entry.totalHours || 0);
   }, 0);
+  
+  // Add extra hours to the total
+  const extraHours = week.extraHours || 0;
+  const total = daysTotal + extraHours;
+  
+  console.log('📊 calculateWeekTotalHours - days total:', daysTotal, 'extra hours:', extraHours, 'final total:', total);
+  
+  return total;
 }
 
 const TimesheetContext = createContext<TimesheetContextType | null>(null);
@@ -146,7 +155,8 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
           setCurrentTimesheet(updatedTimesheet);
           console.log('📝 Updated timesheet state with extra hours:', updatedTimesheet);
           
-          // TODO: Send update to the server
+          // Send update to the server
+          saveExtraHoursToDatabase(week, hours);
         }
         break;
       }
@@ -218,6 +228,38 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
       console.log('💾 Time entry updated successfully:', updatedDay);
     } catch (error) {
       console.error('💾 Error saving time entry:', error);
+    }
+  };
+
+  // Function to save extra hours to database
+  const saveExtraHoursToDatabase = async (week: 1 | 2, hours: number) => {
+    if (!currentTimesheet) return;
+    
+    try {
+      console.log('💾 Saving extra hours to database:', { week, hours });
+      
+      const response = await fetch(buildApiUrl('UPDATE_EXTRA_HOURS'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          timesheetId: currentTimesheet.id,
+          week,
+          hours,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update extra hours');
+      }
+      
+      const updatedWeek = await response.json();
+      console.log('💾 Extra hours updated successfully:', updatedWeek);
+    } catch (error) {
+      console.error('💾 Error saving extra hours:', error);
     }
   };
 

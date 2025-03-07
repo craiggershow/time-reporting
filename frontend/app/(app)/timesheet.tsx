@@ -1021,7 +1021,7 @@ export default function TimesheetScreen() {
     </View>
   );
 }
-function calculateWeekTotal(week: WeekData | undefined): number {
+function calculateWeekTotal(week: any): number {
   console.log('calculateWeekTotal - weekData:', week);
   
   if (!week) {
@@ -1031,7 +1031,8 @@ function calculateWeekTotal(week: WeekData | undefined): number {
 
   console.log('calculateWeekTotal - Week Data:', week);
   
-  const total = week.days.totalHours + (week.extraHours || 0);
+  // Use the totalHours property directly from the WeekData structure
+  const total = week.totalHours || 0;
   console.log('calculateWeekTotal - final total:', total);
 
   return total;
