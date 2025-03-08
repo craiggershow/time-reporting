@@ -22,6 +22,7 @@ export const API_ENDPOINTS = {
   RECALL_TIMESHEET: '/api/timesheets/recall',
   UPDATE_TIME_ENTRY: '/api/timesheets/entry',
   UPDATE_EXTRA_HOURS: '/api/timesheets/extra-hours',
+  UPDATE_VACATION_HOURS: '/api/timesheets/vacation-hours',
   PENDING_TIMESHEETS: '/api/admin/timesheets/pending',
   APPROVE_TIMESHEET: '/api/admin/timesheets/approve',
   PAY_PERIODS: '/api/pay-periods',

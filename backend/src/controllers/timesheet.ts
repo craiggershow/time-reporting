@@ -747,4 +747,44 @@ export const updateExtraHours = async (req: AuthRequest, res: ExpressResponse) =
   }
 };
 
+export const updateVacationHours = async (req: AuthRequest, res: ExpressResponse) => {
+  try {
+    const { timesheetId, hours } = req.body;
+    console.log(`[updateVacationHours] Updating vacation hours for timesheet ${timesheetId}`);
+    console.log(`[updateVacationHours] Hours: ${hours}`);
+
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Find the timesheet
+    const timesheet = await prisma.timesheet.findUnique({
+      where: {
+        id: timesheetId,
+      },
+    });
+
+    if (!timesheet) {
+      console.error('[updateVacationHours] Timesheet not found');
+      return res.status(404).json({ error: 'Timesheet not found' });
+    }
+
+    // Update the vacation hours
+    const updatedTimesheet = await prisma.timesheet.update({
+      where: {
+        id: timesheetId,
+      },
+      data: {
+        vacationHours: hours,
+      },
+    });
+
+    console.log(`[updateVacationHours] Timesheet updated successfully:`, updatedTimesheet);
+    return res.json(updatedTimesheet);
+  } catch (error) {
+    console.error('[updateVacationHours] Error:', error);
+    return res.status(500).json({ error: 'Failed to update vacation hours' });
+  }
+};
+
 // ... implement other timesheet controller functions ... 

@@ -174,7 +174,8 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
         setCurrentTimesheet(updatedTimesheet);
         console.log('📝 Updated timesheet state with vacation hours:', updatedTimesheet);
         
-        // TODO: Send update to the server
+        // Send update to the server
+        saveVacationHoursToDatabase(hours);
         break;
       }
       
@@ -262,6 +263,37 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
       console.log('💾 Extra hours updated successfully:', updatedWeek);
     } catch (error) {
       console.error('💾 Error saving extra hours:', error);
+    }
+  };
+
+  // Function to save vacation hours to database
+  const saveVacationHoursToDatabase = async (hours: number) => {
+    if (!currentTimesheet) return;
+    
+    try {
+      console.log('💾 Saving vacation hours to database:', hours);
+      
+      const response = await fetch(buildApiUrl('UPDATE_VACATION_HOURS'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          timesheetId: currentTimesheet.id,
+          hours,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update vacation hours');
+      }
+      
+      const updatedTimesheet = await response.json();
+      console.log('💾 Vacation hours updated successfully:', updatedTimesheet);
+    } catch (error) {
+      console.error('💾 Error saving vacation hours:', error);
     }
   };
 

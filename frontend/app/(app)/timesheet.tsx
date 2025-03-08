@@ -925,7 +925,7 @@ export default function TimesheetScreen() {
   }
 
   // Calculate totals for summary
-  console.log('🔢 currentTimesheet structure:', JSON.stringify(currentTimesheet, null, 2));
+  //console.log('🔢 currentTimesheet structure:', JSON.stringify(currentTimesheet, null, 2));
   
   // Use the totalHours property directly from the WeekData structure
   const week1Total = currentTimesheet.week1.totalHours || 0;
