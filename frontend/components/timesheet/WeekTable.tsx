@@ -193,6 +193,27 @@ export function WeekTable({
     const entry = data.days[day];
     const errorMessage = validationState[day]?.message || '';
 
+    // For total hours cell, only show errors that are not specific to other fields
+    if (field === 'totalHours') {
+      // Don't show end time specific errors in the total hours cell
+      if (errorMessage.includes('End time cannot be later than')) {
+        return false;
+      }
+      
+      // Don't show start/end time pair errors in the total hours cell
+      if (errorMessage.includes('End time must be after start time')) {
+        return false;
+      }
+      
+      // Don't show lunch time errors in the total hours cell
+      if (errorMessage.includes('Lunch')) {
+        return false;
+      }
+      
+      // For any other errors, show them in the total hours cell
+      return true;
+    }
+
     // Check for specific error messages to determine which field has the error
     if (errorMessage.includes('End time cannot be later than') && field === 'endTime') {
       return true;
@@ -203,10 +224,15 @@ export function WeekTable({
       case 'endTime':
         if (!entry?.startTime && entry?.endTime) return true;  // Missing start time
         if (entry?.startTime && !entry?.endTime) return false; // Don't highlight missing end time
+        if (errorMessage.includes('End time must be after start time')) return true;
         break;
       case 'lunchEndTime':
         if (!entry?.lunchStartTime && entry?.lunchEndTime) return true;  // Missing lunch start time
         if (entry?.lunchStartTime && !entry?.lunchEndTime) return false; // Don't highlight missing lunch end time
+        if (errorMessage.includes('Lunch end time must be')) return true;
+        break;
+      case 'lunchStartTime':
+        if (errorMessage.includes('Lunch start time must be')) return true;
         break;
     }
 
@@ -388,7 +414,7 @@ export function WeekTable({
               <View key={day} style={[
                 styles.cell, 
                 { backgroundColor: colors.background },
-                validationState[day] && !validationState[day].isValid && styles.errorCell
+                hasFieldError(day, 'totalHours') && styles.errorCell
               ]}>
                 <ThemedText style={styles.totalHours}>
                   {(data.days[day].totalHours !== undefined && data.days[day].totalHours !== null) 
