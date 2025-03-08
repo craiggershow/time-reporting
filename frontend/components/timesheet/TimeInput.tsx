@@ -214,7 +214,7 @@ export function TimeInput({
   // Use localValue when editing, otherwise use formatted value from props
   // IMPORTANT: Always show the value from props when not editing to ensure consistency
   const displayValue = isEditing ? localValue : (value ? formatTimeForDisplay(value) : '');
-  console.log('Rendering TimeInput with displayValue:', displayValue);
+  console.debug('Rendering TimeInput with displayValue:', displayValue);
 
   return (
     <Input

@@ -8,8 +8,11 @@ interface ValidationResult {
 }
 
 
-export function validateTimeEntry(entry: TimeEntry, settings?: TimesheetSettings): ValidationResult {
+export function validateTimeEntry(entry: TimeEntry, settings?: any): ValidationResult {
   console.log('⚙️ validateTimeEntry called with settings:', settings);
+  console.log('⚙️ validateTimeEntry settings type:', typeof settings);
+  console.log('⚙️ validateTimeEntry settings keys:', settings ? Object.keys(settings) : 'null');
+  console.log('⚙️ validateTimeEntry settings stringified:', settings ? JSON.stringify(settings) : 'null');
   console.log('⚙️ validateTimeEntry entry:', entry);
   
   // Check for incomplete pairs
@@ -20,7 +23,7 @@ export function validateTimeEntry(entry: TimeEntry, settings?: TimesheetSettings
     };
   }
 
-  if (!entry.startTime && entry.endTime) {
+  if (entry.endTime && !entry.startTime) {
     return {
       isValid: false,
       message: 'Start time is required when end time is entered'
@@ -34,88 +37,80 @@ export function validateTimeEntry(entry: TimeEntry, settings?: TimesheetSettings
     };
   }
 
-  if (!entry.lunchStartTime && entry.lunchEndTime) {
+  if (entry.lunchEndTime && !entry.lunchStartTime) {
     return {
       isValid: false,
       message: 'Lunch start time is required when lunch end time is entered'
     };
   }
 
-  // If no times are entered at all, consider it valid
-  if (!entry.startTime && !entry.endTime && !entry.lunchStartTime && !entry.lunchEndTime) {
+  // Skip further validation for non-regular day types
+  if (entry.dayType !== 'REGULAR') {
     return { isValid: true };
   }
 
-  // Only validate times if they exist
-  if (entry.startTime && entry.endTime) {
-    const startMinutes = timeToMinutes(entry.startTime);
-    const endMinutes = timeToMinutes(entry.endTime);
-
-    // Check start time is after minimum (if settings are provided)
-    if (settings?.minStartTime !== undefined && startMinutes < settings.minStartTime) {
-      return {
-        isValid: false,
-        message: `Start time must be after ${convertTo12Hour(minutesToTime(settings.minStartTime))}`
-      };
-    }
-
-    // Check end time is before maximum (if settings are provided)
-    if (settings?.maxEndTime !== undefined && endMinutes > settings.maxEndTime) {
-      return {
-        isValid: false,
-        message: `End time must be before ${convertTo12Hour(minutesToTime(settings.maxEndTime))}`
-      };
-    }
+  // Skip validation if no times are entered
+  if (!entry.startTime || !entry.endTime) {
+    return { isValid: true };
   }
 
-  // Check lunch times if both are present
+  // Extract maxEndTime from settings if available
+  let maxEndTime: number | undefined;
+  if (settings) {
+    // Try different paths to find maxEndTime
+    if (settings.maxEndTime !== undefined) {
+      maxEndTime = settings.maxEndTime;
+    } else if (settings.settings?.value?.maxEndTime !== undefined) {
+      maxEndTime = settings.settings.value.maxEndTime;
+    }
+    console.log('⚙️ Extracted maxEndTime for validation:', maxEndTime);
+  } else {
+    console.log('⚙️ No settings provided to validateTimeEntry, skipping maxEndTime validation');
+  }
+
+  // Convert times to minutes for comparison
+  const startMinutes = timeToMinutes(entry.startTime);
+  const endMinutes = timeToMinutes(entry.endTime);
+
+  // Check if end time is after start time
+  if (endMinutes <= startMinutes) {
+    return {
+      isValid: false,
+      message: 'End time must be after start time'
+    };
+  }
+
+  // Check if end time exceeds max end time (if defined)
+  if (maxEndTime !== undefined && endMinutes > maxEndTime) {
+    const formattedMaxEndTime = convertTo12Hour(minutesToTime(maxEndTime));
+    return {
+      isValid: false,
+      message: `End time cannot be later than ${formattedMaxEndTime}`
+    };
+  }
+
+  // Check lunch times if both are entered
   if (entry.lunchStartTime && entry.lunchEndTime) {
     const lunchStartMinutes = timeToMinutes(entry.lunchStartTime);
     const lunchEndMinutes = timeToMinutes(entry.lunchEndTime);
 
-    // Check lunch start time constraints
-    if (entry.startTime) {
-      const startMinutes = timeToMinutes(entry.startTime);
-      if (lunchStartMinutes < startMinutes) {
-        return {
-          isValid: false,
-          message: 'Lunch start time must be after start time'
-        };
-      }
+    // Check if lunch start is after work start
+    if (lunchStartMinutes < startMinutes) {
+      return {
+        isValid: false,
+        message: 'Lunch start time must be after work start time'
+      };
     }
 
-    if (entry.endTime) {
-      const endMinutes = timeToMinutes(entry.endTime);
-      if (lunchStartMinutes > endMinutes) {
-        return {
-          isValid: false,
-          message: 'Lunch start time must be before end time'
-        };
-      }
+    // Check if lunch end is before work end
+    if (lunchEndMinutes > endMinutes) {
+      return {
+        isValid: false,
+        message: 'Lunch end time must be before work end time'
+      };
     }
 
-    // Check lunch end time constraints
-    if (entry.startTime) {
-      const startMinutes = timeToMinutes(entry.startTime);
-      if (lunchEndMinutes < startMinutes) {
-        return {
-          isValid: false,
-          message: 'Lunch end time must be after start time'
-        };
-      }
-    }
-
-    if (entry.endTime) {
-      const endMinutes = timeToMinutes(entry.endTime);
-      if (lunchEndMinutes > endMinutes) {
-        return {
-          isValid: false,
-          message: 'Lunch end time must be before end time'
-        };
-      }
-    }
-
-    // Check lunch end is after lunch start
+    // Check if lunch end is after lunch start
     if (lunchEndMinutes <= lunchStartMinutes) {
       return {
         isValid: false,
@@ -135,7 +130,7 @@ export function validateTimeEntry(entry: TimeEntry, settings?: TimesheetSettings
   return { isValid: true };
 }
 
-export function validateWeeklyHours(weekTotal: number, settings?: TimesheetSettings): ValidationResult {
+export function validateWeeklyHours(weekTotal: number, settings?: any): ValidationResult {
   console.log('⚙️ validateWeeklyHours called with weekTotal:', weekTotal, 'settings:', settings);
   
   if (!settings) {
@@ -143,10 +138,19 @@ export function validateWeeklyHours(weekTotal: number, settings?: TimesheetSetti
     return { isValid: true };
   }
 
-  if (settings.maxWeeklyHours !== undefined && weekTotal > settings.maxWeeklyHours) {
+  // Extract maxWeeklyHours from settings if available
+  let maxWeeklyHours: number | undefined;
+  if (settings.maxWeeklyHours !== undefined) {
+    maxWeeklyHours = settings.maxWeeklyHours;
+  } else if (settings.settings?.value?.maxWeeklyHours !== undefined) {
+    maxWeeklyHours = settings.settings.value.maxWeeklyHours;
+  }
+  console.log('⚙️ Extracted maxWeeklyHours for validation:', maxWeeklyHours);
+
+  if (maxWeeklyHours !== undefined && weekTotal > maxWeeklyHours) {
     return {
       isValid: false,
-      message: `Weekly hours must not exceed ${settings.maxWeeklyHours}`
+      message: `Weekly hours must not exceed ${maxWeeklyHours}`
     };
   }
 

@@ -13,6 +13,7 @@ import { Tooltip } from '../ui/Tooltip';
 import { useState, useEffect } from 'react';
 import { timeToMinutes } from '@/utils/timeCalculations';
 import { convertTo12Hour } from '@/utils/time';
+import { useSettings } from '@/context/SettingsContext';
 
 interface WeekTableProps {
   data: WeekData;
@@ -49,6 +50,7 @@ export function WeekTable({
   onCopyPrevious,
 }: WeekTableProps) {
   const { colors } = useTheme();
+  const { settings } = useSettings();
   const [validationState, setValidationState] = useState<ValidationState>({});
   const [showValidation, setShowValidation] = useState<{ [key: string]: boolean }>({});
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
@@ -81,7 +83,8 @@ export function WeekTable({
     }
     
     const entry = data.days[day];
-    return validateTimeEntry(entry);
+    console.log(`⚙️ WeekTable validateDay calling validateTimeEntry with settings:`, settings);
+    return validateTimeEntry(entry, settings);
   };
 
   // Separate weekly validation
@@ -94,7 +97,8 @@ export function WeekTable({
       return sum + (data.days[d]?.totalHours || 0);
     }, 0) + (data.extraHours || 0);
     
-    return validateWeeklyHours(weekTotal);
+    console.log(`⚙️ WeekTable validateWeeklyTotal calling validateWeeklyHours with settings:`, settings);
+    return validateWeeklyHours(weekTotal, settings);
   };
 
   // Add validation status row after total hours
