@@ -84,7 +84,9 @@ export function WeekTable({
     
     const entry = data.days[day];
     console.log(`⚙️ WeekTable validateDay calling validateTimeEntry with settings:`, settings);
-    return validateTimeEntry(entry, settings);
+    const validation = validateTimeEntry(entry, settings);
+    console.log(`⚙️ WeekTable validateDay result for ${day}:`, validation);
+    return validation;
   };
 
   // Separate weekly validation
@@ -189,6 +191,12 @@ export function WeekTable({
     if (!validationState[day] || validationState[day].isValid) return false;
     
     const entry = data.days[day];
+    const errorMessage = validationState[day]?.message || '';
+
+    // Check for specific error messages to determine which field has the error
+    if (errorMessage.includes('End time cannot be later than') && field === 'endTime') {
+      return true;
+    }
 
     // Only highlight end time fields for incomplete pairs
     switch (field) {

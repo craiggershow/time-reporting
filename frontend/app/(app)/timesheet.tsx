@@ -1053,7 +1053,7 @@ function calculateWeekTotal(week: any): number {
 
 // Helper function to process week data
 function processWeekData(weekData: any) {
-  console.log('Processing week data (full):', JSON.stringify(weekData, null, 2)); // Log full structure
+  //console.log('Processing week data (full):', JSON.stringify(weekData, null, 2)); // Log full structure
 
   if (!weekData) {
     console.log('No week data provided, returning empty data');

@@ -9,11 +9,11 @@ interface ValidationResult {
 
 
 export function validateTimeEntry(entry: TimeEntry, settings?: any): ValidationResult {
-  console.log('⚙️ validateTimeEntry called with settings:', settings);
-  console.log('⚙️ validateTimeEntry settings type:', typeof settings);
-  console.log('⚙️ validateTimeEntry settings keys:', settings ? Object.keys(settings) : 'null');
-  console.log('⚙️ validateTimeEntry settings stringified:', settings ? JSON.stringify(settings) : 'null');
-  console.log('⚙️ validateTimeEntry entry:', entry);
+  //console.log('⚙️ validateTimeEntry called with settings:', settings);
+  //console.log('⚙️ validateTimeEntry settings type:', typeof settings);
+  //console.log('⚙️ validateTimeEntry settings keys:', settings ? Object.keys(settings) : 'null');
+  //console.log('⚙️ validateTimeEntry settings stringified:', settings ? JSON.stringify(settings) : 'null');
+  //console.log('⚙️ validateTimeEntry entry:', entry);
   
   // Check for incomplete pairs
   if (entry.startTime && !entry.endTime) {
