@@ -327,7 +327,7 @@ export function WeekTable({
                 return (
                   <View key={day} style={[
                     styles.cell,
-                    hasError && styles.errorCell,
+                    // hasError && styles.errorCell, // Shows the outer red error box
                     disabled && styles.disabledCell
                   ]}>
                     <View style={styles.inputContainer}>
@@ -426,7 +426,7 @@ export function WeekTable({
               return (
                 <View key={day} style={[
                   styles.cell, 
-                  { backgroundColor: colors.background },
+                  { backgroundColor: colors.background.card },
                   hasError && styles.errorCell
                 ]}>
                   <View style={styles.inputContainer}>
@@ -453,7 +453,7 @@ export function WeekTable({
             })}
             <View style={[
               styles.cell, 
-              { backgroundColor: colors.background },
+              { backgroundColor: colors.background.card },
               !validateWeeklyTotal().isValid && styles.errorCell
             ]}>
               <View style={styles.inputContainer}>
