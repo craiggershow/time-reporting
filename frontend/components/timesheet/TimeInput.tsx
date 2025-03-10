@@ -1,6 +1,6 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Input } from '../ui/Input';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { convertTo24Hour } from '@/utils/time';
 
 interface TimeInputProps {
@@ -12,6 +12,8 @@ interface TimeInputProps {
   onKeyDown?: (e: KeyboardEvent) => void;
   tabIndex?: 0 | -1;
 }
+
+
 
 const parseTimeInput = (input: string): string | null => {
   if (!input) return null;
@@ -131,6 +133,7 @@ export function TimeInput({
   // Initialize localValue from the value prop
   const [localValue, setLocalValue] = useState(value ? formatTimeForDisplay(value) : '');
   const [isEditing, setIsEditing] = useState(false);
+  const inputRef = useRef<any>(null);
   
   // Update localValue when value prop changes and we're not editing
   useEffect(() => {
@@ -143,6 +146,19 @@ export function TimeInput({
   useEffect(() => {
     console.log('TimeInput value changed:', { value, localValue, isEditing });
   }, [value, localValue, isEditing]);
+
+  // Use effect to capture the input element and remove its focus outline
+  useEffect(() => {
+    if (typeof document !== 'undefined' && inputRef.current) {
+      // Try to get the actual input element
+      const inputElement = inputRef.current.querySelector('input');
+      if (inputElement) {
+        inputElement.style.outline = 'none';
+        inputElement.style.boxShadow = 'none';
+        inputElement.style.webkitAppearance = 'none';
+      }
+    }
+  }, []);
 
   const handleChange = (text: string) => {
     console.log('⌚ TimeInput handleChange:', text);
@@ -217,18 +233,20 @@ export function TimeInput({
   //console.debug('Rendering TimeInput with displayValue:', displayValue);
 
   return (
-    <Input
-      label=""
-      value={displayValue}
-      onChangeText={handleChange}
-      onBlur={handleInputBlur}
-      onFocus={handleInputFocus}
-      placeholder="--:--"
-      style={[styles.input, hasError && styles.errorInput]}
-      editable={!disabled}
-      maxLength={8} // "12:45 PM" is 8 characters
-      tabIndex={tabIndex}
-    />
+    <View ref={inputRef}>
+      <Input
+        label=""
+        value={displayValue}
+        onChangeText={handleChange}
+        onBlur={handleInputBlur}
+        onFocus={handleInputFocus}
+        placeholder="--:--"
+        style={[styles.input, hasError && styles.errorInput]}
+        editable={!disabled}
+        maxLength={8} // "12:45 PM" is 8 characters
+        tabIndex={tabIndex}
+      />
+    </View>
   );
 }
 

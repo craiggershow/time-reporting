@@ -1,13 +1,27 @@
-import { TextInput, View, StyleSheet, TextInputProps } from 'react-native';
+import { TextInput, View, StyleSheet, TextInputProps, StyleProp, ViewStyle, TextStyle } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { useTheme } from '@/context/ThemeContext';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 
-interface InputProps extends TextInputProps {
+// Create a custom interface that doesn't extend TextInputProps to avoid style type conflicts
+interface InputProps {
   label: string;
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   error?: string;
+  style?: StyleProp<ViewStyle>;
+  onFocus?: (e: any) => void;
+  onBlur?: (e: any) => void;
+  value?: string;
+  onChangeText?: (text: string) => void;
+  placeholder?: string;
+  editable?: boolean;
+  maxLength?: number;
+  keyboardType?: TextInputProps['keyboardType'];
+  secureTextEntry?: boolean;
+  autoCapitalize?: TextInputProps['autoCapitalize'];
+  autoCorrect?: boolean;
+  tabIndex?: number;
 }
 
 export function Input({ 
@@ -16,15 +30,29 @@ export function Input({
   leftIcon, 
   rightIcon,
   error,
+  onFocus,
+  onBlur,
   ...props 
 }: InputProps) {
   const { colors } = useTheme();
+  const [isFocused, setIsFocused] = useState(false);
+  
+  const handleFocus = (e: any) => {
+    setIsFocused(true);
+    onFocus && onFocus(e);
+  };
+  
+  const handleBlur = (e: any) => {
+    setIsFocused(false);
+    onBlur && onBlur(e);
+  };
 
   return (
     <View style={styles.container}>
       {label && <ThemedText style={styles.label}>{label}</ThemedText>}
       <View style={[
         styles.inputContainer,
+        isFocused && styles.focusedContainer,
         error && styles.errorContainer,
         style
       ]}>
@@ -32,11 +60,13 @@ export function Input({
         <TextInput
           style={[
             styles.input,
-            leftIcon && styles.inputWithLeftIcon,
-            rightIcon && styles.inputWithRightIcon,
+            leftIcon && { paddingLeft: 40 },
+            rightIcon && { paddingRight: 40 }
           ]}
           placeholderTextColor="#94a3b8"
-          {...props}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          {...props as any}
         />
         {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
       </View>
@@ -55,25 +85,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  inputContainer: {
+  inputContainer: { // unfocussed styles
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRadius: 8,
     backgroundColor: '#ffffff',
+    overflow: 'hidden', // Ensure input doesn't overflow container
+  },
+  focusedContainer: {
+    borderColor: '#3b82f6', // Blue border for focus state
+    borderWidth: 1,
   },
   input: {
     flex: 1,
     height: 44,
     paddingHorizontal: 12,
     fontSize: 16,
-  },
-  inputWithLeftIcon: {
-    paddingLeft: 40,
-  },
-  inputWithRightIcon: {
-    paddingRight: 40,
+    width: '100%', // Ensure input takes full width of container
+    borderWidth: 0, // Remove default input border
   },
   iconLeft: {
     position: 'absolute',
