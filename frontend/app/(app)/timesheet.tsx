@@ -547,30 +547,24 @@ export default function TimesheetScreen() {
       return [];
     }
 
-    console.log('🔍 Collecting validation errors with settings:', settings);
-    console.log('🔍 Settings type:', typeof settings);
-    console.log('🔍 Settings keys:', settings ? Object.keys(settings) : 'null');
-    console.log('🔍 Settings stringified:', settings ? JSON.stringify(settings) : 'null');
+    //console.log('🔍 Collecting validation errors with settings:', settings);
+    //console.log('🔍 Settings type:', typeof settings);
+    //console.log('🔍 Settings keys:', settings ? Object.keys(settings) : 'null');
+    //console.log('🔍 Settings stringified:', settings ? JSON.stringify(settings) : 'null');
     
     // If settings are not available, skip validation
     if (!settings) {
       console.log('🔍 No settings available, skipping validation');
       return [];
     }
-    
-    console.log('🔍 maxEndTime for validation:', settings.maxEndTime);
-    console.log('🔍 Settings structure exploration:');
-    if (settings.settings) console.log('🔍 settings.settings:', settings.settings);
-    if (settings.value) console.log('🔍 settings.value:', settings.value);
-    if (settings.timesheetSettings) console.log('🔍 settings.timesheetSettings:', settings.timesheetSettings);
-
+        
     const errors: string[] = [];
     const weeks = ['week1', 'week2'] as const;
     
     weeks.forEach((week, index) => {
       // Check each day in the week
       DAYS.forEach(day => {
-        const entry = currentTimesheet[week][day];
+        const entry = currentTimesheet[week]["days"][day];
         console.log(`🔍 Validating ${week} - ${day} for errors:`, entry);
         
         // Skip validation if entry is undefined

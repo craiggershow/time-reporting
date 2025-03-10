@@ -55,6 +55,7 @@ export function WeekTable({
   const [showValidation, setShowValidation] = useState<{ [key: string]: boolean }>({});
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const [hoveredLock, setHoveredLock] = useState<string | null>(null);
+  const [hoveredError, setHoveredError] = useState<string | null>(null);
 
   console.log('WeekTable - data:', data);
   // Calculate weekly total
@@ -186,6 +187,21 @@ export function WeekTable({
     });
   }, [data]);
 
+  // Define error message to field mapping once
+  const errorFieldMap: Record<string, keyof TimeEntry> = {
+    'End time cannot be later than': 'endTime',
+    'Start time cannot be earlier than': 'startTime',
+    'End time must be after start time': 'endTime',
+    'Lunch start time must be after work start time': 'lunchStartTime',
+    'Lunch end time must be before work end time': 'lunchEndTime',
+    'Lunch end time must be after lunch start time': 'lunchEndTime',
+    'Start time is required when end time is entered': 'startTime',
+    'End time is required when start time is entered': 'endTime',
+    'Lunch start time is required when lunch end time is entered': 'lunchStartTime',
+    'Lunch end time is required when lunch start time is entered': 'lunchEndTime',
+    'Daily hours cannot exceed': 'totalHours'
+  };
+
   // Add a function to check if a field has an error
   const hasFieldError = (day: keyof WeekData, field: keyof TimeEntry) => {
     if (!validationState[day] || validationState[day].isValid) return false;
@@ -193,77 +209,35 @@ export function WeekTable({
     const entry = data.days[day];
     const errorMessage = validationState[day]?.message || '';
 
-    // For total hours cell, only show errors that are not specific to other fields
-    if (field === 'totalHours') {
-      // Don't show end time specific errors in the total hours cell
-      if (errorMessage.includes('End time cannot be later than')) {
-        return false;
+    // Check if the error message matches the field
+    for (const [errorPattern, errorField] of Object.entries(errorFieldMap)) {
+      if (errorMessage.includes(errorPattern) && field === errorField) {
+        return true;
       }
-      
-      // Don't show start/end time pair errors in the total hours cell
-      if (errorMessage.includes('End time must be after start time')) {
-        return false;
-      }
-      
-      // Don't show lunch time errors in the total hours cell
-      if (errorMessage.includes('Lunch')) {
-        return false;
-      }
-      
-      // For any other errors, show them in the total hours cell
-      return true;
     }
 
-    // Check for specific error messages to determine which field has the error
-    if (errorMessage.includes('End time cannot be later than') && field === 'endTime') {
-      return true;
-    }
-
-    // Only highlight end time fields for incomplete pairs
-    switch (field) {
-      case 'endTime':
-        if (!entry?.startTime && entry?.endTime) return true;  // Missing start time
-        if (entry?.startTime && !entry?.endTime) return false; // Don't highlight missing end time
-        if (errorMessage.includes('End time must be after start time')) return true;
-        break;
-      case 'lunchEndTime':
-        if (!entry?.lunchStartTime && entry?.lunchEndTime) return true;  // Missing lunch start time
-        if (entry?.lunchStartTime && !entry?.lunchEndTime) return false; // Don't highlight missing lunch end time
-        if (errorMessage.includes('Lunch end time must be')) return true;
-        break;
-      case 'lunchStartTime':
-        if (errorMessage.includes('Lunch start time must be')) return true;
-        break;
-    }
-
-    // If we have both times in a pair, check their values
-    if (!entry?.startTime || !entry?.endTime) return false;
-
-    const startMinutes = timeToMinutes(entry?.startTime);
-    const endMinutes = timeToMinutes(entry?.endTime);
-    
-    switch (field) {
-      case 'endTime':
-        return endMinutes < startMinutes;
-      case 'lunchStartTime':
-        if (!entry?.lunchStartTime) return false;
-        const lunchStartMin = timeToMinutes(entry?.lunchStartTime);
-        return lunchStartMin < startMinutes || lunchStartMin > endMinutes;
-      case 'lunchEndTime':
-        if (!entry?.lunchEndTime || !entry?.lunchStartTime) return false;
-        const lunchStartMinutes = timeToMinutes(entry?.lunchStartTime);
-        const lunchEndMinutes = timeToMinutes(entry?.lunchEndTime);
-        return lunchEndMinutes < startMinutes || 
-               lunchEndMinutes > endMinutes || 
-               lunchEndMinutes <= lunchStartMinutes;
-      default:
-        return false;
-    }
+    return false;
   };
 
   const handleTimeUpdate = (day: keyof WeekData, field: keyof TimeEntry, value: string | null) => {
     console.log('handleTimeUpdate:', { day, field, value });
     onUpdate(day as any, field as any, value);
+  };
+
+  // Add a function to get the tooltip message for a field
+  const getFieldTooltipMessage = (day: keyof WeekData, field: keyof TimeEntry) => {
+    if (!validationState[day] || validationState[day].isValid) return '';
+    
+    const errorMessage = validationState[day]?.message || '';
+    
+    // Check if the error message matches the field
+    for (const [errorPattern, errorField] of Object.entries(errorFieldMap)) {
+      if (errorMessage.includes(errorPattern) && field === errorField) {
+        return errorMessage;
+      }
+    }
+
+    return '';
   };
 
   return (
@@ -326,6 +300,7 @@ export function WeekTable({
                 
                 const fieldName = fieldMap[label] as keyof TimeEntry;
                 const hasError = hasFieldError(day, fieldName);
+                const tooltipMessage = getFieldTooltipMessage(day, fieldName);
                 
                 return (
                   <View key={day} style={[
@@ -351,6 +326,18 @@ export function WeekTable({
                             <Tooltip message="Cannot edit future dates" />
                           )}
                           <Ionicons name="lock-closed" size={16} color="#94a3b8" />
+                        </View>
+                      )}
+                      {hasError && tooltipMessage && (
+                        <View 
+                          style={styles.errorIconContainer}
+                          onMouseEnter={() => setHoveredError(`${day}-${fieldName}`)}
+                          onMouseLeave={() => setHoveredError(null)}
+                        >
+                          {hoveredError === `${day}-${fieldName}` && (
+                            <Tooltip message={tooltipMessage} />
+                          )}
+                          <Ionicons name="warning" size={16} color="#ef4444" />
                         </View>
                       )}
                     </View>
@@ -410,27 +397,60 @@ export function WeekTable({
             <View style={[styles.labelCell, { backgroundColor: colors.inputBackground }]}>
               <ThemedText>Total Hours</ThemedText>
             </View>
-            {DAYS.map((day) => (
-              <View key={day} style={[
-                styles.cell, 
-                { backgroundColor: colors.background },
-                hasFieldError(day, 'totalHours') && styles.errorCell
-              ]}>
-                <ThemedText style={styles.totalHours}>
-                  {(data.days[day].totalHours !== undefined && data.days[day].totalHours !== null) 
-                    ? data.days[day].totalHours.toFixed(2) 
-                    : '0.00'}
-                </ThemedText>
-              </View>
-            ))}
+            {DAYS.map((day) => {
+              const hasError = hasFieldError(day, 'totalHours');
+              const tooltipMessage = getFieldTooltipMessage(day, 'totalHours');
+              
+              return (
+                <View key={day} style={[
+                  styles.cell, 
+                  { backgroundColor: colors.background },
+                  hasError && styles.errorCell
+                ]}>
+                  <View style={styles.inputContainer}>
+                    <ThemedText style={styles.totalHours}>
+                      {(data.days[day].totalHours !== undefined && data.days[day].totalHours !== null) 
+                        ? data.days[day].totalHours.toFixed(2) 
+                        : '0.00'}
+                    </ThemedText>
+                    {hasError && tooltipMessage && (
+                      <View 
+                        style={styles.errorIconContainer}
+                        onMouseEnter={() => setHoveredError(`${day}-totalHours`)}
+                        onMouseLeave={() => setHoveredError(null)}
+                      >
+                        {hoveredError === `${day}-totalHours` && (
+                          <Tooltip message={tooltipMessage} />
+                        )}
+                        <Ionicons name="warning" size={16} color="#ef4444" />
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
             <View style={[
               styles.cell, 
               { backgroundColor: colors.background },
               !validateWeeklyTotal().isValid && styles.errorCell
             ]}>
-              <ThemedText style={[styles.totalHours, styles.weeklyTotal]}>
-                {weeklyTotal.toFixed(2)}
-              </ThemedText>
+              <View style={styles.inputContainer}>
+                <ThemedText style={[styles.totalHours, styles.weeklyTotal]}>
+                  {weeklyTotal.toFixed(2)}
+                </ThemedText>
+                {!validateWeeklyTotal().isValid && validateWeeklyTotal().message && (
+                  <View 
+                    style={styles.errorIconContainer}
+                    onMouseEnter={() => setHoveredError('weeklyTotal')}
+                    onMouseLeave={() => setHoveredError(null)}
+                  >
+                    {hoveredError === 'weeklyTotal' && (
+                      <Tooltip message={validateWeeklyTotal().message || ''} />
+                    )}
+                    <Ionicons name="warning" size={16} color="#ef4444" />
+                  </View>
+                )}
+              </View>
             </View>
           </View>
 
@@ -507,11 +527,12 @@ const styles = StyleSheet.create({
   totalHours: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#333333',
   },
   weeklyTotal: {
     fontSize: 16,
     fontWeight: '700',
+    color: '#333333',
   },
   tooltipContainer: {
     position: 'relative',
@@ -538,5 +559,11 @@ const styles = StyleSheet.create({
   },
   disabledCell: {
     backgroundColor: '#f1f5f9',
+  },
+  errorIconContainer: {
+    position: 'absolute',
+    right: -24,
+    top: '50%',
+    transform: [{ translateY: -8 }],
   },
 }); 

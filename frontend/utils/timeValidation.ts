@@ -14,6 +14,17 @@ export function validateTimeEntry(entry: TimeEntry, settings?: any): ValidationR
   //console.log('⚙️ validateTimeEntry settings keys:', settings ? Object.keys(settings) : 'null');
   //console.log('⚙️ validateTimeEntry settings stringified:', settings ? JSON.stringify(settings) : 'null');
   //console.log('⚙️ validateTimeEntry entry:', entry);
+
+  // Validate times not entered when type is not REGULAR
+  if (entry.dayType !== 'REGULAR') {
+    if (entry.startTime || entry.endTime || entry.lunchStartTime || entry.lunchEndTime) {
+      return { isValid: false, message: 'Regular day type required when times are entered' };
+    } else {
+      return { isValid: true };
+    }
+  } else {
+    console.log('⚙️ Regular day type, proceeding with validation');
+  }
   
   // Check for incomplete pairs
   if (entry.startTime && !entry.endTime) {
@@ -44,33 +55,34 @@ export function validateTimeEntry(entry: TimeEntry, settings?: any): ValidationR
     };
   }
 
-  // Skip further validation for non-regular day types
-  if (entry.dayType !== 'REGULAR') {
-    return { isValid: true };
-  }
-
   // Skip validation if no times are entered
   if (!entry.startTime || !entry.endTime) {
     return { isValid: true };
   }
 
-  // Extract maxEndTime from settings if available
-  let maxEndTime: number | undefined;
-  if (settings) {
-    // Try different paths to find maxEndTime
-    if (settings.maxEndTime !== undefined) {
-      maxEndTime = settings.maxEndTime;
-    } else if (settings.settings?.value?.maxEndTime !== undefined) {
-      maxEndTime = settings.settings.value.maxEndTime;
-    }
-    console.log('⚙️ Extracted maxEndTime for validation:', maxEndTime);
-  } else {
-    console.log('⚙️ No settings provided to validateTimeEntry, skipping maxEndTime validation');
-  }
+  // Extract settings values if available
+  const maxEndTime = settings?.maxEndTime;
+  const minStartTime = settings?.minStartTime;
+  const maxDailyHours = settings?.maxDailyHours;
+  
+  console.log('⚙️ Extracted settings for validation:', { 
+    maxEndTime, 
+    minStartTime, 
+    maxDailyHours 
+  });
 
   // Convert times to minutes for comparison
   const startMinutes = timeToMinutes(entry.startTime);
   const endMinutes = timeToMinutes(entry.endTime);
+
+  // Check if start time is before minimum start time (if defined)
+  if (minStartTime !== undefined && startMinutes < minStartTime) {
+    const formattedMinStartTime = convertTo12Hour(minutesToTime(minStartTime));
+    return {
+      isValid: false,
+      message: `Start time cannot be earlier than ${formattedMinStartTime}`
+    };
+  }
 
   // Check if end time is after start time
   if (endMinutes <= startMinutes) {
@@ -119,14 +131,15 @@ export function validateTimeEntry(entry: TimeEntry, settings?: any): ValidationR
     }
   }
 
-  // Check total hours
-  if (entry.totalHours > 15) {
+  // Check total hours against max daily hours
+  if (maxDailyHours !== undefined && entry.totalHours > maxDailyHours) {
     return {
       isValid: false,
-      message: 'Total hours cannot exceed 15 hours per day'
+      message: `Daily hours cannot exceed ${maxDailyHours} hours`
     };
   }
 
+  console.log('⚙️ validateTimeEntry found no errors returning true');
   return { isValid: true };
 }
 
@@ -138,13 +151,8 @@ export function validateWeeklyHours(weekTotal: number, settings?: any): Validati
     return { isValid: true };
   }
 
-  // Extract maxWeeklyHours from settings if available
-  let maxWeeklyHours: number | undefined;
-  if (settings.maxWeeklyHours !== undefined) {
-    maxWeeklyHours = settings.maxWeeklyHours;
-  } else if (settings.settings?.value?.maxWeeklyHours !== undefined) {
-    maxWeeklyHours = settings.settings.value.maxWeeklyHours;
-  }
+  // Extract maxWeeklyHours from settings
+  const maxWeeklyHours = settings?.maxWeeklyHours;
   console.log('⚙️ Extracted maxWeeklyHours for validation:', maxWeeklyHours);
 
   if (maxWeeklyHours !== undefined && weekTotal > maxWeeklyHours) {
