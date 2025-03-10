@@ -826,33 +826,28 @@ export default function TimesheetScreen() {
       return;
     }
     
-    console.log('📋 Copying week 1 to week 2');
+    console.log('📋 Copying week 1 to week 2', currentTimesheet);
     
     // Get the array of day names in lowercase
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
     
     // For each day, copy from week1 to week2
-    days.forEach(dayKey => {
-      // Try to get the entry directly from the weekData object
-      let week1Entry = currentTimesheet.week1[dayKey];
-      
-      // If that didn't work, try to get it from weekData.days if it's an object
-      if (!week1Entry && currentTimesheet.week1.days && typeof currentTimesheet.week1.days === 'object') {
-        week1Entry = currentTimesheet.week1.days[dayKey];
-      }
-      
-      if (week1Entry) {
-        console.log(`📋 Copying day ${dayKey} from week 1 to week 2:`, week1Entry);
+    days.forEach(day => {
+      // Access the day directly from week1.days
+      if (currentTimesheet.week1.days[day]) {
+        console.log(`📋 Copying day ${day} from week 1 to week 2:`, currentTimesheet.week1.days[day]);
         
         // Update the timesheet state for this day
         updateTimesheetState({
           type: 'UPDATE_TIME_ENTRY',
           payload: {
             week: 2,
-            day: dayKey.toUpperCase() as DayOfWeek, // Convert to uppercase for the API
-            entry: { ...week1Entry },
+            day: day,
+            entry: { ...currentTimesheet.week1.days[day] },
           },
         });
+      } else {
+        console.log(`📋 No data found for ${day} in week 1`);
       }
     });
     
