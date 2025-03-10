@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, Platform } from 'react-native';
 import RNDateTimePicker from '@react-native-community/datetimepicker';
 
 interface DateTimePickerProps {
@@ -20,6 +20,9 @@ export function DateTimePicker({
   const [rawInput, setRawInput] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [dateValue, setDateValue] = useState<Date>(new Date());
+  
+  // Check if we're running on web
+  const isWeb = Platform.OS === 'web';
 
   // Initialize the date value and display value
   useEffect(() => {
@@ -156,14 +159,17 @@ export function DateTimePicker({
           keyboardType="numeric"
           maxLength={10}
         />
-        <Pressable 
-          style={styles.button}
-          onPress={() => setShowPicker(true)}
-        >
-          <Text>📅</Text>
-        </Pressable>
+        {/* Only show the calendar button on native platforms, not on web */}
+        {!isWeb && (
+          <Pressable 
+            style={styles.button}
+            onPress={() => setShowPicker(true)}
+          >
+            <Text>📅</Text>
+          </Pressable>
+        )}
       </View>
-      {showPicker && (
+      {showPicker && !isWeb && (
         <RNDateTimePicker
           value={dateValue}
           onChange={handlePickerChange}
