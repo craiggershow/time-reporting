@@ -2,6 +2,22 @@ import { View, StyleSheet } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '@/context/ThemeContext';
 import { DayType } from '@/types/timesheet';
+import { useEffect } from 'react';
+
+// Add global style to remove focus outlines from select elements
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    select:focus, select:active {
+      outline: none !important;
+      box-shadow: none !important;
+      -webkit-box-shadow: none !important;
+      border-color: #e2e8f0 !important;
+      border-radius: 8px !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 interface DayTypeSelectProps {
   value: DayType;
@@ -32,7 +48,14 @@ export function DayTypeSelect({ value = 'regular', onChange, disabled }: DayType
           selectedValue={value}
           onValueChange={onChange}
           enabled={!disabled}
-          style={[styles.picker, { color: '#1e293b' }]} // Dark text
+          style={[
+            styles.picker, 
+            { 
+              color: '#1e293b',
+              // Remove default focus styling
+              outline: 'none',
+            }
+          ]} 
           dropdownIconColor="#1e293b" // Dark icon
           itemStyle={styles.pickerItem}
         >
@@ -55,15 +78,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     overflow: 'hidden',
+    position: 'relative',
   },
   pickerContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   picker: {
     width: 120,
     height: 40,
     textAlign: 'center',
+    borderWidth: 0, // Remove default border
+    borderRadius: 8, // Match container border radius
   },
   pickerItem: {
     textAlign: 'center',
