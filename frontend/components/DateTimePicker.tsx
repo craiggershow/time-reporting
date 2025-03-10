@@ -3,34 +3,48 @@ import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
 import RNDateTimePicker from '@react-native-community/datetimepicker';
 
 interface DateTimePickerProps {
-  value: Date;
-  onChange: (date: Date) => void;
+  value: Date | string;
+  onChange: (date: Date | string) => void;
   label?: string;
+  returnFormat?: 'date' | 'string';
 }
 
-export function DateTimePicker({ value, onChange, label }: DateTimePickerProps) {
+export function DateTimePicker({ 
+  value, 
+  onChange, 
+  label,
+  returnFormat = 'date' 
+}: DateTimePickerProps) {
   const [showPicker, setShowPicker] = useState(false);
-  const [displayValue, setDisplayValue] = useState(formatDate(value));
+  const [displayValue, setDisplayValue] = useState('');
   const [rawInput, setRawInput] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [dateValue, setDateValue] = useState<Date>(new Date());
 
+  // Initialize the date value and display value
   useEffect(() => {
+    let date: Date;
+    
+    if (typeof value === 'string') {
+      // Parse the date string (YYYY-MM-DD)
+      const [year, month, day] = value.split('-').map(num => parseInt(num, 10));
+      date = new Date(year, month - 1, day);
+    } else {
+      date = value;
+    }
+    
+    setDateValue(date);
     if (!isEditing) {
-      setDisplayValue(formatDate(value));
+      setDisplayValue(formatDate(date));
       setRawInput('');
     }
   }, [value, isEditing]);
 
   function formatDate(date: Date): string {
-    // Create a new date using local values to avoid timezone offset
-    const localDate = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate()
-    );
-    const year = localDate.getFullYear();
-    const month = String(localDate.getMonth() + 1).padStart(2, '0');
-    const day = String(localDate.getDate()).padStart(2, '0');
+    // Use UTC methods to avoid timezone issues
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 
@@ -82,15 +96,23 @@ export function DateTimePicker({ value, onChange, label }: DateTimePickerProps) 
       const fullDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       
       if (isValidDate(fullDateStr)) {
-        // Create date in local timezone
-        const newDate = new Date(year, month, day);
-        onChange(newDate);
-        setDisplayValue(formatDate(newDate));
+        // Create date using UTC to avoid timezone issues
+        const utcDate = new Date(Date.UTC(year, month, day));
+        setDateValue(utcDate);
+        
+        // Return either the Date object or the formatted string based on returnFormat
+        if (returnFormat === 'string') {
+          onChange(fullDateStr);
+        } else {
+          onChange(utcDate);
+        }
+        
+        setDisplayValue(formatDate(utcDate));
       } else {
-        setDisplayValue(formatDate(value));
+        setDisplayValue(formatDate(dateValue));
       }
     } else {
-      setDisplayValue(formatDate(value));
+      setDisplayValue(formatDate(dateValue));
     }
     setRawInput('');
   };
@@ -98,13 +120,24 @@ export function DateTimePicker({ value, onChange, label }: DateTimePickerProps) 
   const handlePickerChange = (event: any, selectedDate?: Date) => {
     setShowPicker(false);
     if (selectedDate) {
-      // Ensure we keep the local date values
-      const localDate = new Date(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        selectedDate.getDate()
-      );
-      onChange(localDate);
+      // Use UTC methods to avoid timezone adjustments
+      const year = selectedDate.getUTCFullYear();
+      const month = selectedDate.getUTCMonth();
+      const day = selectedDate.getUTCDate();
+      
+      // Create a new date using UTC
+      const utcDate = new Date(Date.UTC(year, month, day));
+      setDateValue(utcDate);
+      
+      // Return either the Date object or the formatted string based on returnFormat
+      if (returnFormat === 'string') {
+        // Format as YYYY-MM-DD string
+        const formattedDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        onChange(formattedDate);
+      } else {
+        onChange(utcDate);
+      }
+      
       setIsEditing(false);
     }
   };
@@ -132,7 +165,7 @@ export function DateTimePicker({ value, onChange, label }: DateTimePickerProps) 
       </View>
       {showPicker && (
         <RNDateTimePicker
-          value={value}
+          value={dateValue}
           onChange={handlePickerChange}
           mode="date"
           display="default"

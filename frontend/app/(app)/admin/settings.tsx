@@ -149,10 +149,26 @@ export default function AdminSettings() {
     setSettings(s => ({ ...s, holidays: updatedHolidays }));
   };
 
-  const handleDateChange = (date: Date) => {
-    // Ensure we're working with a clean date object without time components
-    const cleanDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    setSettings(s => ({ ...s, payPeriodStartDate: cleanDate }));
+  const handleDateChange = (date: Date | string) => {
+    // Ensure we're working with a Date object first
+    let dateObj: Date;
+    
+    if (typeof date === 'string') {
+      // If it's already a string, parse it to a Date
+      const [year, month, day] = date.split('-').map(num => parseInt(num, 10));
+      dateObj = new Date(year, month - 1, day);
+    } else {
+      dateObj = date;
+    }
+    
+    // Use UTC methods to avoid timezone adjustments
+    const year = dateObj.getUTCFullYear();
+    const month = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getUTCDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    
+    console.log('Setting pay period start date as string (UTC):', dateString);
+    setSettings(s => ({ ...s, payPeriodStartDate: dateString }));
   };
 
   if (isLoading) {

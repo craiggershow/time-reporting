@@ -41,12 +41,23 @@ export async function updateSettings(req: Request, res: Response) {
   try {
     const { holidays, ...otherSettings } = req.body as TimesheetSettings;
 
-    // Ensure payPeriodStartDate is stored as UTC midnight
+    // Ensure payPeriodStartDate is stored as a string in YYYY-MM-DD format without timezone adjustments
     if (otherSettings.payPeriodStartDate) {
-      const date = new Date(otherSettings.payPeriodStartDate);
-      // Create new date at UTC midnight for the local date
-      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      otherSettings.payPeriodStartDate = localDate;
+      // If it's a string with a time component, strip it
+      if (typeof otherSettings.payPeriodStartDate === 'string' && otherSettings.payPeriodStartDate.includes('T')) {
+        otherSettings.payPeriodStartDate = otherSettings.payPeriodStartDate.split('T')[0];
+      } 
+      // If it's a Date object, convert to YYYY-MM-DD string directly
+      else if (otherSettings.payPeriodStartDate instanceof Date) {
+        // Use UTC methods to avoid timezone adjustments
+        const date = otherSettings.payPeriodStartDate;
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        otherSettings.payPeriodStartDate = `${year}-${month}-${day}`;
+      }
+      
+      console.log('Storing payPeriodStartDate as string:', otherSettings.payPeriodStartDate);
     }
 
     // Update main settings
@@ -65,8 +76,26 @@ export async function updateSettings(req: Request, res: Response) {
       if (holidays.length > 0) {
         await prisma.holiday.createMany({
           data: holidays.map(h => {
-            const date = new Date(h.date);
-            const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            let dateStr: string;
+            
+            // Handle date as string or Date object
+            if (typeof h.date === 'string') {
+              // If it's a string with a time component, strip it
+              dateStr = h.date.includes('T') ? h.date.split('T')[0] : h.date;
+            } else {
+              // If it's a Date object, convert to YYYY-MM-DD string using UTC
+              const date = h.date;
+              const year = date.getUTCFullYear();
+              const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+              const day = String(date.getUTCDate()).padStart(2, '0');
+              dateStr = `${year}-${month}-${day}`;
+            }
+            
+            // Parse the date string to create a Date object for the database
+            // This ensures the date is stored correctly without timezone adjustments
+            const [year, month, day] = dateStr.split('-').map(num => parseInt(num, 10));
+            const localDate = new Date(Date.UTC(year, month - 1, day));
+            
             return {
               date: localDate,
               name: h.name,

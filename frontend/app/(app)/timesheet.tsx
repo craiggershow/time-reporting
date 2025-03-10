@@ -113,43 +113,49 @@ export default function TimesheetScreen() {
     try {
       let periodStartDate: Date;
       
-      console.log('Settings value:', settings?.settings?.value);
-      
       // First try to use the pay period from the timesheet itself
       if (currentTimesheet.payPeriod?.startDate) {
-        console.log('Using pay period start date from timesheet:', currentTimesheet.payPeriod.startDate);
-        periodStartDate = parseISO(currentTimesheet.payPeriod.startDate);
+        // Create a date-only version of the date to avoid timezone issues
+        const dateStr = new Date(currentTimesheet.payPeriod.startDate).toISOString().split('T')[0];
+        const [year, month, day] = dateStr.split('-').map(num => parseInt(num, 10));
+        
+        // Create a new date with just year, month, day (no time component)
+        periodStartDate = new Date(year, month - 1, day);
+        console.log('Using pay period start date from timesheet:', dateStr);
       }
-      // Then try to use the settings
-      else if (typeof settings?.settings?.value?.payPeriodStartDate === 'string') {
-        console.log('Using pay period start date from settings (string):', settings.settings.value.payPeriodStartDate);
-        periodStartDate = parseISO(settings.settings.value.payPeriodStartDate);
-      } else if (settings?.settings?.value?.payPeriodStartDate instanceof Date) {
-        console.log('Using pay period start date from settings (Date):', settings.settings.value.payPeriodStartDate);
-        periodStartDate = settings.settings.value.payPeriodStartDate;
-      } else {
+      // Then use default (Monday of current week)
+      else {
         console.log('Using default pay period start date (Monday of current week)');
-        periodStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
+        const today = new Date();
+        const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        periodStartDate = startOfWeek(todayDateOnly, { weekStartsOn: 1 });
       }
       
-      debugDate('Period Start Date (raw)', periodStartDate);
+      // Log the date in YYYY-MM-DD format for debugging
+      const dateStr = periodStartDate.toISOString().split('T')[0];
+      console.log('Period Start Date:', dateStr);
       
-      const weekStartDate = addWeeks(periodStartDate, 0);
-      debugDate('Week Start Date (calculated)', weekStartDate);
+      // Create a date-only version of the start date
+      const weekStartDate = new Date(
+        periodStartDate.getFullYear(),
+        periodStartDate.getMonth(),
+        periodStartDate.getDate()
+      );
       
-      if (!(weekStartDate instanceof Date) || !isValid(weekStartDate)) {
+      if (!isValid(weekStartDate)) {
         console.error('Invalid weekStartDate calculated', weekStartDate);
-        setStartDate(new Date());
+        setStartDate(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
       } else {
         setStartDate(weekStartDate);
+        console.log('Final start date set:', weekStartDate.toISOString().split('T')[0]);
       }
-      
-      debugDate('startDate (final state)', startDate);
     } catch (error) {
       console.error('Error calculating start date:', error);
-      setStartDate(new Date());
+      // Create a date-only version of today
+      const today = new Date();
+      setStartDate(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
     }
-  }, [currentTimesheet, settings]);
+  }, [currentTimesheet]);
 
   const autoSubmit = async (newState: TimesheetData) => {
     // First check if this is a start time without an end time

@@ -110,6 +110,7 @@ interface PayPeriodDates {
 
 async function getCurrentPayPeriod(): Promise<{ id: string; startDate: Date; endDate: Date }> {
   try {
+    console.log('=== Getting Current Pay Period ===');
     const settings = await prisma.settings.findUnique({
       where: { key: 'timesheet_settings' }
     });
@@ -118,23 +119,56 @@ async function getCurrentPayPeriod(): Promise<{ id: string; startDate: Date; end
       throw new Error('Timesheet settings not found');
     }
 
+    console.log('Settings found:', settings);
     const { payPeriodStartDate } = settings.value as { payPeriodStartDate: string };
-    const baseStartDate = new Date(payPeriodStartDate);
-    baseStartDate.setHours(0, 0, 0, 0); // Set to midnight but keep date only for comparisons
+    console.log('Pay period start date from settings (raw):', payPeriodStartDate);
     
+    // Parse the base start date from settings - use YYYY-MM-DD format
+    // The payPeriodStartDate should already be in YYYY-MM-DD format
+    const [year, month, day] = payPeriodStartDate.split('-').map(num => parseInt(num, 10));
+    
+    // Validate the date components
+    if (isNaN(year) || isNaN(month) || isNaN(day)) {
+      throw new Error(`Invalid pay period start date format: ${payPeriodStartDate}`);
+    }
+    
+    // Create a date object with the date components (no time)
+    const baseStartDate = new Date(year, month - 1, day); // month is 0-indexed in JS Date
+    console.log('Base start date (parsed):', 
+      `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`);
+    
+    // Get current date without time component
     const now = new Date();
-    now.setHours(0, 0, 0, 0); // Set to midnight for date-only comparison
+    const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    console.log('Current date (date only):', 
+      `${nowDateOnly.getFullYear()}-${(nowDateOnly.getMonth() + 1).toString().padStart(2, '0')}-${nowDateOnly.getDate().toString().padStart(2, '0')}`);
     
+    // Calculate the current pay period start date
     const currentStartDate = new Date(baseStartDate);
-    while (currentStartDate <= now) {
+    console.log('Initial currentStartDate:', 
+      `${currentStartDate.getFullYear()}-${(currentStartDate.getMonth() + 1).toString().padStart(2, '0')}-${currentStartDate.getDate().toString().padStart(2, '0')}`);
+    
+    // Find the most recent pay period start date that is not in the future
+    while (currentStartDate <= nowDateOnly) {
       currentStartDate.setDate(currentStartDate.getDate() + 14);
     }
+    
+    // Go back one pay period since we went past the current date
     currentStartDate.setDate(currentStartDate.getDate() - 14);
+    console.log('Final currentStartDate (after adjustment):', 
+      `${currentStartDate.getFullYear()}-${(currentStartDate.getMonth() + 1).toString().padStart(2, '0')}-${currentStartDate.getDate().toString().padStart(2, '0')}`);
     
     const endDate = new Date(currentStartDate);
-    endDate.setDate(endDate.getDate() + 13);
+    endDate.setDate(endDate.getDate() + 13); // 14 days total (0-13)
+    console.log('End date of pay period:', 
+      `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`);
 
     // Find or create pay period
+    console.log('Looking for pay period in database with start:', 
+      `${currentStartDate.getFullYear()}-${(currentStartDate.getMonth() + 1).toString().padStart(2, '0')}-${currentStartDate.getDate().toString().padStart(2, '0')}`, 
+      'end:', 
+      `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`);
+    
     const payPeriod = await prisma.payPeriod.upsert({
       where: {
         startDate_endDate: {
@@ -148,7 +182,8 @@ async function getCurrentPayPeriod(): Promise<{ id: string; startDate: Date; end
       },
       update: {}
     });
-
+    
+    console.log('Pay period found/created:', payPeriod);
     return payPeriod;
   } catch (error) {
     console.error('Error getting pay period:', error);
