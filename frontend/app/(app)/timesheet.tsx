@@ -547,24 +547,23 @@ export default function TimesheetScreen() {
       return [];
     }
 
-    //console.log('🔍 Collecting validation errors with settings:', settings);
-    //console.log('🔍 Settings type:', typeof settings);
-    //console.log('🔍 Settings keys:', settings ? Object.keys(settings) : 'null');
-    //console.log('🔍 Settings stringified:', settings ? JSON.stringify(settings) : 'null');
+    console.log('🔍 Collecting validation errors with settings:', settings);
     
     // If settings are not available, skip validation
     if (!settings) {
       console.log('🔍 No settings available, skipping validation');
       return [];
     }
-        
+    
+    console.log('🔍 maxEndTime for validation:', settings.maxEndTime);
+
     const errors: string[] = [];
     const weeks = ['week1', 'week2'] as const;
     
     weeks.forEach((week, index) => {
       // Check each day in the week
       DAYS.forEach(day => {
-        const entry = currentTimesheet[week]["days"][day];
+        const entry = currentTimesheet[week][day];
         console.log(`🔍 Validating ${week} - ${day} for errors:`, entry);
         
         // Skip validation if entry is undefined
@@ -576,9 +575,20 @@ export default function TimesheetScreen() {
         console.log(`🔍 About to call validateTimeEntry with:`, { entry, settings });
         const validation = validateTimeEntry(entry, settings);
         console.log(`🔍 validateTimeEntry returned:`, validation);
-        if (!validation.isValid && validation.message) {
-          console.log(`🔍 Validation error for ${week} - ${day}:`, validation.message);
-          errors.push(`Week ${index + 1} - ${day.charAt(0).toUpperCase() + day.slice(1)}: ${validation.message}`);
+        
+        // Handle multiple validation messages
+        if (!validation.isValid) {
+          if (validation.messages && validation.messages.length > 0) {
+            // Add each validation message with the day and week prefix
+            validation.messages.forEach(message => {
+              console.log(`🔍 Validation error for ${week} - ${day}:`, message);
+              errors.push(`Week ${index + 1} - ${day.charAt(0).toUpperCase() + day.slice(1)}: ${message}`);
+            });
+          } else if (validation.message) {
+            // Fallback to single message for backward compatibility
+            console.log(`🔍 Validation error for ${week} - ${day}:`, validation.message);
+            errors.push(`Week ${index + 1} - ${day.charAt(0).toUpperCase() + day.slice(1)}: ${validation.message}`);
+          }
         }
       });
 
@@ -589,9 +599,20 @@ export default function TimesheetScreen() {
       );
       console.log(`🔍 Validating ${week} total hours for errors:`, weekTotal);
       const weekValidation = validateWeeklyHours(weekTotal, settings);
-      if (!weekValidation.isValid && weekValidation.message) {
-        console.log(`🔍 Validation error for ${week} total hours:`, weekValidation.message);
-        errors.push(`Week ${index + 1}: ${weekValidation.message}`);
+      
+      // Handle multiple validation messages for weekly hours
+      if (!weekValidation.isValid) {
+        if (weekValidation.messages && weekValidation.messages.length > 0) {
+          // Add each validation message with the week prefix
+          weekValidation.messages.forEach(message => {
+            console.log(`🔍 Validation error for ${week} total hours:`, message);
+            errors.push(`Week ${index + 1}: ${message}`);
+          });
+        } else if (weekValidation.message) {
+          // Fallback to single message for backward compatibility
+          console.log(`🔍 Validation error for ${week} total hours:`, weekValidation.message);
+          errors.push(`Week ${index + 1}: ${weekValidation.message}`);
+        }
       }
     });
 

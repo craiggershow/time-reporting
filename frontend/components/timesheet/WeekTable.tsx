@@ -31,6 +31,7 @@ interface ValidationState {
   [key: string]: {
     isValid: boolean;
     message?: string;
+    messages?: string[];
   };
 }
 
@@ -207,16 +208,16 @@ export function WeekTable({
     if (!validationState[day] || validationState[day].isValid) return false;
     
     const entry = data.days[day];
-    const errorMessage = validationState[day]?.message || '';
-
-    // Check if the error message matches the field
-    for (const [errorPattern, errorField] of Object.entries(errorFieldMap)) {
-      if (errorMessage.includes(errorPattern) && field === errorField) {
-        return true;
-      }
+    const errorMessages = validationState[day]?.messages || [];
+    
+    // If we have multiple messages, check if any are relevant to this field
+    if (errorMessages.length > 0) {
+      return errorMessages.some(msg => isErrorForField(msg, field));
     }
-
-    return false;
+    
+    // Fallback to the old message property for backward compatibility
+    const singleErrorMessage = validationState[day]?.message || '';
+    return isErrorForField(singleErrorMessage, field);
   };
 
   const handleTimeUpdate = (day: keyof WeekData, field: keyof TimeEntry, value: string | null) => {
@@ -228,16 +229,38 @@ export function WeekTable({
   const getFieldTooltipMessage = (day: keyof WeekData, field: keyof TimeEntry) => {
     if (!validationState[day] || validationState[day].isValid) return '';
     
-    const errorMessage = validationState[day]?.message || '';
+    const errorMessages = validationState[day]?.messages || [];
+    if (errorMessages.length === 0) {
+      // Fallback to the old message property for backward compatibility
+      const singleErrorMessage = validationState[day]?.message || '';
+      if (singleErrorMessage && isErrorForField(singleErrorMessage, field)) {
+        return singleErrorMessage;
+      }
+      return '';
+    }
     
-    // Check if the error message matches the field
+    // Filter messages that are relevant to this field
+    const relevantMessages = errorMessages.filter(msg => isErrorForField(msg, field));
+    
+    // Join multiple messages with line breaks
+    return relevantMessages.join('\n');
+  };
+  
+  // Helper function to check if an error message is for a specific field
+  const isErrorForField = (errorMessage: string, field: keyof TimeEntry) => {
+    // For the total hours field, only show daily hours exceeded errors
+    if (field === 'totalHours') {
+      return errorMessage.includes('Daily hours cannot exceed');
+    }
+    
+    // For other fields, check if the error message matches the field
     for (const [errorPattern, errorField] of Object.entries(errorFieldMap)) {
       if (errorMessage.includes(errorPattern) && field === errorField) {
-        return errorMessage;
+        return true;
       }
     }
-
-    return '';
+    
+    return false;
   };
 
   return (
