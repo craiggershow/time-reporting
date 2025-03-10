@@ -53,7 +53,7 @@ export function HolidayManagementModal({ holidays: initialHolidays, onClose, onS
       <View style={styles.container}>
         <ThemedText type="title">Manage Holidays</ThemedText>
         
-        <View style={styles.addHolidaySection}>
+        <View style={styles.section}>
           <ThemedText style={styles.subtitle}>Add New Holiday</ThemedText>
           <View style={styles.addHolidayForm}>
             <DateTimePicker
@@ -79,25 +79,27 @@ export function HolidayManagementModal({ holidays: initialHolidays, onClose, onS
           </View>
         </View>
 
-        <ScrollView style={styles.holidayList}>
+        <View style={styles.section}>
           <ThemedText style={styles.subtitle}>Current Holidays</ThemedText>
-          {holidays.map((holiday, index) => (
-            <View key={index} style={styles.holidayItem}>
-              <View style={styles.holidayInfo}>
-                <ThemedText>{holiday.name}</ThemedText>
-                <ThemedText style={styles.holidayDetails}>
-                  {format(holiday.date, 'MMM d, yyyy')} - {holiday.payRate}x pay
-                </ThemedText>
+          <ScrollView style={styles.holidayList}>
+            {holidays.map((holiday, index) => (
+              <View key={index} style={styles.holidayItem}>
+                <View style={styles.holidayInfo}>
+                  <ThemedText>{holiday.name}</ThemedText>
+                  <ThemedText style={styles.holidayDetails}>
+                    {format(holiday.date, 'MMM d, yyyy')} - {holiday.payRate}x pay
+                  </ThemedText>
+                </View>
+                <Button
+                  onPress={() => handleRemoveHoliday(index)}
+                  variant="secondary"
+                >
+                  Remove
+                </Button>
               </View>
-              <Button
-                onPress={() => handleRemoveHoliday(index)}
-                variant="secondary"
-              >
-                Remove
-              </Button>
-            </View>
-          ))}
-        </ScrollView>
+            ))}
+          </ScrollView>
+        </View>
 
         <View style={styles.actions}>
           <Button onPress={onClose} variant="secondary">
@@ -121,7 +123,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: spacing.sm,
   },
-  addHolidaySection: {
+  section: {
     backgroundColor: colors.background.tableAlt,
     padding: spacing.md,
     borderRadius: 8,

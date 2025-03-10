@@ -117,7 +117,6 @@ export function WeekTable({
         const entry = data.days[day];
         const isMissingEndTime = entry?.startTime && !entry?.endTime;
         const isMissingLunchEndTime = entry?.lunchStartTime && !entry?.lunchEndTime;
-        const showWarning = !validation?.isValid && !(isMissingEndTime || isMissingLunchEndTime);
         const isHovered = hoveredDay === day;
 
         return (
@@ -133,7 +132,7 @@ export function WeekTable({
                   >
                     <Ionicons name="warning" size={20} color="#ef4444" />
                   </View>
-                  {(showWarning || isHovered) && validation?.message && (
+                  {(isHovered) && validation?.message && (
                     <Tooltip message={validation.message} />
                   )}
                 </View>

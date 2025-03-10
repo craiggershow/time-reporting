@@ -9,14 +9,14 @@ interface ModalProps {
 }
 
 export function Modal({ children, onClose }: ModalProps) {
-  const theme = useTheme();
+  const { colors: themeColors } = useTheme();
 
   return (
     <View style={styles.container}>
       <View style={styles.overlay}>
-        <View style={styles.content}>
+        <View style={[styles.content, { backgroundColor: themeColors.background.card }]}>
           <Pressable style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="close" size={24} color={colors.text.primary} />
+            <Ionicons name="close" size={24} color={themeColors.text.primary} />
           </Pressable>
           {children}
         </View>
@@ -42,13 +42,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)', // Darker overlay for better contrast
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.md,
   },
   content: {
-    backgroundColor: colors.appBackground,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
@@ -56,6 +55,11 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 500,
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
   },
   closeButton: {
     position: 'absolute',
