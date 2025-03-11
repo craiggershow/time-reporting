@@ -10,8 +10,8 @@ interface ValidationResult {
 
 
 export function validateTimeEntry(entry: TimeEntry, settings?: any): ValidationResult {
-  console.log('⚙️ validateTimeEntry called with settings:', settings);
-  console.log('⚙️ validateTimeEntry entry:', entry);
+  //console.log('⚙️ validateTimeEntry called with settings:', settings);
+  //console.log('⚙️ validateTimeEntry entry:', entry);
   
   const errors: string[] = [];
   
@@ -47,11 +47,11 @@ export function validateTimeEntry(entry: TimeEntry, settings?: any): ValidationR
   const minStartTime = settings?.minStartTime;
   const maxDailyHours = settings?.maxDailyHours;
   
-  console.log('⚙️ Extracted settings for validation:', { 
-    maxEndTime, 
-    minStartTime, 
-    maxDailyHours 
-  });
+  //console.log('⚙️ Extracted settings for validation:', { 
+  //  maxEndTime, 
+  //  minStartTime, 
+  //  maxDailyHours 
+  //});
 
   // Convert times to minutes for comparison
   const startMinutes = timeToMinutes(entry.startTime);
@@ -108,18 +108,18 @@ export function validateTimeEntry(entry: TimeEntry, settings?: any): ValidationR
 }
 
 export function validateWeeklyHours(weekTotal: number, settings?: any): ValidationResult {
-  console.log('⚙️ validateWeeklyHours called with weekTotal:', weekTotal, 'settings:', settings);
+  //console.log('⚙️ validateWeeklyHours called with weekTotal:', weekTotal, 'settings:', settings);
   
   const errors: string[] = [];
   
   if (!settings) {
-    console.log('⚙️ No settings provided to validateWeeklyHours, skipping validation');
+    //console.log('⚙️ No settings provided to validateWeeklyHours, skipping validation');
     return { isValid: true, messages: [] };
   }
 
   // Extract maxWeeklyHours from settings
   const maxWeeklyHours = settings?.maxWeeklyHours;
-  console.log('⚙️ Extracted maxWeeklyHours for validation:', maxWeeklyHours);
+  //console.log('⚙️ Extracted maxWeeklyHours for validation:', maxWeeklyHours);
 
   if (maxWeeklyHours !== undefined && weekTotal > maxWeeklyHours) {
     errors.push(`Weekly hours must not exceed ${maxWeeklyHours}`);

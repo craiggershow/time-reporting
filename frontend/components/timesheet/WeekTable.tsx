@@ -58,29 +58,23 @@ export function WeekTable({
   const [hoveredLock, setHoveredLock] = useState<string | null>(null);
   const [hoveredError, setHoveredError] = useState<string | null>(null);
 
-  console.log(`🔍 WeekTable ${weekNumber} - data:`, JSON.stringify(data, null, 2));
-  
   // Add effect to log when data changes
   useEffect(() => {
-    console.log(`🔄 WeekTable ${weekNumber} - data changed:`, JSON.stringify(data, null, 2));
-    
-    // Log specific day data to see if it's changing
     if (weekNumber === 2) {
-      console.log(`🔍 WeekTable ${weekNumber} - monday data:`, JSON.stringify(data.monday, null, 2));
-      console.log(`🔍 WeekTable ${weekNumber} - data reference:`, Object.is(data, data));
+      //console.log(`🔄 WeekTable ${weekNumber} - received data update`);
     }
   }, [data, weekNumber]);
 
   // Calculate weekly total
   const weeklyTotal = DAYS.reduce((sum, day) => {
     if (!data || !data.days || !data.days[day]) {
-      console.warn(`Missing data for day: ${day}`);
+      //console.warn(`Missing data for day: ${day}`);
       return sum;
     }
     return sum + (data.days[day]?.totalHours || 0);
   }, 0) + (data.extraHours || 0);
 
-  console.log('WeekTable - weeklyTotal:', weeklyTotal);
+  //console.log('WeekTable - weeklyTotal:', weeklyTotal);
 
   // Calculate if any day in this week is in the future
   const today = new Date();
@@ -92,14 +86,14 @@ export function WeekTable({
   // Calculate validation for a day
   const validateDay = (day: keyof WeekData) => {
     if (!data || !data.days || !data.days[day]) {
-      console.warn(`Missing data for day: ${day}`);
+      //console.warn(`Missing data for day: ${day}`);
       return { isValid: false, message: 'Missing data' };
     }
     
     const entry = data.days[day];
-    console.log(`⚙️ WeekTable validateDay calling validateTimeEntry with settings:`, settings);
+    //console.log(`⚙️ WeekTable validateDay calling validateTimeEntry with settings:`, settings);
     const validation = validateTimeEntry(entry, settings);
-    console.log(`⚙️ WeekTable validateDay result for ${day}:`, validation);
+    //console.log(`⚙️ WeekTable validateDay result for ${day}:`, validation);
     return validation;
   };
 
@@ -107,13 +101,13 @@ export function WeekTable({
   const validateWeeklyTotal = () => {
     const weekTotal = DAYS.reduce((sum, d) => {
       if (!data || !data.days || !data.days[d]) {
-        console.warn(`Missing data for day: ${d}`);
+        //console.warn(`Missing data for day: ${d}`);
         return sum;
       }
       return sum + (data.days[d]?.totalHours || 0);
     }, 0) + (data.extraHours || 0);
     
-    console.log(`⚙️ WeekTable validateWeeklyTotal calling validateWeeklyHours with settings:`, settings);
+    //console.log(`⚙️ WeekTable validateWeeklyTotal calling validateWeeklyHours with settings:`, settings);
     return validateWeeklyHours(weekTotal, settings);
   };
 
@@ -232,7 +226,7 @@ export function WeekTable({
   };
 
   const handleTimeUpdate = (day: keyof WeekData, field: keyof TimeEntry, value: string | null) => {
-    console.log('handleTimeUpdate:', { day, field, value });
+    //console.log('handleTimeUpdate:', { day, field, value });
     onUpdate(day as any, field as any, value);
   };
 

@@ -570,29 +570,29 @@ export default function TimesheetScreen() {
       // Check each day in the week
       DAYS.forEach(day => {
         const entry = currentTimesheet[week][day];
-        console.log(`🔍 Validating ${week} - ${day} for errors:`, entry);
+        //console.log(`🔍 Validating ${week} - ${day} for errors:`, entry);
         
         // Skip validation if entry is undefined
         if (!entry) {
-          console.log(`🔍 Skipping validation for ${week} - ${day}: entry is undefined`);
+          //console.log(`🔍 Skipping validation for ${week} - ${day}: entry is undefined`);
           return;
         }
         
-        console.log(`🔍 About to call validateTimeEntry with:`, { entry, settings });
+        //console.log(`🔍 About to call validateTimeEntry with:`, { entry, settings });
         const validation = validateTimeEntry(entry, settings);
-        console.log(`🔍 validateTimeEntry returned:`, validation);
+        //console.log(`🔍 validateTimeEntry returned:`, validation);
         
         // Handle multiple validation messages
         if (!validation.isValid) {
           if (validation.messages && validation.messages.length > 0) {
             // Add each validation message with the day and week prefix
             validation.messages.forEach(message => {
-              console.log(`🔍 Validation error for ${week} - ${day}:`, message);
+              //console.log(`🔍 Validation error for ${week} - ${day}:`, message);
               errors.push(`Week ${index + 1} - ${day.charAt(0).toUpperCase() + day.slice(1)}: ${message}`);
             });
           } else if (validation.message) {
             // Fallback to single message for backward compatibility
-            console.log(`🔍 Validation error for ${week} - ${day}:`, validation.message);
+            //console.log(`🔍 Validation error for ${week} - ${day}:`, validation.message);
             errors.push(`Week ${index + 1} - ${day.charAt(0).toUpperCase() + day.slice(1)}: ${validation.message}`);
           }
         }
@@ -603,7 +603,7 @@ export default function TimesheetScreen() {
         (sum, day) => sum + (currentTimesheet[week][day]?.totalHours || 0),
         currentTimesheet[week].extraHours || 0
       );
-      console.log(`🔍 Validating ${week} total hours for errors:`, weekTotal);
+      // console.log(`🔍 Validating ${week} total hours for errors:`, weekTotal);
       const weekValidation = validateWeeklyHours(weekTotal, settings);
       
       // Handle multiple validation messages for weekly hours
@@ -611,18 +611,18 @@ export default function TimesheetScreen() {
         if (weekValidation.messages && weekValidation.messages.length > 0) {
           // Add each validation message with the week prefix
           weekValidation.messages.forEach(message => {
-            console.log(`🔍 Validation error for ${week} total hours:`, message);
+            //console.log(`🔍 Validation error for ${week} total hours:`, message);
             errors.push(`Week ${index + 1}: ${message}`);
           });
         } else if (weekValidation.message) {
           // Fallback to single message for backward compatibility
-          console.log(`🔍 Validation error for ${week} total hours:`, weekValidation.message);
+          //console.log(`🔍 Validation error for ${week} total hours:`, weekValidation.message);
           errors.push(`Week ${index + 1}: ${weekValidation.message}`);
         }
       }
     });
 
-    console.log('🔍 Validation errors collected:', errors.length > 0 ? errors : 'No errors');
+    //console.log('🔍 Validation errors collected:', errors.length > 0 ? errors : 'No errors');
     return errors;
   };
 
@@ -632,10 +632,10 @@ export default function TimesheetScreen() {
 
       // Check for validation errors first
       const validationErrors = getValidationErrors();
-      console.log('Validation errors:', validationErrors);
+      //console.log('Validation errors:', validationErrors);
 
       if (validationErrors.length > 0) {
-        console.log('Found validation errors, showing alert');
+        //console.log('Found validation errors, showing alert');
         setIsSubmitting(false);
         Alert.alert(
           'Validation Errors',
@@ -646,7 +646,7 @@ export default function TimesheetScreen() {
         return;
       }
 
-      console.log('No validation errors, proceeding with submit');
+      //console.log('No validation errors, proceeding with submit');
 
       if (!currentTimesheet) {
         setIsSubmitting(false);
@@ -666,7 +666,7 @@ export default function TimesheetScreen() {
       }
 
       const currentTimesheet = await currentResponse.json();
-      console.log('Current timesheet:', currentTimesheet);
+      //console.log('Current timesheet:', currentTimesheet);
 
       if (!currentTimesheet.payPeriod?.id) {
         throw new Error('No payPeriodId found');
@@ -817,16 +817,16 @@ export default function TimesheetScreen() {
 
   const handleCopyWeek = () => {
     if (!currentTimesheet?.week1) {
-      console.log('📋 No week1 data found');
+      //console.log('📋 No week1 data found');
       return;
     }
     
     if (!currentTimesheet?.week2) {
-      console.log('📋 No week2 data found');
+      //console.log('📋 No week2 data found');
       return;
     }
     
-    console.log('📋 Copying week 1 to week 2', JSON.stringify(currentTimesheet, null, 2));
+    //console.log('📋 Copying week 1 to week 2');
     
     // Get the array of day names in lowercase
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
@@ -835,8 +835,7 @@ export default function TimesheetScreen() {
     days.forEach(day => {
       // Access the day directly from week1.days
       if (currentTimesheet.week1.days[day]) {
-        console.log(`📋 Copying day ${day} from week 1 to week 2:`, JSON.stringify(currentTimesheet.week1.days[day], null, 2));
-        console.log(`📋 Current week2 day ${day} before update:`, JSON.stringify(currentTimesheet.week2.days[day], null, 2));
+        //console.log(`📋 Copying day ${day}`);
         
         // Update the timesheet state for this day
         updateTimesheetState({
@@ -847,9 +846,6 @@ export default function TimesheetScreen() {
             entry: { ...currentTimesheet.week1.days[day] },
           },
         });
-        
-        // Log after the update to see if the state was updated
-        console.log(`📋 After updateTimesheetState call for day ${day}`);
       } else {
         console.log(`📋 No data found for ${day} in week 1`);
       }
@@ -857,7 +853,7 @@ export default function TimesheetScreen() {
     
     // Also copy extra hours if they exist
     if (currentTimesheet.week1.extraHours) {
-      console.log(`📋 Copying extra hours: ${currentTimesheet.week1.extraHours}`);
+      //console.log(`📋 Copying extra hours: ${currentTimesheet.week1.extraHours}`);
       updateTimesheetState({
         type: 'SET_EXTRA_HOURS',
         payload: {
@@ -865,27 +861,21 @@ export default function TimesheetScreen() {
           hours: currentTimesheet.week1.extraHours
         }
       });
-      console.log(`📋 After updateTimesheetState call for extra hours`);
     }
-    
-    // Log the timesheet after all updates
-    setTimeout(() => {
-      console.log('📋 Timesheet after all updates:', JSON.stringify(currentTimesheet, null, 2));
-    }, 100);
   };
 
   const handleCopyPrevious = (week: 1 | 2, day: DayOfWeek) => {
     if (!currentTimesheet) {
-      console.log('📋 No currentTimesheet found');
+      //console.log('📋 No currentTimesheet found');
       return;
     }
-    console.log('📋 handleCopyPrevious called with:', { week, day });
+    //console.log('📋 handleCopyPrevious called with:', { week, day });
 
     const weekKey = `week${week}`;
     const weekData = currentTimesheet[weekKey];
     
     if (!weekData) {
-      console.log(`📋 No weekData found for week${week}`);
+      //console.log(`📋 No weekData found for week${week}`);
       return;
     }
     
@@ -897,7 +887,7 @@ export default function TimesheetScreen() {
     const currentDayIndex = days.indexOf(dayLowerCase as any);
     
     if (currentDayIndex <= 0) {
-      console.log('📋 Cannot copy - this is the first day or day not found');
+      //console.log('📋 Cannot copy - this is the first day or day not found');
       return; // Can't copy if it's the first day or not found
     }
     
@@ -913,15 +903,15 @@ export default function TimesheetScreen() {
     }
     
     if (!previousEntry) {
-      console.log('📋 No previous entry found');
+      //console.log('📋 No previous entry found');
       return;
     }
-    console.log('📋 previousEntry:', previousEntry);
-    console.log('📋 Copying from previous day:', { 
-      from: previousDayKey,
-      to: dayLowerCase,
-      entry: previousEntry
-    });
+    //console.log('📋 previousEntry:', previousEntry);
+    //console.log('📋 Copying from previous day:', { 
+    //  from: previousDayKey,
+    //  to: dayLowerCase,
+    //  entry: previousEntry
+    //});
     
     updateTimesheetState({
       type: 'UPDATE_TIME_ENTRY',
@@ -971,11 +961,11 @@ export default function TimesheetScreen() {
   const week1Total = currentTimesheet.week1.totalHours || 0;
   const week2Total = currentTimesheet.week2.totalHours || 0;
   
-  console.log('🔢 week1Total (using totalHours directly):', week1Total);
-  console.log('🔢 week2Total (using totalHours directly):', week2Total);
+  //console.log('🔢 week1Total (using totalHours directly):', week1Total);
+  //console.log('🔢 week2Total (using totalHours directly):', week2Total);
 
   const periodTotal = week1Total + week2Total + (currentTimesheet.vacationHours || 0);
-  console.log('🔢 periodTotal:', periodTotal);
+  //console.log('🔢 periodTotal:', periodTotal);
 
   return (
     <View style={styles.container}>
@@ -1063,15 +1053,15 @@ export default function TimesheetScreen() {
 }
 function calculateWeekTotal(week: any): number {
   if (!week) {
-    console.log('calculateWeekTotal - weekData is undefined, returning 0');
+    //console.log('calculateWeekTotal - weekData is undefined, returning 0');
     return 0;
   }
 
-  console.log('calculateWeekTotal - Week Data:', week);
+  //console.log('calculateWeekTotal - Week Data:', week);
   
   // Use the totalHours property directly from the WeekData structure
   const total = week.totalHours || 0;
-  console.log('calculateWeekTotal - final total:', total);
+  //console.log('calculateWeekTotal - final total:', total);
 
   return total;
 }
@@ -1083,13 +1073,13 @@ function processWeekData(weekData: any) {
   //console.log('Processing week data (full):', JSON.stringify(weekData, null, 2)); // Log full structure
 
   if (!weekData) {
-    console.log('No week data provided, returning empty data');
+    //console.log('No week data provided, returning empty data');
     return createEmptyWeekData();
   }
 
   // Try to find the correct data structure
   const days = weekData.days || weekData.data?.days || [];
-  console.log('Days array:', days);
+  //console.log('Days array:', days);
 
   // Convert days array to object by day of week
   const daysObject = days.reduce((acc: any, day: any) => {
@@ -1130,7 +1120,7 @@ function processWeekData(weekData: any) {
     extraHours: Number(weekData.extraHours || 0),
   };
 
-  console.log('Final processed week data:', result);
+  //console.log('Final processed week data:', result);
   return result;
 }
 const styles = StyleSheet.create({
