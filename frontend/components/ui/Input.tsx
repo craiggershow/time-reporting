@@ -39,24 +39,24 @@ export function Input({
   
   const handleFocus = (e: any) => {
     setIsFocused(true);
-    onFocus && onFocus(e);
+    if (onFocus) onFocus(e);
   };
   
   const handleBlur = (e: any) => {
     setIsFocused(false);
-    onBlur && onBlur(e);
+    if (onBlur) onBlur(e);
   };
 
   return (
     <View style={styles.container}>
-      {label && <ThemedText style={styles.label}>{label}</ThemedText>}
+      {label ? <ThemedText style={styles.label}>{label}</ThemedText> : null}
       <View style={[
         styles.inputContainer,
         isFocused && styles.focusedContainer,
         error && styles.errorContainer,
         style
       ]}>
-        {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
+        {leftIcon ? <View style={styles.iconLeft}>{leftIcon}</View> : null}
         <TextInput
           style={[
             styles.input,
@@ -68,11 +68,11 @@ export function Input({
           onBlur={handleBlur}
           {...props as any}
         />
-        {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
+        {rightIcon ? <View style={styles.iconRight}>{rightIcon}</View> : null}
       </View>
-      {error && (
+      {error ? (
         <ThemedText style={styles.errorText}>{error}</ThemedText>
-      )}
+      ) : null}
     </View>
   );
 }

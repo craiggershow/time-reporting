@@ -138,14 +138,9 @@ export function TimeInput({
   // Update localValue when value prop changes and we're not editing
   useEffect(() => {
     if (!isEditing) {
-      console.log('TimeInput - updating localValue from prop:', { value, localValue });
       setLocalValue(value ? formatTimeForDisplay(value) : '');
     }
   }, [value, isEditing]);
-
-  useEffect(() => {
-    console.log('TimeInput value changed:', { value, localValue, isEditing });
-  }, [value, localValue, isEditing]);
 
   // Use effect to capture the input element and remove its focus outline
   useEffect(() => {
@@ -161,14 +156,11 @@ export function TimeInput({
   }, []);
 
   const handleChange = (text: string) => {
-    console.log('⌚ TimeInput handleChange:', text);
-    
     // Store the raw input value
     setLocalValue(text);
     
     // Only clear value if empty or placeholder
     if (!text || text === '--:--') {
-      console.log('⌚ TimeInput clearing value');
       onChange(null);
     }
     // Don't process the time yet, just store the local value
@@ -176,12 +168,10 @@ export function TimeInput({
   };
 
   const handleInputBlur = () => {
-    console.log('⌚ TimeInput handleInputBlur - before:', { localValue, value });
     setIsEditing(false);
     
     // Clear value if empty or placeholder
     if (!localValue || localValue === '--:--') {
-      console.log('⌚ TimeInput clearing value on blur');
       onChange(null);
       setLocalValue('');
       onBlur?.();
@@ -191,11 +181,8 @@ export function TimeInput({
     // Now process the time when the user is done typing
     // Try to convert the input to 24-hour format
     let time24h = convertTo24Hour(localValue);
-    console.log('⌚ TimeInput processing time on blur:', { localValue, time24h });
     
     if (time24h) {
-      // Successfully converted to 24-hour format
-      console.log('⌚ TimeInput successfully converted time:', time24h);
       onChange(time24h);
     } else {
       // If direct conversion fails, try to parse it as a simple number (e.g., "8" -> "08:00")
@@ -204,33 +191,26 @@ export function TimeInput({
         const hours = parseInt(simpleNumberMatch[1], 10);
         if (hours >= 0 && hours <= 23) {
           time24h = `${hours.toString().padStart(2, '0')}:00`;
-          console.log('⌚ TimeInput parsed simple number input:', { localValue, time24h });
           onChange(time24h);
         } else {
-          // Invalid hours
-          console.log('⌚ TimeInput invalid hours, reverting to previous value');
           setLocalValue(value ? formatTimeForDisplay(value) : '');
         }
       } else {
         // If parsing fails, keep the previous valid value
-        console.log('⌚ TimeInput parsing failed, reverting to previous value');
         setLocalValue(value ? formatTimeForDisplay(value) : '');
       }
     }
     
     onBlur?.();
-    console.log('⌚ TimeInput handleInputBlur - after:', { localValue, value, time24h });
   };
 
   const handleInputFocus = () => {
-    console.log('handleInputFocus:', { localValue, value });
     setIsEditing(true);
   };
 
   // Use localValue when editing, otherwise use formatted value from props
   // IMPORTANT: Always show the value from props when not editing to ensure consistency
   const displayValue = isEditing ? localValue : (value ? formatTimeForDisplay(value) : '');
-  //console.debug('Rendering TimeInput with displayValue:', displayValue);
 
   return (
     <View ref={inputRef}>
