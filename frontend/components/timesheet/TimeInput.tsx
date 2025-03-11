@@ -1,4 +1,4 @@
-import { StyleSheet, View, TouchableOpacity, Modal, Platform, TextStyle } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Modal, Platform, TextStyle, ScrollView, FlatList } from 'react-native';
 import { Input } from '../ui/Input';
 import { useState, useEffect, useRef } from 'react';
 import { convertTo24Hour } from '@/utils/time';
@@ -140,6 +140,7 @@ export function TimeInput({
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const [timeSection, setTimeSection] = useState<'morning' | 'afternoon' | 'evening'>('morning');
   
   // Update localValue when value prop changes and we're not editing
   useEffect(() => {
@@ -218,22 +219,63 @@ export function TimeInput({
     }
   };
 
-  // Generate time options for the time picker
+  // Generate time options for the time picker, organized by sections
   const generateTimeOptions = () => {
-    const options = [];
+    // Create time options for different parts of the day
+    const morningOptions = [];
+    const afternoonOptions = [];
+    const eveningOptions = [];
     
-    // Add common work hours (6am to 8pm in 15-minute increments)
-    for (let hour = 6; hour <= 20; hour++) {
+    // Morning: 6am to 11:45am in 15-minute increments
+    for (let hour = 6; hour < 12; hour++) {
       for (let minute = 0; minute < 60; minute += 15) {
-        const period = hour >= 12 ? 'PM' : 'AM';
-        const hour12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-        const timeString = `${hour12}:${minute.toString().padStart(2, '0')} ${period}`;
-        options.push(timeString);
+        const period = 'AM';
+        const timeString = `${hour}:${minute.toString().padStart(2, '0')} ${period}`;
+        morningOptions.push(timeString);
       }
     }
     
-    return options;
+    // Afternoon: 12pm to 4:45pm in 15-minute increments
+    for (let hour = 12; hour < 17; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const period = 'PM';
+        const hour12 = hour > 12 ? hour - 12 : hour;
+        const timeString = `${hour12}:${minute.toString().padStart(2, '0')} ${period}`;
+        afternoonOptions.push(timeString);
+      }
+    }
+    
+    // Evening: 5pm to 11:45pm in 15-minute increments
+    for (let hour = 17; hour < 24; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const period = 'PM';
+        const hour12 = hour > 12 ? hour - 12 : hour;
+        const timeString = `${hour12}:${minute.toString().padStart(2, '0')} ${period}`;
+        eveningOptions.push(timeString);
+      }
+    }
+    
+    return { morningOptions, afternoonOptions, eveningOptions };
   };
+
+  const { morningOptions, afternoonOptions, eveningOptions } = generateTimeOptions();
+
+  // Determine which section the current time belongs to
+  useEffect(() => {
+    if (value) {
+      const time24h = convertTo24Hour(value);
+      if (time24h) {
+        const hour = parseInt(time24h.split(':')[0], 10);
+        if (hour >= 6 && hour < 12) {
+          setTimeSection('morning');
+        } else if (hour >= 12 && hour < 17) {
+          setTimeSection('afternoon');
+        } else {
+          setTimeSection('evening');
+        }
+      }
+    }
+  }, [value, showTimePicker]);
 
   const handleTimeSelection = (selectedTime: string) => {
     setLocalValue(selectedTime);
@@ -313,24 +355,76 @@ export function TimeInput({
                 </TouchableOpacity>
               </View>
               
-              <View style={styles.timeOptionsContainer}>
-                {generateTimeOptions().map((timeOption) => (
+              <View style={styles.timeSectionTabs}>
+                <TouchableOpacity 
+                  style={[
+                    styles.timeSectionTab, 
+                    timeSection === 'morning' && styles.activeTimeSectionTab
+                  ]}
+                  onPress={() => setTimeSection('morning')}
+                >
+                  <ThemedText style={
+                    timeSection === 'morning' ? styles.activeTimeSectionTabText : styles.timeSectionTabText
+                  }>
+                    Morning
+                  </ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[
+                    styles.timeSectionTab, 
+                    timeSection === 'afternoon' && styles.activeTimeSectionTab
+                  ]}
+                  onPress={() => setTimeSection('afternoon')}
+                >
+                  <ThemedText style={
+                    timeSection === 'afternoon' ? styles.activeTimeSectionTabText : styles.timeSectionTabText
+                  }>
+                    Afternoon
+                  </ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[
+                    styles.timeSectionTab, 
+                    timeSection === 'evening' && styles.activeTimeSectionTab
+                  ]}
+                  onPress={() => setTimeSection('evening')}
+                >
+                  <ThemedText style={
+                    timeSection === 'evening' ? styles.activeTimeSectionTabText : styles.timeSectionTabText
+                  }>
+                    Evening
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
+              
+              <FlatList
+                data={
+                  timeSection === 'morning' 
+                    ? morningOptions 
+                    : timeSection === 'afternoon' 
+                      ? afternoonOptions 
+                      : eveningOptions
+                }
+                renderItem={({ item }) => (
                   <TouchableOpacity
-                    key={timeOption}
                     style={[
                       styles.timeOption,
-                      timeOption === displayValue && styles.selectedTimeOption
+                      item === displayValue && styles.selectedTimeOption
                     ]}
-                    onPress={() => handleTimeSelection(timeOption)}
+                    onPress={() => handleTimeSelection(item)}
                   >
                     <ThemedText style={
-                      timeOption === displayValue ? styles.selectedTimeOptionText : styles.timeOptionText
+                      item === displayValue ? styles.selectedTimeOptionText : styles.timeOptionText
                     }>
-                      {timeOption}
+                      {item}
                     </ThemedText>
                   </TouchableOpacity>
-                ))}
-              </View>
+                )}
+                keyExtractor={(item) => item}
+                numColumns={3}
+                contentContainerStyle={styles.timeOptionsContainer}
+                showsVerticalScrollIndicator={true}
+              />
               
               <View style={styles.modalFooter}>
                 <TouchableOpacity 
@@ -409,14 +503,34 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  timeOptionsContainer: {
-    padding: 16,
+  timeSectionTabs: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  timeSectionTab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeTimeSectionTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#0ea5e9',
+  },
+  timeSectionTabText: {
+    fontSize: 14,
+    color: '#64748b',
+  },
+  activeTimeSectionTabText: {
+    color: '#0ea5e9',
+    fontWeight: '600',
+  },
+  timeOptionsContainer: {
+    padding: 12,
   },
   timeOption: {
-    width: '30%',
+    width: '33.33%',
     padding: 12,
     marginBottom: 8,
     borderRadius: 8,
