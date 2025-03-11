@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { useTheme } from '@/context/ThemeContext';
 import { WeekData, TimeEntry, DayType, DayOfWeek } from '@/types/timesheet';
@@ -57,6 +57,9 @@ export function WeekTable({
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const [hoveredLock, setHoveredLock] = useState<string | null>(null);
   const [hoveredError, setHoveredError] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<keyof WeekData | null>(null);
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   // Add effect to log when data changes
   useEffect(() => {
@@ -268,6 +271,132 @@ export function WeekTable({
     return false;
   };
 
+  // Render the mobile view with a day selector and vertical layout
+  const renderMobileView = () => {
+    return (
+      <View style={styles.mobileContainer}>
+        <View style={styles.daySelector}>
+          {DAYS.map((day, index) => (
+            <Button
+              key={day}
+              variant={selectedDay === day ? "primary" : "secondary"}
+              onPress={() => setSelectedDay(day)}
+              style={styles.daySelectorButton}
+            >
+              <ThemedText style={styles.daySelectorText}>
+                {format(addDays(safeStartDate, index), 'EEE')}
+              </ThemedText>
+            </Button>
+          ))}
+        </View>
+        
+        {selectedDay && (
+          <View style={styles.mobileTimeEntryContainer}>
+            <View style={styles.mobileTimeEntryHeader}>
+              <ThemedText style={styles.mobileTimeEntryDay}>
+                {format(addDays(safeStartDate, DAYS.indexOf(selectedDay)), 'EEEE, MMM d')}
+              </ThemedText>
+              {DAYS.indexOf(selectedDay) > 0 && (
+                <Button
+                  variant="secondary"
+                  onPress={() => onCopyPrevious(selectedDay)}
+                  style={styles.copyButton}
+                  textStyle={styles.copyButtonText}
+                >
+                  Copy Previous
+                </Button>
+              )}
+            </View>
+            
+            <View style={styles.mobileTimeEntryFields}>
+              {['startTime', 'endTime', 'lunchStartTime', 'lunchEndTime'].map((fieldName, index) => {
+                const label = ['Start Time', 'End Time', 'Lunch Start', 'Lunch End'][index];
+                const dayDate = addDays(safeStartDate, DAYS.indexOf(selectedDay));
+                const disabled = isFutureDate(dayDate);
+                const hasError = hasFieldError(selectedDay, fieldName as keyof TimeEntry);
+                const tooltipMessage = getFieldTooltipMessage(selectedDay, fieldName as keyof TimeEntry);
+                
+                return (
+                  <View key={fieldName} style={styles.mobileTimeEntryField}>
+                    <ThemedText style={styles.mobileTimeEntryLabel}>{label}</ThemedText>
+                    <View style={styles.mobileTimeInputContainer}>
+                      <TimeInput
+                        value={formatTimeForDisplay(data.days[selectedDay][fieldName as keyof TimeEntry])}
+                        onChange={(value) => handleTimeUpdate(selectedDay, fieldName as keyof TimeEntry, value)}
+                        disabled={disabled}
+                        onBlur={() => handleBlur(selectedDay)}
+                        hasError={hasError}
+                      />
+                      {disabled && (
+                        <View style={styles.mobileLockIconContainer}>
+                          <Ionicons name="lock-closed" size={16} color="#94a3b8" />
+                        </View>
+                      )}
+                      {hasError && tooltipMessage && (
+                        <View style={styles.mobileErrorIconContainer}>
+                          <Ionicons name="warning" size={16} color="#ef4444" />
+                          <ThemedText style={styles.mobileErrorText}>{tooltipMessage}</ThemedText>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+              
+              <View style={styles.mobileTimeEntryField}>
+                <ThemedText style={styles.mobileTimeEntryLabel}>Day Type</ThemedText>
+                <View style={styles.mobileTimeInputContainer}>
+                  <DayTypeSelect
+                    value={data.days[selectedDay].dayType}
+                    onChange={(type) => onDayTypeChange(selectedDay, type)}
+                    disabled={isFutureDate(addDays(safeStartDate, DAYS.indexOf(selectedDay)))}
+                  />
+                </View>
+              </View>
+              
+              <View style={styles.mobileTimeEntryField}>
+                <ThemedText style={styles.mobileTimeEntryLabel}>Total Hours</ThemedText>
+                <View style={styles.mobileTimeInputContainer}>
+                  <ThemedText style={styles.totalHours}>
+                    {(data.days[selectedDay].totalHours !== undefined && data.days[selectedDay].totalHours !== null) 
+                      ? data.days[selectedDay].totalHours.toFixed(2) 
+                      : '0.00'}
+                  </ThemedText>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+        
+        <View style={styles.mobileExtraHoursContainer}>
+          <ThemedText style={styles.mobileTimeEntryLabel}>Extra Hours</ThemedText>
+          <Input
+            label=""
+            value={data.extraHours?.toString() || '0'}
+            onChangeText={(text) => onExtraHoursChange(parseFloat(text) || 0)}
+            keyboardType="numeric"
+            style={styles.mobileExtraHoursInput}
+          />
+        </View>
+        
+        <View style={styles.mobileTotalContainer}>
+          <ThemedText style={styles.mobileTimeEntryLabel}>Weekly Total</ThemedText>
+          <View style={styles.mobileTotalValueContainer}>
+            <ThemedText style={[styles.totalHours, styles.weeklyTotal]}>
+              {weeklyTotal.toFixed(2)}
+            </ThemedText>
+            {!validateWeeklyTotal().isValid && validateWeeklyTotal().message && (
+              <View style={styles.mobileErrorContainer}>
+                <Ionicons name="warning" size={16} color="#ef4444" />
+                <ThemedText style={styles.mobileErrorText}>{validateWeeklyTotal().message}</ThemedText>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
@@ -277,92 +406,181 @@ export function WeekTable({
         </ThemedText>
       </View>
       
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.table}>
-          {/* Header Row */}
-          <View style={[styles.row, { backgroundColor: colors.inputBackground }]}>
-            <View style={styles.headerCell} />
-            {DAYS.map((day, index) => (
-              <View key={day} style={styles.headerCell}>
+      {isMobile ? (
+        renderMobileView()
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.table}>
+            {/* Desktop view - existing code */}
+            {/* Header Row */}
+            <View style={[styles.row, { backgroundColor: colors.inputBackground }]}>
+              <View style={styles.headerCell} />
+              {DAYS.map((day, index) => (
+                <View key={day} style={styles.headerCell}>
+                  <ThemedText style={[styles.dayName, { color: colors.text }]}>
+                    {format(addDays(safeStartDate, index), 'EEE')}
+                  </ThemedText>
+                  <ThemedText style={[styles.date, { color: colors.text }]}>
+                    {format(addDays(safeStartDate, index), 'MMM d')}
+                  </ThemedText>
+                  {index > 0 && (
+                    <Button
+                      variant="secondary"
+                      onPress={() => onCopyPrevious(day)}
+                      style={styles.copyButton}
+                      textStyle={styles.copyButtonText}
+                    >
+                      Copy Previous
+                    </Button>
+                  )}
+                </View>
+              ))}
+              <View style={styles.headerCell}>
                 <ThemedText style={[styles.dayName, { color: colors.text }]}>
-                  {format(addDays(safeStartDate, index), 'EEE')}
+                  Extra Hours
                 </ThemedText>
-                <ThemedText style={[styles.date, { color: colors.text }]}>
-                  {format(addDays(safeStartDate, index), 'MMM d')}
-                </ThemedText>
-                {index > 0 && (
-                  <Button
-                    variant="secondary"
-                    onPress={() => onCopyPrevious(day)}
-                    style={styles.copyButton}
-                    textStyle={styles.copyButtonText}
-                  >
-                    Copy Previous
-                  </Button>
+              </View>
+            </View>
+
+            {/* Time Rows */}
+            {['Start', 'End', 'Lunch Start', 'Lunch End'].map((label, index) => (
+              <View key={label} style={styles.row}>
+                <View style={[styles.labelCell, { backgroundColor: colors.inputBackground }]}>
+                  <ThemedText>{label}</ThemedText>
+                </View>
+                {DAYS.map((day) => {
+                  const dayDate = addDays(safeStartDate, DAYS.indexOf(day));
+                  const disabled = isFutureDate(dayDate);
+                  
+                  const fieldMap = {
+                    'Start': 'startTime',
+                    'End': 'endTime',
+                    'Lunch Start': 'lunchStartTime',
+                    'Lunch End': 'lunchEndTime',
+                  };
+                  
+                  const fieldName = fieldMap[label] as keyof TimeEntry;
+                  const hasError = hasFieldError(day, fieldName);
+                  const tooltipMessage = getFieldTooltipMessage(day, fieldName);
+                  
+                  return (
+                    <View key={day} style={[
+                      styles.cell,
+                      // hasError && styles.errorCell, // Shows the outer red error box
+                      disabled && styles.disabledCell
+                    ]}>
+                      <View style={styles.inputContainer}>
+                        <TimeInput
+                          value={formatTimeForDisplay(data.days[day][fieldName])}
+                          onChange={(value) => handleTimeUpdate(day, fieldName, value)}
+                          disabled={disabled}
+                          onBlur={() => handleBlur(day)}
+                          hasError={hasError}
+                        />
+                        {disabled && (
+                          <View 
+                            style={styles.lockIconContainer}
+                            onMouseEnter={() => setHoveredLock(`${day}-${fieldName}`)}
+                            onMouseLeave={() => setHoveredLock(null)}
+                          >
+                            {hoveredLock === `${day}-${fieldName}` && (
+                              <Tooltip message="Cannot edit future dates" />
+                            )}
+                            <Ionicons name="lock-closed" size={16} color="#94a3b8" />
+                          </View>
+                        )}
+                        {hasError && tooltipMessage && (
+                          <View 
+                            style={styles.errorIconContainer}
+                            onMouseEnter={() => setHoveredError(`${day}-${fieldName}`)}
+                            onMouseLeave={() => setHoveredError(null)}
+                          >
+                            {hoveredError === `${day}-${fieldName}` && (
+                              <Tooltip message={tooltipMessage} />
+                            )}
+                            <Ionicons name="warning" size={16} color="#ef4444" />
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+                {label === 'Start' && (
+                  <View style={styles.cell}>
+                    <Input
+                      label=""
+                      value={data.extraHours?.toString() || '0'}
+                      onChangeText={(text) => onExtraHoursChange(parseFloat(text) || 0)}
+                      keyboardType="numeric"
+                      style={styles.extraHoursInput}
+                    />
+                  </View>
                 )}
               </View>
             ))}
-            <View style={styles.headerCell}>
-              <ThemedText style={[styles.dayName, { color: colors.text }]}>
-                Extra Hours
-              </ThemedText>
-            </View>
-          </View>
 
-          {/* Time Rows */}
-          {['Start', 'End', 'Lunch Start', 'Lunch End'].map((label, index) => (
-            <View key={label} style={styles.row}>
+            {/* Day Type Row */}
+            <View style={styles.row}>
               <View style={[styles.labelCell, { backgroundColor: colors.inputBackground }]}>
-                <ThemedText>{label}</ThemedText>
+                <ThemedText>Type</ThemedText>
               </View>
               {DAYS.map((day) => {
                 const dayDate = addDays(safeStartDate, DAYS.indexOf(day));
                 const disabled = isFutureDate(dayDate);
-                
-                const fieldMap = {
-                  'Start': 'startTime',
-                  'End': 'endTime',
-                  'Lunch Start': 'lunchStartTime',
-                  'Lunch End': 'lunchEndTime',
-                };
-                
-                const fieldName = fieldMap[label] as keyof TimeEntry;
-                const hasError = hasFieldError(day, fieldName);
-                const tooltipMessage = getFieldTooltipMessage(day, fieldName);
-                
                 return (
-                  <View key={day} style={[
-                    styles.cell,
-                    // hasError && styles.errorCell, // Shows the outer red error box
-                    disabled && styles.disabledCell
-                  ]}>
+                  <View key={day} style={[styles.cell, disabled && styles.disabledCell]}>
                     <View style={styles.inputContainer}>
-                      <TimeInput
-                        value={formatTimeForDisplay(data.days[day][fieldName])}
-                        onChange={(value) => handleTimeUpdate(day, fieldName, value)}
+                      <DayTypeSelect
+                        value={data.days[day].dayType}
+                        onChange={(type) => onDayTypeChange(day, type)}
                         disabled={disabled}
-                        onBlur={() => handleBlur(day)}
-                        hasError={hasError}
                       />
                       {disabled && (
                         <View 
                           style={styles.lockIconContainer}
-                          onMouseEnter={() => setHoveredLock(`${day}-${fieldName}`)}
+                          onMouseEnter={() => setHoveredLock(`${day}-type`)}
                           onMouseLeave={() => setHoveredLock(null)}
                         >
-                          {hoveredLock === `${day}-${fieldName}` && (
+                          {hoveredLock === `${day}-type` && (
                             <Tooltip message="Cannot edit future dates" />
                           )}
                           <Ionicons name="lock-closed" size={16} color="#94a3b8" />
                         </View>
                       )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Total Hours Row */}
+            <View style={styles.row}>
+              <View style={[styles.labelCell, { backgroundColor: colors.inputBackground }]}>
+                <ThemedText>Total Hours</ThemedText>
+              </View>
+              {DAYS.map((day) => {
+                const hasError = hasFieldError(day, 'totalHours');
+                const tooltipMessage = getFieldTooltipMessage(day, 'totalHours');
+                
+                return (
+                  <View key={day} style={[
+                    styles.cell, 
+                    { backgroundColor: colors.background.card },
+                    hasError && styles.errorCell
+                  ]}>
+                    <View style={styles.inputContainer}>
+                      <ThemedText style={styles.totalHours}>
+                        {(data.days[day].totalHours !== undefined && data.days[day].totalHours !== null) 
+                          ? data.days[day].totalHours.toFixed(2) 
+                          : '0.00'}
+                      </ThemedText>
                       {hasError && tooltipMessage && (
                         <View 
                           style={styles.errorIconContainer}
-                          onMouseEnter={() => setHoveredError(`${day}-${fieldName}`)}
+                          onMouseEnter={() => setHoveredError(`${day}-totalHours`)}
                           onMouseLeave={() => setHoveredError(null)}
                         >
-                          {hoveredError === `${day}-${fieldName}` && (
+                          {hoveredError === `${day}-totalHours` && (
                             <Tooltip message={tooltipMessage} />
                           )}
                           <Ionicons name="warning" size={16} color="#ef4444" />
@@ -372,120 +590,36 @@ export function WeekTable({
                   </View>
                 );
               })}
-              {label === 'Start' && (
-                <View style={styles.cell}>
-                  <Input
-                    label=""
-                    value={data.extraHours?.toString() || '0'}
-                    onChangeText={(text) => onExtraHoursChange(parseFloat(text) || 0)}
-                    keyboardType="numeric"
-                    style={styles.extraHoursInput}
-                  />
+              <View style={[
+                styles.cell, 
+                { backgroundColor: colors.background.card },
+                !validateWeeklyTotal().isValid && styles.errorCell
+              ]}>
+                <View style={styles.inputContainer}>
+                  <ThemedText style={[styles.totalHours, styles.weeklyTotal]}>
+                    {weeklyTotal.toFixed(2)}
+                  </ThemedText>
+                  {!validateWeeklyTotal().isValid && validateWeeklyTotal().message && (
+                    <View 
+                      style={styles.errorIconContainer}
+                      onMouseEnter={() => setHoveredError('weeklyTotal')}
+                      onMouseLeave={() => setHoveredError(null)}
+                    >
+                      {hoveredError === 'weeklyTotal' && (
+                        <Tooltip message={validateWeeklyTotal().message || ''} />
+                      )}
+                      <Ionicons name="warning" size={16} color="#ef4444" />
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
-          ))}
-
-          {/* Day Type Row */}
-          <View style={styles.row}>
-            <View style={[styles.labelCell, { backgroundColor: colors.inputBackground }]}>
-              <ThemedText>Type</ThemedText>
-            </View>
-            {DAYS.map((day) => {
-              const dayDate = addDays(safeStartDate, DAYS.indexOf(day));
-              const disabled = isFutureDate(dayDate);
-              return (
-                <View key={day} style={[styles.cell, disabled && styles.disabledCell]}>
-                  <View style={styles.inputContainer}>
-                    <DayTypeSelect
-                      value={data.days[day].dayType}
-                      onChange={(type) => onDayTypeChange(day, type)}
-                      disabled={disabled}
-                    />
-                    {disabled && (
-                      <View 
-                        style={styles.lockIconContainer}
-                        onMouseEnter={() => setHoveredLock(`${day}-type`)}
-                        onMouseLeave={() => setHoveredLock(null)}
-                      >
-                        {hoveredLock === `${day}-type` && (
-                          <Tooltip message="Cannot edit future dates" />
-                        )}
-                        <Ionicons name="lock-closed" size={16} color="#94a3b8" />
-                      </View>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-
-          {/* Total Hours Row */}
-          <View style={styles.row}>
-            <View style={[styles.labelCell, { backgroundColor: colors.inputBackground }]}>
-              <ThemedText>Total Hours</ThemedText>
-            </View>
-            {DAYS.map((day) => {
-              const hasError = hasFieldError(day, 'totalHours');
-              const tooltipMessage = getFieldTooltipMessage(day, 'totalHours');
-              
-              return (
-                <View key={day} style={[
-                  styles.cell, 
-                  { backgroundColor: colors.background.card },
-                  hasError && styles.errorCell
-                ]}>
-                  <View style={styles.inputContainer}>
-                    <ThemedText style={styles.totalHours}>
-                      {(data.days[day].totalHours !== undefined && data.days[day].totalHours !== null) 
-                        ? data.days[day].totalHours.toFixed(2) 
-                        : '0.00'}
-                    </ThemedText>
-                    {hasError && tooltipMessage && (
-                      <View 
-                        style={styles.errorIconContainer}
-                        onMouseEnter={() => setHoveredError(`${day}-totalHours`)}
-                        onMouseLeave={() => setHoveredError(null)}
-                      >
-                        {hoveredError === `${day}-totalHours` && (
-                          <Tooltip message={tooltipMessage} />
-                        )}
-                        <Ionicons name="warning" size={16} color="#ef4444" />
-                      </View>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
-            <View style={[
-              styles.cell, 
-              { backgroundColor: colors.background.card },
-              !validateWeeklyTotal().isValid && styles.errorCell
-            ]}>
-              <View style={styles.inputContainer}>
-                <ThemedText style={[styles.totalHours, styles.weeklyTotal]}>
-                  {weeklyTotal.toFixed(2)}
-                </ThemedText>
-                {!validateWeeklyTotal().isValid && validateWeeklyTotal().message && (
-                  <View 
-                    style={styles.errorIconContainer}
-                    onMouseEnter={() => setHoveredError('weeklyTotal')}
-                    onMouseLeave={() => setHoveredError(null)}
-                  >
-                    {hoveredError === 'weeklyTotal' && (
-                      <Tooltip message={validateWeeklyTotal().message || ''} />
-                    )}
-                    <Ionicons name="warning" size={16} color="#ef4444" />
-                  </View>
-                )}
               </View>
             </View>
-          </View>
 
-          {/* Validation Row */}
-          {renderValidationRow()}
-        </View>
-      </ScrollView>
+            {/* Validation Row */}
+            {renderValidationRow()}
+          </View>
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -593,5 +727,92 @@ const styles = StyleSheet.create({
     right: -24,
     top: '50%',
     transform: [{ translateY: -8 }],
+  },
+  // Mobile styles
+  mobileContainer: {
+    marginTop: 16,
+  },
+  daySelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  daySelectorButton: {
+    flex: 1,
+    marginHorizontal: 2,
+    paddingHorizontal: 4,
+  },
+  daySelectorText: {
+    fontSize: 12,
+  },
+  mobileTimeEntryContainer: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  mobileTimeEntryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  mobileTimeEntryDay: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  mobileTimeEntryFields: {
+    marginBottom: 8,
+  },
+  mobileTimeEntryField: {
+    marginBottom: 16,
+  },
+  mobileTimeEntryLabel: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  mobileTimeInputContainer: {
+    position: 'relative',
+  },
+  mobileLockIconContainer: {
+    position: 'absolute',
+    right: 8,
+    top: '50%',
+    transform: [{ translateY: -8 }],
+  },
+  mobileErrorIconContainer: {
+    marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mobileErrorText: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginLeft: 4,
+  },
+  mobileExtraHoursContainer: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  mobileExtraHoursInput: {
+    width: '100%',
+    textAlign: 'center',
+    backgroundColor: '#ffffff',
+  },
+  mobileTotalContainer: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    padding: 16,
+  },
+  mobileTotalValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mobileErrorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
   },
 }); 

@@ -1,7 +1,11 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Modal, Platform, TextStyle } from 'react-native';
 import { Input } from '../ui/Input';
 import { useState, useEffect, useRef } from 'react';
 import { convertTo24Hour } from '@/utils/time';
+import { ThemedText } from '../ThemedText';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/ThemeContext';
+import { useWindowDimensions } from 'react-native';
 
 interface TimeInputProps {
   value: string | null;
@@ -12,8 +16,6 @@ interface TimeInputProps {
   onKeyDown?: (e: KeyboardEvent) => void;
   tabIndex?: 0 | -1;
 }
-
-
 
 const parseTimeInput = (input: string): string | null => {
   if (!input) return null;
@@ -133,7 +135,11 @@ export function TimeInput({
   // Initialize localValue from the value prop
   const [localValue, setLocalValue] = useState(value ? formatTimeForDisplay(value) : '');
   const [isEditing, setIsEditing] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const inputRef = useRef<any>(null);
+  const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
   
   // Update localValue when value prop changes and we're not editing
   useEffect(() => {
@@ -206,6 +212,44 @@ export function TimeInput({
 
   const handleInputFocus = () => {
     setIsEditing(true);
+    if (isMobile && Platform.OS !== 'web') {
+      // On mobile devices, show the time picker instead of the keyboard
+      setShowTimePicker(true);
+    }
+  };
+
+  // Generate time options for the time picker
+  const generateTimeOptions = () => {
+    const options = [];
+    
+    // Add common work hours (6am to 8pm in 15-minute increments)
+    for (let hour = 6; hour <= 20; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+        const timeString = `${hour12}:${minute.toString().padStart(2, '0')} ${period}`;
+        options.push(timeString);
+      }
+    }
+    
+    return options;
+  };
+
+  const handleTimeSelection = (selectedTime: string) => {
+    setLocalValue(selectedTime);
+    const time24h = convertTo24Hour(selectedTime);
+    if (time24h) {
+      onChange(time24h);
+    }
+    setShowTimePicker(false);
+    onBlur?.();
+  };
+
+  const clearTime = () => {
+    setLocalValue('');
+    onChange(null);
+    setShowTimePicker(false);
+    onBlur?.();
   };
 
   // Use localValue when editing, otherwise use formatted value from props
@@ -214,18 +258,92 @@ export function TimeInput({
 
   return (
     <View ref={inputRef}>
-      <Input
-        label=""
-        value={displayValue}
-        onChangeText={handleChange}
-        onBlur={handleInputBlur}
-        onFocus={handleInputFocus}
-        placeholder="--:--"
-        style={[styles.input, hasError && styles.errorInput]}
-        editable={!disabled}
-        maxLength={8} // "12:45 PM" is 8 characters
-        tabIndex={tabIndex}
-      />
+      {isMobile ? (
+        <TouchableOpacity 
+          onPress={disabled ? undefined : () => setShowTimePicker(true)}
+          style={[
+            styles.mobileTimeInput,
+            hasError && styles.errorInput,
+            disabled && styles.disabledInput
+          ]}
+        >
+          <ThemedText style={
+            !displayValue ? styles.placeholderText : styles.mobileTimeText
+          }>
+            {displayValue || '--:--'}
+          </ThemedText>
+          {!disabled && (
+            <Ionicons 
+              name="time-outline" 
+              size={18} 
+              color={typeof colors?.text === 'string' ? colors.text : '#64748b'} 
+              style={styles.timeIcon}
+            />
+          )}
+        </TouchableOpacity>
+      ) : (
+        <Input
+          label=""
+          value={displayValue}
+          onChangeText={handleChange}
+          onBlur={handleInputBlur}
+          onFocus={handleInputFocus}
+          placeholder="--:--"
+          style={[styles.input, hasError && styles.errorInput]}
+          editable={!disabled}
+          maxLength={8} // "12:45 PM" is 8 characters
+          tabIndex={tabIndex}
+        />
+      )}
+
+      {/* Time Picker Modal for Mobile */}
+      {isMobile && (
+        <Modal
+          visible={showTimePicker}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowTimePicker(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <ThemedText style={styles.modalTitle}>Select Time</ThemedText>
+                <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                  <Ionicons name="close" size={24} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.timeOptionsContainer}>
+                {generateTimeOptions().map((timeOption) => (
+                  <TouchableOpacity
+                    key={timeOption}
+                    style={[
+                      styles.timeOption,
+                      timeOption === displayValue && styles.selectedTimeOption
+                    ]}
+                    onPress={() => handleTimeSelection(timeOption)}
+                  >
+                    <ThemedText style={
+                      timeOption === displayValue ? styles.selectedTimeOptionText : styles.timeOptionText
+                    }>
+                      {timeOption}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              
+              <View style={styles.modalFooter}>
+                <TouchableOpacity 
+                  style={styles.clearButton}
+                  onPress={clearTime}
+                >
+                  <ThemedText style={styles.clearButtonText}>Clear</ThemedText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -239,5 +357,95 @@ const styles = StyleSheet.create({
     borderColor: '#ef4444',
     borderWidth: 2,
     borderRadius: 4,
+  },
+  // Mobile styles
+  mobileTimeInput: {
+    width: '100%',
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  mobileTimeText: {
+    fontSize: 16,
+  },
+  placeholderText: {
+    color: '#94a3b8',
+  },
+  timeIcon: {
+    marginLeft: 8,
+  },
+  disabledInput: {
+    backgroundColor: '#f1f5f9',
+    opacity: 0.7,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 24,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  timeOptionsContainer: {
+    padding: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  timeOption: {
+    width: '30%',
+    padding: 12,
+    marginBottom: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center',
+  },
+  selectedTimeOption: {
+    backgroundColor: '#0ea5e9',
+  },
+  timeOptionText: {
+    fontSize: 14,
+  },
+  selectedTimeOptionText: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  modalFooter: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  clearButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+    width: '50%',
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    color: '#64748b',
+    fontWeight: '600',
   },
 }); 
