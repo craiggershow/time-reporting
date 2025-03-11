@@ -426,17 +426,19 @@ export function WeekTable({
             {/* Move Copy Previous button to its own row */}
             {DAYS.indexOf(selectedDay) > 0 && !isFutureDate(addDays(safeStartDate, DAYS.indexOf(selectedDay))) && (
               <View style={styles.mobileCopyButtonContainer}>
-                <Button
-                  variant="secondary"
-                  onPress={() => onCopyPrevious(selectedDay)}
+                <TouchableOpacity
                   style={styles.mobileCopyButton}
-                  textStyle={styles.copyButtonText}
+                  onPress={() => onCopyPrevious(selectedDay)}
+                  activeOpacity={0.8}
                 >
                   <View style={styles.copyButtonContent}>
-                    <Ionicons name="copy-outline" size={16} color="#64748b" />
+                    <View style={styles.copyIconContainer}>
+                      <Ionicons name="copy-outline" size={18} color="#ffffff" />
+                    </View>
                     <ThemedText style={styles.mobileCopyButtonText}>Copy from Previous Day</ThemedText>
+                    <Ionicons name="chevron-forward" size={18} color="#ffffff" style={styles.copyButtonArrow} />
                   </View>
-                </Button>
+                </TouchableOpacity>
               </View>
             )}
             
@@ -1122,20 +1124,45 @@ const styles = StyleSheet.create({
   },
   mobileCopyButtonContainer: {
     marginBottom: 16,
+    paddingHorizontal: 4,
   },
   mobileCopyButton: {
     width: '100%',
-    paddingVertical: 10,
+    paddingVertical: 14,
+    backgroundColor: '#0ea5e9',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   copyButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
+  },
+  copyIconContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
   },
   mobileCopyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    flex: 1,
+  },
+  copyButtonArrow: {
     marginLeft: 8,
-    fontSize: 14,
-    color: '#64748b',
   },
   activeIndicator: {
     position: 'absolute',
