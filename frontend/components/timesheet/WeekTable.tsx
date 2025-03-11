@@ -408,18 +408,24 @@ export function WeekTable({
                   )}
                 </View>
               </View>
-              
-              {DAYS.indexOf(selectedDay) > 0 && (
+            </View>
+            
+            {/* Move Copy Previous button to its own row */}
+            {DAYS.indexOf(selectedDay) > 0 && !isFutureDate(addDays(safeStartDate, DAYS.indexOf(selectedDay))) && (
+              <View style={styles.mobileCopyButtonContainer}>
                 <Button
                   variant="secondary"
                   onPress={() => onCopyPrevious(selectedDay)}
-                  style={styles.copyButton}
+                  style={styles.mobileCopyButton}
                   textStyle={styles.copyButtonText}
                 >
-                  Copy Previous
+                  <View style={styles.copyButtonContent}>
+                    <Ionicons name="copy-outline" size={16} color="#64748b" />
+                    <ThemedText style={styles.mobileCopyButtonText}>Copy from Previous Day</ThemedText>
+                  </View>
                 </Button>
-              )}
-            </View>
+              </View>
+            )}
             
             <View style={styles.mobileTimeEntryFields}>
               {['startTime', 'endTime', 'lunchStartTime', 'lunchEndTime'].map((fieldName, index) => {
@@ -962,10 +968,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   mobileTimeEntryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   mobileTimeEntryDay: {
     fontSize: 16,
@@ -1066,9 +1069,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  mobileErrorContainer: {
+  mobileCopyButtonContainer: {
+    marginBottom: 16,
+  },
+  mobileCopyButton: {
+    width: '100%',
+    paddingVertical: 10,
+  },
+  copyButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mobileCopyButtonText: {
     marginLeft: 8,
+    fontSize: 14,
+    color: '#64748b',
   },
 }); 
