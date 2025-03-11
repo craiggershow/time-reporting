@@ -1182,6 +1182,12 @@ const styles = StyleSheet.create({
   vacationInput: {
     width: 100,
     textAlign: 'right',
+    ...Platform.select({
+      web: {
+        outline: 'none',
+        outlineStyle: 'none',
+      },
+    }),
   },
   actions: {
     padding: 16,

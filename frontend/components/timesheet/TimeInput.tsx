@@ -446,6 +446,12 @@ const styles = StyleSheet.create({
   input: {
     width: 100,
     textAlign: 'center',
+    ...Platform.select({
+      web: {
+        outline: 'none',
+        outlineStyle: 'none',
+      },
+    }),
   },
   errorInput: {
     borderColor: '#ef4444',

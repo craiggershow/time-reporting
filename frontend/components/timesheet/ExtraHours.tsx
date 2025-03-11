@@ -1,4 +1,4 @@
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { Input } from '../ui/Input';
 import { useTheme } from '@/context/ThemeContext';
@@ -37,5 +37,11 @@ const styles = StyleSheet.create({
   input: {
     width: 80,
     textAlign: 'right',
+    ...Platform.select({
+      web: {
+        outline: 'none',
+        outlineStyle: 'none',
+      },
+    }),
   },
 }); 
