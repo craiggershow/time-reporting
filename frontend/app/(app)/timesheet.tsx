@@ -90,11 +90,6 @@ export default function TimesheetScreen() {
     return startOfWeek(today, { weekStartsOn: 1 }); // Start on Monday
   });
 
-  // Log debug information about startDate
-  useEffect(() => {
-    debugDate('startDate in TimesheetScreen', startDate);
-  }, [startDate]);
-
   useEffect(() => {
     fetchCurrentTimesheet();
   }, []);
@@ -558,7 +553,7 @@ export default function TimesheetScreen() {
       return [];
     }
 
-    console.log('🔍 Collecting validation errors with settings:', settings);
+    //console.log('🔍 Collecting validation errors with settings:', settings);
     
     // If settings are not available, skip validation
     if (!settings) {

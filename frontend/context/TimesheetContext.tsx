@@ -100,13 +100,13 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
       setError(error instanceof Error ? error.message : 'Failed to fetch timesheet');
     } finally {
       setIsLoading(false);
-      console.log('🔍 fetchCurrentTimesheet: Completed');
+      //console.log('🔍 fetchCurrentTimesheet: Completed');
     }
   }, []);
 
   // New function to update timesheet state without fetching from the database
   const updateTimesheetState = useCallback((action: TimesheetAction) => {
-    console.log('📝 updateTimesheetState:', JSON.stringify(action, null, 2));
+    //console.log('📝 updateTimesheetState:', JSON.stringify(action, null, 2));
     
     if (!currentTimesheet) {
       console.error('Cannot update timesheet: No current timesheet');
@@ -116,8 +116,7 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
     switch (action.type) {
       case 'UPDATE_TIME_ENTRY': {
         const { week, day, entry } = action.payload;
-        console.log('📝 Updating time entry in state:', JSON.stringify({ week, day, entry }, null, 2));
-        console.log('📝 Day type:', typeof day);
+        //console.log('📝 Updating time entry in state:', JSON.stringify({ week, day, entry }, null, 2));
         
         const weekKey = `week${week}` as const;
         
@@ -125,22 +124,22 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
         setCurrentTimesheet(prevTimesheet => {
           if (!prevTimesheet || !prevTimesheet[weekKey]?.days?.[day]) {
             console.error('📝 Cannot update entry - path not found:', `${weekKey}.days.${day}`);
-            console.log('📝 Available days:', Object.keys(prevTimesheet?.[weekKey]?.days || {}));
+            //console.log('📝 Available days:', Object.keys(prevTimesheet?.[weekKey]?.days || {}));
             return prevTimesheet;
           }
           
           // Create a deep copy of the previous timesheet
           const updatedTimesheet = JSON.parse(JSON.stringify(prevTimesheet));
           
-          console.log('📝 Before update:', JSON.stringify(updatedTimesheet[weekKey].days[day], null, 2));
+          //console.log('📝 Before update:', JSON.stringify(updatedTimesheet[weekKey].days[day], null, 2));
           updatedTimesheet[weekKey].days[day] = entry;
-          console.log('📝 After update:', JSON.stringify(updatedTimesheet[weekKey].days[day], null, 2));
+          //console.log('📝 After update:', JSON.stringify(updatedTimesheet[weekKey].days[day], null, 2));
           
           // Recalculate total hours for the week
           updatedTimesheet[weekKey].totalHours = calculateWeekTotalHours(updatedTimesheet[weekKey]);
           
-          console.log('📝 Updated timesheet state - week1:', JSON.stringify(updatedTimesheet.week1, null, 2));
-          console.log('📝 Updated timesheet state - week2:', JSON.stringify(updatedTimesheet.week2, null, 2));
+          //console.log('📝 Updated timesheet state - week1:', JSON.stringify(updatedTimesheet.week1, null, 2));
+          //console.log('📝 Updated timesheet state - week2:', JSON.stringify(updatedTimesheet.week2, null, 2));
           
           // Send update to the server (this will be implemented later)
           saveTimeEntryToDatabase(week, day, entry);
@@ -228,7 +227,6 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
       // Convert dayType to uppercase if it exists
       if (processedEntry.dayType) {
         processedEntry.dayType = processedEntry.dayType.toUpperCase();
-        console.log('💾 Ensuring dayType is uppercase:', processedEntry.dayType);
         
         // For special day types, ensure time entries are cleared
         if (['VACATION', 'SICK', 'HOLIDAY'].includes(processedEntry.dayType)) {
