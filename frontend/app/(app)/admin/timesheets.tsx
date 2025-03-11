@@ -1,12 +1,13 @@
-import { View, StyleSheet, ScrollView, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Header } from '@/components/layout/Header';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'expo-router';
+import { useRouter, Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { buildApiUrl } from '@/constants/Config';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface TimesheetEntry {
   id: string;
@@ -81,10 +82,10 @@ export default function TimesheetManagement() {
       <View style={styles.timesheetCard}>
         <View style={styles.timesheetHeader}>
           <ThemedText style={styles.employeeName}>{item.employeeName}</ThemedText>
-          <View style={[
-            styles.statusBadge,
-            { backgroundColor: getStatusColor(item.status) }
-          ]}>
+          <View style={{
+            ...styles.statusBadge,
+            backgroundColor: getStatusColor(item.status)
+          }}>
             <ThemedText style={styles.statusText}>{item.status}</ThemedText>
           </View>
         </View>
@@ -113,7 +114,10 @@ export default function TimesheetManagement() {
           </Button>
           <Button
             variant="secondary"
-            onPress={() => router.push(`/admin/timesheets/${item.id}`)}
+            onPress={() => {
+              console.log('View details for timesheet:', item.id);
+              // For now, just log the action until we fix the navigation
+            }}
           >
             View Details
           </Button>
@@ -127,18 +131,19 @@ export default function TimesheetManagement() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <Header />
       <View style={styles.content}>
         <View style={styles.titleContainer}>
           <ThemedText type="title">Timesheet Management</ThemedText>
-          <Button
-            variant="secondary"
-            onPress={fetchTimesheets}
-            style={styles.refreshButton}
-          >
-            <Ionicons name="refresh" size={20} color="#64748b" />
-          </Button>
+          <View style={styles.refreshButton}>
+            <Ionicons 
+              name="refresh" 
+              size={20} 
+              color="#64748b" 
+              onPress={fetchTimesheets}
+            />
+          </View>
         </View>
 
         {error && (
@@ -154,9 +159,11 @@ export default function TimesheetManagement() {
           contentContainerStyle={styles.list}
           refreshing={isLoading}
           onRefresh={fetchTimesheets}
+          showsVerticalScrollIndicator={true}
+          initialNumToRender={5}
         />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -201,13 +208,13 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   list: {
-    gap: 16,
+    paddingBottom: 20,
   },
   timesheetCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
-    gap: 16,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -237,12 +244,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   timesheetDetails: {
-    gap: 8,
+    marginTop: 12,
+    marginBottom: 12,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
   label: {
     color: '#64748b',

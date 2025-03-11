@@ -191,13 +191,11 @@ export function UserManagement() {
       width: 400,
       render: (email: string) => (
         <View style={{ width: 400 }}>
-          <ThemedText style={[
-            styles.text.cell, 
-            { 
-              width: '100%',
-              textAlign: 'center'  // Center the email text
-            }
-          ]}>
+          <ThemedText style={{
+            ...styles.text.cell, 
+            width: '100%',
+            textAlign: 'center'  // Center the email text
+          }}>
             {email}
           </ThemedText>
         </View>
@@ -218,7 +216,10 @@ export function UserManagement() {
       title: 'Status',
       sortable: true,
       render: (value: boolean) => (
-        <View style={[styles.status.badge, value ? styles.status.active : styles.status.inactive]}>
+        <View style={{
+          ...styles.status.badge,
+          ...(value ? styles.status.active : styles.status.inactive)
+        }}>
           <ThemedText style={value ? styles.status.active : styles.status.inactive}>
             {value ? 'Active' : 'Inactive'}
           </ThemedText>
@@ -304,27 +305,23 @@ export function UserManagement() {
 
   return (
     <View 
-      style={[
-        styles.container,
-        Platform.select({
-          web: {
-            backgroundColor: colors.adminBackground,
-          }
-        })
-      ]}
+      style={{
+        ...styles.container,
+        ...(Platform.OS === 'web' ? { backgroundColor: colors.adminBackground } : {})
+      }}
     >
       <Header />
       <ScrollView 
-        style={[
-          styles.content,
-          { backgroundColor: colors.adminBackground }
-        ]}
+        style={{
+          ...styles.content,
+          backgroundColor: colors.adminBackground
+        }}
       >
         <View 
-          style={[
-            styles.section,
-            { backgroundColor: colors.adminBackground }
-          ]}
+          style={{
+            ...styles.section,
+            backgroundColor: colors.adminBackground
+          }}
         >
           <View style={styles.header}>
             <View style={styles.headerInfo}>

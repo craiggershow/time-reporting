@@ -1,5 +1,16 @@
 import { TouchableOpacity, StyleSheet, Text, ViewStyle, TextStyle } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
+import { useContext } from 'react';
+import { createContext } from 'react';
+
+// Default colors to use when ThemeContext is not available
+const defaultColors = {
+  tint: '#2563eb',
+  icon: '#94a3b8',
+  background: '#ffffff',
+  text: '#1e293b',
+  border: '#e2e8f0',
+};
 
 interface ButtonProps {
   children: string;
@@ -18,13 +29,22 @@ export function Button({
   textStyle,
   disabled = false,
 }: ButtonProps) {
-  const { colors } = useTheme();
+  // Try to use ThemeContext, but fall back to default colors if not available
+  let themeColors = defaultColors;
+  
+  try {
+    const { colors } = useTheme();
+    themeColors = colors;
+  } catch (error) {
+    // ThemeContext not available, use default colors
+    console.log('ThemeContext not available, using default colors');
+  }
   
   const backgroundColor = variant === 'primary' 
-    ? disabled ? colors.icon : colors.tint 
-    : colors.background;
-  const textColor = variant === 'primary' ? '#fff' : colors.text;
-  const borderColor = variant === 'secondary' ? colors.border : backgroundColor;
+    ? disabled ? themeColors.icon : themeColors.tint 
+    : themeColors.background;
+  const textColor = variant === 'primary' ? '#fff' : themeColors.text;
+  const borderColor = variant === 'secondary' ? themeColors.border : backgroundColor;
 
   return (
     <TouchableOpacity

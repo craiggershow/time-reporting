@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Button } from './ui/Button';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
 interface Props {
   children: React.ReactNode;
@@ -9,6 +8,19 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+}
+
+// Simple button that doesn't rely on ThemeContext
+function SimpleButton({ onPress, children }: { onPress: () => void; children: string }) {
+  return (
+    <TouchableOpacity
+      style={styles.button}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text style={styles.buttonText}>{children}</Text>
+    </TouchableOpacity>
+  );
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
@@ -28,9 +40,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <View style={styles.container}>
           <Text style={styles.title}>Something went wrong</Text>
           <Text style={styles.error}>{this.state.error?.message}</Text>
-          <Button onPress={() => this.setState({ hasError: false })}>
+          <SimpleButton onPress={() => this.setState({ hasError: false })}>
             Try again
-          </Button>
+          </SimpleButton>
         </View>
       );
     }
@@ -45,14 +57,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#f8fafc',
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+    color: '#1e293b',
   },
   error: {
-    color: 'red',
+    color: '#dc2626',
     marginBottom: 20,
+  },
+  button: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

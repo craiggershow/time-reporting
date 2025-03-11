@@ -7,7 +7,7 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { TimesheetProvider } from '@/context/TimesheetContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { SettingsProvider } from '@/context/SettingsContext';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { colors } from '@/styles/common';
 import { globalStyles } from '@/styles/global';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -37,6 +37,15 @@ export const unstable_settings = {
   },
 };
 
+// Simple loading component that doesn't rely on any context
+function SimpleLoadingSpinner({ message }: { message?: string }) {
+  return (
+    <View style={styles.loadingContainer}>
+      <Text style={styles.loadingText}>{message || 'Loading...'}</Text>
+    </View>
+  );
+}
+
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     // Add custom fonts here if needed
@@ -54,7 +63,7 @@ export default function RootLayout() {
   }, [loaded]);
 
   if (!loaded) {
-    return <LoadingSpinner message="Loading app..." />;
+    return <SimpleLoadingSpinner message="Loading app..." />;
   }
 
   return (
@@ -92,5 +101,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.page,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#1e293b',
+    marginTop: 10,
   },
 });
