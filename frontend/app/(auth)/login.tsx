@@ -1,4 +1,4 @@
-import { View, StyleSheet, Image, Pressable } from 'react-native';
+import { View, StyleSheet, Image, Pressable, Platform } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
@@ -12,6 +12,7 @@ import { buildApiUrl } from '@/constants/Config';
 import { useAuth } from '@/context/AuthContext';
 import { colors as commonColors } from '@/styles/common';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 /**
  * LoginScreen Component
@@ -108,59 +109,67 @@ export default function LoginScreen() {
    * and login button. Shows error message if login fails.
    */
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      <View style={styles.content}>
-        <Image 
-          source={require('@/assets/images/KV-Dental-Sign-logo-and-Name-500x86.gif')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        
-        <View style={styles.formContainer}>
-          <View style={styles.form}>
-            <Input
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.content}>
+          <View style={styles.logoContainer}>
+            <Image 
+              source={require('@/assets/images/KV-Dental-Sign-logo-and-Name-500x86.gif')}
+              style={styles.logo}
+              resizeMode="contain"
             />
-
-            <Input
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="password"
-            />
-
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Checkbox
-                checked={rememberMe}
-                onValueChange={setRememberMe}
-                label="Remember me"
-                labelStyle={styles.rememberMeText}
+          </View>
+          
+          <View style={styles.formContainer}>
+            <View style={styles.form}>
+              <ThemedText style={styles.formTitle}>Sign In</ThemedText>
+              
+              <Input
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={styles.input}
               />
+
+              <Input
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                style={styles.input}
+              />
+
+              <View style={styles.rememberMeContainer}>
+                <Checkbox
+                  checked={rememberMe}
+                  onValueChange={setRememberMe}
+                  label="Remember me"
+                  labelStyle={styles.rememberMeText}
+                />
+              </View>
+
+              {error && (
+                <View style={styles.errorContainer}>
+                  <ThemedText style={styles.error}>
+                    {error}
+                  </ThemedText>
+                </View>
+              )}
+
+              <Button
+                onPress={isLoading ? () => {} : handleLogin}
+                disabled={isLoading}
+                style={styles.loginButton}
+              >
+                {isLoading ? 'Logging in...' : 'Login'}
+              </Button>
             </View>
-
-            {error && (
-              <ThemedText style={styles.error}>
-                {error}
-              </ThemedText>
-            )}
-
-            <Button
-              onPress={handleLogin}
-              disabled={isLoading}
-              loading={isLoading}
-            >
-              {isLoading ? 'Logging in...' : 'Login'}
-            </Button>
           </View>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -169,31 +178,89 @@ export default function LoginScreen() {
  * Defines layout and appearance for the login screen and its elements
  */
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+  },
+  content: {
+    width: '100%',
+    maxWidth: 450,
+    alignItems: 'center',
+  },
+  logoContainer: {
+    width: '100%',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 24,
   },
   logo: {
     width: 300,
     height: 52,
-    marginBottom: 40,
   },
   formContainer: {
     width: '100%',
-    maxWidth: 400,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+      },
+    }),
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  form: {
+    padding: 24,
     gap: 16,
-    marginTop: 32,
+  },
+  formTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+    color: '#1e293b',
+  },
+  input: {
+    marginBottom: 8,
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  rememberMeText: {
+    color: '#4b5563',
+    fontSize: 14,
+  },
+  errorContainer: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  error: {
+    color: '#dc2626',
+    textAlign: 'center',
   },
   loginButton: {
     marginTop: 8,
-  },
-  error: {
-    color: '#ef4444',
-    textAlign: 'center',
-  },
-  rememberMeText: {
-    color: commonColors.text.light,
   },
 }); 
