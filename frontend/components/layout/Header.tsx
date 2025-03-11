@@ -4,7 +4,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/styles/common';
-import { Button } from '../ui/Button';
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -52,13 +51,13 @@ export function Header() {
               <ThemedText style={styles.adminText}>Admin Portal</ThemedText>
             </Pressable>
           )}
-          <Button
-            variant="secondary"
+          <Pressable 
+            style={styles.logoutButton}
             onPress={handleLogout}
-            leftIcon={<Ionicons name="log-out-outline" size={20} />}
           >
-            Logout
-          </Button>
+            <Ionicons name="log-out-outline" size={20} color="#000000" />
+            <ThemedText style={styles.logoutText}>Logout</ThemedText>
+          </Pressable>
         </View>
       </View>
       <View style={styles.logoSection}>
@@ -73,7 +72,7 @@ export function Header() {
       {user && (
         <View style={styles.userInfo}>
           <ThemedText style={styles.userInfoText}>
-            {user.firstName} {user.lastName} ({user.employeeId})
+            Hello, {user.firstName} {user.lastName}
           </ThemedText>
         </View>
       )}
@@ -144,6 +143,11 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontSize: 16,
     fontWeight: '500',
+  },
+  employeeIdText: {
+    color: '#64748b',
+    fontSize: 14,
+    marginTop: 4,
   },
   userName: {
     color: '#000000',

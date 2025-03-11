@@ -5,6 +5,7 @@ export interface User {
   lastName: string;
   role: 'ADMIN' | 'EMPLOYEE';
   isAdmin: boolean;
+  employeeId?: string; // Optional for backward compatibility
 }
 
 // Optional: Add a more detailed user type for the backend
@@ -14,6 +15,7 @@ export interface BackendUser {
   firstName: string;
   lastName: string;
   role: 'ADMIN' | 'EMPLOYEE';
+  employeeId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +27,7 @@ export interface LoginResponse {
     firstName: string;
     lastName: string;
     role: 'ADMIN' | 'EMPLOYEE';
+    employeeId?: string;
   };
   token: string;
 }
