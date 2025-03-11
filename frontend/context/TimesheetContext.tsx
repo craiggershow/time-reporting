@@ -106,37 +106,48 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
 
   // New function to update timesheet state without fetching from the database
   const updateTimesheetState = useCallback((action: TimesheetAction) => {
-    console.log('📝 updateTimesheetState:', action);
+    console.log('📝 updateTimesheetState:', JSON.stringify(action, null, 2));
     
     if (!currentTimesheet) {
       console.error('Cannot update timesheet: No current timesheet');
       return;
     }
     
-    // Create a deep copy of the current timesheet
-    const updatedTimesheet = JSON.parse(JSON.stringify(currentTimesheet));
-    
     switch (action.type) {
       case 'UPDATE_TIME_ENTRY': {
         const { week, day, entry } = action.payload;
-        console.log('📝 Updating time entry in state:', { week, day, entry });
+        console.log('📝 Updating time entry in state:', JSON.stringify({ week, day, entry }, null, 2));
+        console.log('📝 Day type:', typeof day);
         
         const weekKey = `week${week}` as const;
         
-        // Update the entry
-        if (updatedTimesheet[weekKey]?.days?.[day]) {
+        // Update the entry using a functional state update to ensure React detects the change
+        setCurrentTimesheet(prevTimesheet => {
+          if (!prevTimesheet || !prevTimesheet[weekKey]?.days?.[day]) {
+            console.error('📝 Cannot update entry - path not found:', `${weekKey}.days.${day}`);
+            console.log('📝 Available days:', Object.keys(prevTimesheet?.[weekKey]?.days || {}));
+            return prevTimesheet;
+          }
+          
+          // Create a deep copy of the previous timesheet
+          const updatedTimesheet = JSON.parse(JSON.stringify(prevTimesheet));
+          
+          console.log('📝 Before update:', JSON.stringify(updatedTimesheet[weekKey].days[day], null, 2));
           updatedTimesheet[weekKey].days[day] = entry;
+          console.log('📝 After update:', JSON.stringify(updatedTimesheet[weekKey].days[day], null, 2));
           
           // Recalculate total hours for the week
           updatedTimesheet[weekKey].totalHours = calculateWeekTotalHours(updatedTimesheet[weekKey]);
           
-          // Update the state
-          setCurrentTimesheet(updatedTimesheet);
-          console.log('📝 Updated timesheet state:', updatedTimesheet);
+          console.log('📝 Updated timesheet state - week1:', JSON.stringify(updatedTimesheet.week1, null, 2));
+          console.log('📝 Updated timesheet state - week2:', JSON.stringify(updatedTimesheet.week2, null, 2));
           
           // Send update to the server (this will be implemented later)
           saveTimeEntryToDatabase(week, day, entry);
-        }
+          
+          return updatedTimesheet;
+        });
+        
         break;
       }
       
@@ -146,20 +157,30 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
         
         const weekKey = `week${week}` as const;
         
-        // Update the extra hours
-        if (updatedTimesheet[weekKey]) {
+        // Update the extra hours using a functional state update
+        setCurrentTimesheet(prevTimesheet => {
+          if (!prevTimesheet || !prevTimesheet[weekKey]) {
+            console.error('📝 Cannot update extra hours - week not found:', weekKey);
+            return prevTimesheet;
+          }
+          
+          // Create a deep copy of the previous timesheet
+          const updatedTimesheet = JSON.parse(JSON.stringify(prevTimesheet));
+          
+          // Update the extra hours
           updatedTimesheet[weekKey].extraHours = hours;
           
           // Recalculate total hours for the week
           updatedTimesheet[weekKey].totalHours = calculateWeekTotalHours(updatedTimesheet[weekKey]);
           
-          // Update the state
-          setCurrentTimesheet(updatedTimesheet);
           console.log('📝 Updated timesheet state with extra hours:', updatedTimesheet);
           
           // Send update to the server
           saveExtraHoursToDatabase(week, hours);
-        }
+          
+          return updatedTimesheet;
+        });
+        
         break;
       }
       
@@ -167,15 +188,27 @@ export function TimesheetProvider({ children }: { children: React.ReactNode }) {
         const hours = action.payload;
         console.log('📝 Setting vacation hours in state:', hours);
         
-        // Update the vacation hours
-        updatedTimesheet.vacationHours = hours;
+        // Update the vacation hours using a functional state update
+        setCurrentTimesheet(prevTimesheet => {
+          if (!prevTimesheet) {
+            console.error('📝 Cannot update vacation hours - no timesheet');
+            return prevTimesheet;
+          }
+          
+          // Create a deep copy of the previous timesheet
+          const updatedTimesheet = JSON.parse(JSON.stringify(prevTimesheet));
+          
+          // Update the vacation hours
+          updatedTimesheet.vacationHours = hours;
+          
+          console.log('📝 Updated timesheet state with vacation hours:', updatedTimesheet);
+          
+          // Send update to the server
+          saveVacationHoursToDatabase(hours);
+          
+          return updatedTimesheet;
+        });
         
-        // Update the state
-        setCurrentTimesheet(updatedTimesheet);
-        console.log('📝 Updated timesheet state with vacation hours:', updatedTimesheet);
-        
-        // Send update to the server
-        saveVacationHoursToDatabase(hours);
         break;
       }
       

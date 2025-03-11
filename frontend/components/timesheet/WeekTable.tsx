@@ -58,7 +58,19 @@ export function WeekTable({
   const [hoveredLock, setHoveredLock] = useState<string | null>(null);
   const [hoveredError, setHoveredError] = useState<string | null>(null);
 
-  console.log('WeekTable - data:', data);
+  console.log(`🔍 WeekTable ${weekNumber} - data:`, JSON.stringify(data, null, 2));
+  
+  // Add effect to log when data changes
+  useEffect(() => {
+    console.log(`🔄 WeekTable ${weekNumber} - data changed:`, JSON.stringify(data, null, 2));
+    
+    // Log specific day data to see if it's changing
+    if (weekNumber === 2) {
+      console.log(`🔍 WeekTable ${weekNumber} - monday data:`, JSON.stringify(data.monday, null, 2));
+      console.log(`🔍 WeekTable ${weekNumber} - data reference:`, Object.is(data, data));
+    }
+  }, [data, weekNumber]);
+
   // Calculate weekly total
   const weeklyTotal = DAYS.reduce((sum, day) => {
     if (!data || !data.days || !data.days[day]) {

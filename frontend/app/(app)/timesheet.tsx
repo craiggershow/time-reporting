@@ -826,7 +826,7 @@ export default function TimesheetScreen() {
       return;
     }
     
-    console.log('📋 Copying week 1 to week 2', currentTimesheet);
+    console.log('📋 Copying week 1 to week 2', JSON.stringify(currentTimesheet, null, 2));
     
     // Get the array of day names in lowercase
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
@@ -835,7 +835,8 @@ export default function TimesheetScreen() {
     days.forEach(day => {
       // Access the day directly from week1.days
       if (currentTimesheet.week1.days[day]) {
-        console.log(`📋 Copying day ${day} from week 1 to week 2:`, currentTimesheet.week1.days[day]);
+        console.log(`📋 Copying day ${day} from week 1 to week 2:`, JSON.stringify(currentTimesheet.week1.days[day], null, 2));
+        console.log(`📋 Current week2 day ${day} before update:`, JSON.stringify(currentTimesheet.week2.days[day], null, 2));
         
         // Update the timesheet state for this day
         updateTimesheetState({
@@ -846,6 +847,9 @@ export default function TimesheetScreen() {
             entry: { ...currentTimesheet.week1.days[day] },
           },
         });
+        
+        // Log after the update to see if the state was updated
+        console.log(`📋 After updateTimesheetState call for day ${day}`);
       } else {
         console.log(`📋 No data found for ${day} in week 1`);
       }
@@ -853,6 +857,7 @@ export default function TimesheetScreen() {
     
     // Also copy extra hours if they exist
     if (currentTimesheet.week1.extraHours) {
+      console.log(`📋 Copying extra hours: ${currentTimesheet.week1.extraHours}`);
       updateTimesheetState({
         type: 'SET_EXTRA_HOURS',
         payload: {
@@ -860,7 +865,13 @@ export default function TimesheetScreen() {
           hours: currentTimesheet.week1.extraHours
         }
       });
+      console.log(`📋 After updateTimesheetState call for extra hours`);
     }
+    
+    // Log the timesheet after all updates
+    setTimeout(() => {
+      console.log('📋 Timesheet after all updates:', JSON.stringify(currentTimesheet, null, 2));
+    }, 100);
   };
 
   const handleCopyPrevious = (week: 1 | 2, day: DayOfWeek) => {
@@ -905,7 +916,7 @@ export default function TimesheetScreen() {
       console.log('📋 No previous entry found');
       return;
     }
-    
+    console.log('📋 previousEntry:', previousEntry);
     console.log('📋 Copying from previous day:', { 
       from: previousDayKey,
       to: dayLowerCase,
