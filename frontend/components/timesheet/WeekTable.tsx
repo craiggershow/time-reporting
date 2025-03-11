@@ -436,7 +436,6 @@ export function WeekTable({
                       <Ionicons name="copy-outline" size={18} color="#ffffff" />
                     </View>
                     <ThemedText style={styles.mobileCopyButtonText}>Copy from Previous Day</ThemedText>
-                    <Ionicons name="chevron-forward" size={18} color="#ffffff" style={styles.copyButtonArrow} />
                   </View>
                 </TouchableOpacity>
               </View>
