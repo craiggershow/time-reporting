@@ -3,20 +3,27 @@ import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '@/context/ThemeContext';
 import { DayType } from '@/types/timesheet';
 import { useEffect } from 'react';
+import { isWeb } from '@/utils/platform';
 
-// Add global style to remove focus outlines from select elements
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = `
-    select:focus, select:active {
-      outline: none !important;
-      box-shadow: none !important;
-      -webkit-box-shadow: none !important;
-      border-color: #e2e8f0 !important;
-      border-radius: 8px !important;
+// Add global style to remove focus outlines from select elements on web
+if (isWeb() && typeof document !== 'undefined' && document !== null) {
+  try {
+    if (typeof document.createElement === 'function' && document.head) {
+      const style = document.createElement('style');
+      style.textContent = `
+        select:focus, select:active {
+          outline: none !important;
+          box-shadow: none !important;
+          -webkit-box-shadow: none !important;
+          border-color: #e2e8f0 !important;
+          border-radius: 8px !important;
+        }
+      `;
+      document.head.appendChild(style);
     }
-  `;
-  document.head.appendChild(style);
+  } catch (error) {
+    console.warn('Error adding global style for select elements:', error);
+  }
 }
 
 interface DayTypeSelectProps {

@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Alert, Image, Platform } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { startOfWeek, addWeeks, format, isValid, parseISO, addDays } from 'date-fns';
 import { ThemedText } from '@/components/ThemedText';
@@ -24,6 +24,8 @@ import { useSettings } from '@/context/SettingsContext';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { logDebug } from '@/utils/debug';
+import { addBeforeUnloadListener } from '@/utils/platform';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface DayData {
   startTime: string | null;
@@ -63,7 +65,7 @@ function debugDate(label: string, date: any) {
   });
 }
 
-export default function TimesheetScreen() {
+function TimesheetContent() {
   const { 
     currentTimesheet, 
     isLoading: timesheetLoading, 
@@ -103,8 +105,8 @@ export default function TimesheetScreen() {
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    // Use the platform-agnostic utility function
+    return addBeforeUnloadListener(handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
   useEffect(() => {
@@ -1050,6 +1052,7 @@ export default function TimesheetScreen() {
     </View>
   );
 }
+
 function calculateWeekTotal(week: any): number {
   if (!week) {
     //console.log('calculateWeekTotal - weekData is undefined, returning 0');
@@ -1064,8 +1067,6 @@ function calculateWeekTotal(week: any): number {
 
   return total;
 }
-
-
 
 // Helper function to process week data
 function processWeekData(weekData: any) {
@@ -1122,6 +1123,7 @@ function processWeekData(weekData: any) {
   //console.log('Final processed week data:', result);
   return result;
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1236,5 +1238,13 @@ const styles = StyleSheet.create({
     width: 100,
     textAlign: 'right',
   },
-}); 
+});
+
+export default function TimesheetScreen() {
+  return (
+    <ErrorBoundary>
+      <TimesheetContent />
+    </ErrorBoundary>
+  );
+} 
 

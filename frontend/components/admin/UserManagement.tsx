@@ -13,6 +13,7 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../layout/Header';
 import { useRouter } from 'expo-router';
+import { downloadFile } from '@/utils/platform';
 
 interface User {
   id: string;
@@ -276,25 +277,21 @@ export function UserManagement() {
     setPage(1);
   }, [searchQuery, roleFilter, statusFilter]);
 
-  const handleExport = () => {
+  const handleExportCSV = () => {
     const csvContent = [
-      ['ID', 'Name', 'Email', 'Role', 'Status'],
+      ['ID', 'Employee ID', 'First Name', 'Last Name', 'Email', 'Role', 'Status'],
       ...filteredUsers.map(user => [
+        user.id,
         user.employeeId,
-        `${user.firstName} ${user.lastName}`,
+        user.firstName,
+        user.lastName,
         user.email,
         user.role,
         user.isActive ? 'Active' : 'Inactive'
       ])
     ].map(row => row.join(',')).join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'users.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
+    downloadFile(csvContent, 'users.csv', 'text/csv');
   };
 
   if (isLoading && !users.length) {
@@ -362,7 +359,7 @@ export function UserManagement() {
               )}
               <Button 
                 variant="secondary"
-                onPress={handleExport}
+                onPress={handleExportCSV}
                 leftIcon={<Ionicons name="download-outline" size={20} />}
               >
                 Export

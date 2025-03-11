@@ -1,5 +1,4 @@
 import { Stack } from 'expo-router';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { colors } from '@/styles/common';
 import { View, StyleSheet } from 'react-native';
 import { Redirect } from 'expo-router';
@@ -29,36 +28,33 @@ export default function AppLayout() {
 
   // User is authenticated - render the app layout
   return (
-    <ErrorBoundary>
-      <View style={styles.container}>
-        <Stack
-          screenOptions={{
-            headerShown: false,
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background.page },
+      }}
+    >
+      <Stack.Screen 
+        name="index" 
+        options={{
+          title: 'Home',
+        }}
+      />
+      <Stack.Screen 
+        name="timesheet"
+        options={{
+          title: 'Timesheet',
+        }}
+      />
+      {user?.role === 'ADMIN' && (
+        <Stack.Screen 
+          name="admin"
+          options={{
+            title: 'Admin',
           }}
-        >
-          <Stack.Screen 
-            name="index" 
-            options={{
-              title: 'Home',
-            }}
-          />
-          <Stack.Screen 
-            name="timesheet"
-            options={{
-              title: 'Timesheet',
-            }}
-          />
-          {user?.role === 'ADMIN' && (
-            <Stack.Screen 
-              name="admin"
-              options={{
-                title: 'Admin',
-              }}
-            />
-          )}
-        </Stack>
-      </View>
-    </ErrorBoundary>
+        />
+      )}
+    </Stack>
   );
 }
 
