@@ -110,7 +110,7 @@ interface PayPeriodDates {
 
 async function getCurrentPayPeriod(): Promise<{ id: string; startDate: Date; endDate: Date }> {
   try {
-    console.log('=== Getting Current Pay Period ===');
+    //console.log('=== Getting Current Pay Period ===');
     const settings = await prisma.settings.findUnique({
       where: { key: 'timesheet_settings' }
     });
@@ -119,9 +119,9 @@ async function getCurrentPayPeriod(): Promise<{ id: string; startDate: Date; end
       throw new Error('Timesheet settings not found');
     }
 
-    console.log('Settings found:', settings);
+    //console.log('Settings found:', settings);
     const { payPeriodStartDate } = settings.value as { payPeriodStartDate: string };
-    console.log('Pay period start date from settings (raw):', payPeriodStartDate);
+    //console.log('Pay period start date from settings (raw):', payPeriodStartDate);
     
     // Parse the base start date from settings - use YYYY-MM-DD format
     // The payPeriodStartDate should already be in YYYY-MM-DD format
@@ -134,19 +134,19 @@ async function getCurrentPayPeriod(): Promise<{ id: string; startDate: Date; end
     
     // Create a date object with the date components (no time)
     const baseStartDate = new Date(year, month - 1, day); // month is 0-indexed in JS Date
-    console.log('Base start date (parsed):', 
-      `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`);
+    //console.log('Base start date (parsed):', 
+    //  `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`);
     
     // Get current date without time component
     const now = new Date();
     const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    console.log('Current date (date only):', 
-      `${nowDateOnly.getFullYear()}-${(nowDateOnly.getMonth() + 1).toString().padStart(2, '0')}-${nowDateOnly.getDate().toString().padStart(2, '0')}`);
+    //console.log('Current date (date only):', 
+    //  `${nowDateOnly.getFullYear()}-${(nowDateOnly.getMonth() + 1).toString().padStart(2, '0')}-${nowDateOnly.getDate().toString().padStart(2, '0')}`);
     
     // Calculate the current pay period start date
     const currentStartDate = new Date(baseStartDate);
-    console.log('Initial currentStartDate:', 
-      `${currentStartDate.getFullYear()}-${(currentStartDate.getMonth() + 1).toString().padStart(2, '0')}-${currentStartDate.getDate().toString().padStart(2, '0')}`);
+    //console.log('Initial currentStartDate:', 
+    //  `${currentStartDate.getFullYear()}-${(currentStartDate.getMonth() + 1).toString().padStart(2, '0')}-${currentStartDate.getDate().toString().padStart(2, '0')}`);
     
     // Find the most recent pay period start date that is not in the future
     while (currentStartDate <= nowDateOnly) {
@@ -155,19 +155,19 @@ async function getCurrentPayPeriod(): Promise<{ id: string; startDate: Date; end
     
     // Go back one pay period since we went past the current date
     currentStartDate.setDate(currentStartDate.getDate() - 14);
-    console.log('Final currentStartDate (after adjustment):', 
-      `${currentStartDate.getFullYear()}-${(currentStartDate.getMonth() + 1).toString().padStart(2, '0')}-${currentStartDate.getDate().toString().padStart(2, '0')}`);
+    //console.log('Final currentStartDate (after adjustment):', 
+    //  `${currentStartDate.getFullYear()}-${(currentStartDate.getMonth() + 1).toString().padStart(2, '0')}-${currentStartDate.getDate().toString().padStart(2, '0')}`);
     
     const endDate = new Date(currentStartDate);
     endDate.setDate(endDate.getDate() + 13); // 14 days total (0-13)
-    console.log('End date of pay period:', 
-      `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`);
+    //console.log('End date of pay period:', 
+    //  `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`);
 
     // Find or create pay period
-    console.log('Looking for pay period in database with start:', 
-      `${currentStartDate.getFullYear()}-${(currentStartDate.getMonth() + 1).toString().padStart(2, '0')}-${currentStartDate.getDate().toString().padStart(2, '0')}`, 
-      'end:', 
-      `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`);
+    //console.log('Looking for pay period in database with start:', 
+    //  `${currentStartDate.getFullYear()}-${(currentStartDate.getMonth() + 1).toString().padStart(2, '0')}-${currentStartDate.getDate().toString().padStart(2, '0')}`, 
+    //  'end:', 
+    //  `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}`);
     
     const payPeriod = await prisma.payPeriod.upsert({
       where: {
@@ -183,7 +183,7 @@ async function getCurrentPayPeriod(): Promise<{ id: string; startDate: Date; end
       update: {}
     });
     
-    console.log('Pay period found/created:', payPeriod);
+    //console.log('Pay period found/created:', payPeriod);
     return payPeriod;
   } catch (error) {
     console.error('Error getting pay period:', error);
@@ -288,7 +288,7 @@ export async function getCurrentTimesheet(req: AuthRequest, res: ExpressResponse
     };
 
     res.json(transformedTimesheet);
-    console.log(transformedTimesheet);
+    //console.log(transformedTimesheet);
   } catch (error) {
     console.error('Get current timesheet error:', error);
     res.status(500).json({ error: 'Failed to get current timesheet' });
@@ -476,7 +476,7 @@ function formatDateToTimeString(date: Date | null): string | null {
 }
 
 export async function submitTimesheet(req: AuthRequest, res: ExpressResponse) {
-  console.log('\n=== Submit Timesheet ===');
+  //console.log('\n=== Submit Timesheet ===');
   try {
     const { payPeriodId, weeks, vacationHours } = req.body as TimesheetSubmitData;
 
@@ -619,7 +619,7 @@ export async function recallTimesheet(req: AuthRequest, res: ExpressResponse) {
 }
 
 export async function getAllTimesheets(req: AuthRequest, res: ExpressResponse) {
-  console.log('\n=== Get All Timesheets ===');
+  //console.log('\n=== Get All Timesheets ===');
   try {
     // Implementation
     res.json({ message: 'Get all timesheets' });
@@ -630,7 +630,7 @@ export async function getAllTimesheets(req: AuthRequest, res: ExpressResponse) {
 }
 
 export async function approveTimesheet(req: AuthRequest, res: ExpressResponse) {
-  console.log('\n=== Approve Timesheet ===');
+  //console.log('\n=== Approve Timesheet ===');
   try {
     // Implementation
     res.json({ message: 'Approve timesheet' });
@@ -644,8 +644,8 @@ export async function approveTimesheet(req: AuthRequest, res: ExpressResponse) {
 export const updateTimeEntry = async (req: AuthRequest, res: ExpressResponse) => {
   try {
     const { timesheetId, week, day, entry } = req.body;
-    console.log(`[updateTimeEntry] Updating time entry for timesheet ${timesheetId}, week ${week}, day ${day}`);
-    console.log(`[updateTimeEntry] Entry data:`, entry);
+    //console.log(`[updateTimeEntry] Updating time entry for timesheet ${timesheetId}, week ${week}, day ${day}`);
+    //console.log(`[updateTimeEntry] Entry data:`, entry);
 
     // Validate that dayType is a valid enum value
     if (entry.dayType && !Object.values(DayType).includes(entry.dayType)) {
@@ -720,7 +720,7 @@ export const updateTimeEntry = async (req: AuthRequest, res: ExpressResponse) =>
       },
     });
 
-    console.log(`[updateTimeEntry] Day updated successfully:`, updatedDay);
+    //console.log(`[updateTimeEntry] Day updated successfully:`, updatedDay);
     return res.json(updatedDay);
   } catch (error) {
     console.error('[updateTimeEntry] Error:', error);
@@ -731,8 +731,8 @@ export const updateTimeEntry = async (req: AuthRequest, res: ExpressResponse) =>
 export const updateExtraHours = async (req: AuthRequest, res: ExpressResponse) => {
   try {
     const { timesheetId, week, hours } = req.body;
-    console.log(`[updateExtraHours] Updating extra hours for timesheet ${timesheetId}, week ${week}`);
-    console.log(`[updateExtraHours] Hours: ${hours}`);
+    //console.log(`[updateExtraHours] Updating extra hours for timesheet ${timesheetId}, week ${week}`);
+    //console.log(`[updateExtraHours] Hours: ${hours}`);
 
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -774,7 +774,7 @@ export const updateExtraHours = async (req: AuthRequest, res: ExpressResponse) =
       },
     });
 
-    console.log(`[updateExtraHours] Week updated successfully:`, updatedWeek);
+    //console.log(`[updateExtraHours] Week updated successfully:`, updatedWeek);
     return res.json(updatedWeek);
   } catch (error) {
     console.error('[updateExtraHours] Error:', error);
@@ -785,8 +785,8 @@ export const updateExtraHours = async (req: AuthRequest, res: ExpressResponse) =
 export const updateVacationHours = async (req: AuthRequest, res: ExpressResponse) => {
   try {
     const { timesheetId, hours } = req.body;
-    console.log(`[updateVacationHours] Updating vacation hours for timesheet ${timesheetId}`);
-    console.log(`[updateVacationHours] Hours: ${hours}`);
+    //console.log(`[updateVacationHours] Updating vacation hours for timesheet ${timesheetId}`);
+    //console.log(`[updateVacationHours] Hours: ${hours}`);
 
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -814,7 +814,7 @@ export const updateVacationHours = async (req: AuthRequest, res: ExpressResponse
       },
     });
 
-    console.log(`[updateVacationHours] Timesheet updated successfully:`, updatedTimesheet);
+    //console.log(`[updateVacationHours] Timesheet updated successfully:`, updatedTimesheet);
     return res.json(updatedTimesheet);
   } catch (error) {
     console.error('[updateVacationHours] Error:', error);
