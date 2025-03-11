@@ -314,70 +314,83 @@ export function WeekTable({
     
     return (
       <View style={styles.mobileContainer}>
-        <View style={styles.daySelector}>
-          {DAYS.map((day, index) => {
-            const dayStatus = getDayStatus(day);
-            const isSelected = selectedDay === day;
-            
-            // Determine the status indicator color and style
-            let statusColor;
-            let statusIcon;
-            
-            switch (dayStatus.status) {
-              case 'locked':
-                statusColor = '#94a3b8'; // slate-400
-                statusIcon = 'lock-closed';
-                break;
-              case 'error':
-                statusColor = '#ef4444'; // red-500
-                statusIcon = 'warning';
-                break;
-              case 'complete':
-                statusColor = '#22c55e'; // green-500
-                statusIcon = 'checkmark-circle';
-                break;
-              case 'partial':
-                statusColor = '#f59e0b'; // amber-500
-                statusIcon = 'time-outline';
-                break;
-              default:
-                statusColor = '#cbd5e1'; // slate-300
-                statusIcon = 'ellipse-outline';
-            }
-            
-            return (
-              <TouchableOpacity
-                key={day}
-                style={[
-                  styles.dayTab,
-                  isSelected && styles.selectedDayTab,
-                  dayStatus.status === 'locked' && styles.lockedDayTab,
-                  dayStatus.status === 'error' && styles.errorDayTab,
-                  dayStatus.status === 'complete' && styles.completeDayTab,
-                  dayStatus.status === 'partial' && styles.partialDayTab,
-                ]}
-                onPress={() => setSelectedDay(day)}
-              >
-                <View style={styles.dayTabContent}>
-                  <ThemedText style={[
-                    styles.dayTabText,
-                    isSelected && styles.selectedDayTabText
-                  ]}>
-                    {format(addDays(safeStartDate, index), 'EEE')}
-                  </ThemedText>
-                  <View style={styles.statusIndicator}>
-                    <Ionicons name={statusIcon} size={14} color={statusColor} />
+        <View style={styles.dayTabsContainer}>
+          <View style={styles.daySelector}>
+            {DAYS.map((day, index) => {
+              const dayStatus = getDayStatus(day);
+              const isSelected = selectedDay === day;
+              
+              // Determine the status indicator color and style
+              let statusColor;
+              let statusIcon;
+              
+              switch (dayStatus.status) {
+                case 'locked':
+                  statusColor = '#94a3b8'; // slate-400
+                  statusIcon = 'lock-closed';
+                  break;
+                case 'error':
+                  statusColor = '#ef4444'; // red-500
+                  statusIcon = 'warning';
+                  break;
+                case 'complete':
+                  statusColor = '#22c55e'; // green-500
+                  statusIcon = 'checkmark-circle';
+                  break;
+                case 'partial':
+                  statusColor = '#f59e0b'; // amber-500
+                  statusIcon = 'time-outline';
+                  break;
+                default:
+                  statusColor = '#cbd5e1'; // slate-300
+                  statusIcon = 'ellipse-outline';
+              }
+              
+              return (
+                <TouchableOpacity
+                  key={day}
+                  style={[
+                    styles.dayTab,
+                    isSelected && styles.selectedDayTab,
+                    dayStatus.status === 'locked' && styles.lockedDayTab,
+                    dayStatus.status === 'error' && styles.errorDayTab,
+                    dayStatus.status === 'complete' && styles.completeDayTab,
+                    dayStatus.status === 'partial' && styles.partialDayTab,
+                  ]}
+                  onPress={() => setSelectedDay(day)}
+                >
+                  {isSelected && (
+                    <View style={styles.activeIndicatorTop} />
+                  )}
+                  <View style={styles.dayTabContent}>
+                    <ThemedText style={[
+                      styles.dayTabText,
+                      isSelected && styles.selectedDayTabText
+                    ]}>
+                      {format(addDays(safeStartDate, index), 'EEE')}
+                    </ThemedText>
+                    <View style={styles.statusIndicator}>
+                      <Ionicons name={statusIcon} size={14} color={statusColor} />
+                    </View>
                   </View>
-                </View>
-                {dayStatus.status !== 'empty' && (
-                  <View style={[
-                    styles.statusBar,
-                    { backgroundColor: statusColor }
-                  ]} />
-                )}
-              </TouchableOpacity>
-            );
-          })}
+                  {dayStatus.status !== 'empty' && (
+                    <View style={[
+                      styles.statusBar,
+                      { backgroundColor: statusColor }
+                    ]} />
+                  )}
+                  {isSelected && (
+                    <View style={styles.activeMarker}>
+                      <Ionicons name="caret-down" size={16} color="#0ea5e9" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          
+          {/* Active day indicator line */}
+          <View style={styles.activeTabIndicator} />
         </View>
         
         {selectedDay && (
@@ -884,23 +897,38 @@ const styles = StyleSheet.create({
   mobileContainer: {
     marginTop: 16,
   },
+  dayTabsContainer: {
+    marginBottom: 16,
+    position: 'relative',
+  },
   daySelector: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
   },
   dayTab: {
     flex: 1,
     marginHorizontal: 2,
-    borderRadius: 8,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     backgroundColor: '#f8fafc',
-    overflow: 'hidden',
+    overflow: 'visible',
     borderWidth: 1,
     borderColor: '#e2e8f0',
+    borderBottomWidth: 0,
+    position: 'relative',
+    zIndex: 1,
   },
   selectedDayTab: {
     borderColor: '#0ea5e9',
-    backgroundColor: '#f0f9ff',
+    backgroundColor: '#e0f2fe',
+    borderWidth: 2,
+    borderBottomWidth: 0,
+    shadowColor: '#0ea5e9',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+    zIndex: 2,
   },
   lockedDayTab: {
     borderColor: '#94a3b8',
@@ -928,8 +956,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   selectedDayTabText: {
-    fontWeight: '600',
-    color: '#0ea5e9',
+    fontWeight: '700',
+    color: '#0369a1',
+  },
+  activeIndicatorTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: '#0ea5e9',
+  },
+  activeMarker: {
+    position: 'absolute',
+    bottom: -15,
+    alignSelf: 'center',
+    zIndex: 3,
+  },
+  activeTabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: '#0ea5e9',
+    zIndex: 0,
   },
   statusIndicator: {
     marginTop: 4,
@@ -1085,5 +1136,13 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: '#64748b',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: '#0ea5e9',
   },
 }); 
