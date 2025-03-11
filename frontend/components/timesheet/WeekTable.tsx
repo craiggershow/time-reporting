@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, useWindowDimensions, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, useWindowDimensions, Platform, TouchableOpacity } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { useTheme } from '@/context/ThemeContext';
 import { WeekData, TimeEntry, DayType, DayOfWeek } from '@/types/timesheet';
@@ -112,6 +112,40 @@ export function WeekTable({
     
     //console.log(`⚙️ WeekTable validateWeeklyTotal calling validateWeeklyHours with settings:`, settings);
     return validateWeeklyHours(weekTotal, settings);
+  };
+
+  // Add a function to determine the status of a day
+  const getDayStatus = (day: keyof WeekData) => {
+    // Check if the day is in the future (locked)
+    const dayDate = addDays(safeStartDate, DAYS.indexOf(day));
+    const isLocked = isFutureDate(dayDate);
+    
+    if (isLocked) {
+      return { status: 'locked', message: 'Future date - cannot edit' };
+    }
+    
+    // Check if the day has validation errors
+    const validation = validateDay(day);
+    if (!validation.isValid) {
+      return { status: 'error', message: validation.message || 'Invalid time entry' };
+    }
+    
+    // Check if the day has any time entries
+    const hasTimeEntries = data.days[day]?.startTime || 
+                          data.days[day]?.endTime || 
+                          data.days[day]?.lunchStartTime || 
+                          data.days[day]?.lunchEndTime;
+    
+    // Check if the day has complete time entries (both start and end time)
+    const hasCompleteEntries = data.days[day]?.startTime && data.days[day]?.endTime;
+    
+    if (hasCompleteEntries) {
+      return { status: 'complete', message: 'Time entry complete' };
+    } else if (hasTimeEntries) {
+      return { status: 'partial', message: 'Time entry incomplete' };
+    }
+    
+    return { status: 'empty', message: 'No time entered' };
   };
 
   // Add validation status row after total hours
@@ -273,29 +307,108 @@ export function WeekTable({
 
   // Render the mobile view with a day selector and vertical layout
   const renderMobileView = () => {
+    // Initialize selectedDay if it's null
+    if (!selectedDay && DAYS.length > 0) {
+      setSelectedDay(DAYS[0]);
+    }
+    
     return (
       <View style={styles.mobileContainer}>
         <View style={styles.daySelector}>
-          {DAYS.map((day, index) => (
-            <Button
-              key={day}
-              variant={selectedDay === day ? "primary" : "secondary"}
-              onPress={() => setSelectedDay(day)}
-              style={styles.daySelectorButton}
-            >
-              <ThemedText style={styles.daySelectorText}>
-                {format(addDays(safeStartDate, index), 'EEE')}
-              </ThemedText>
-            </Button>
-          ))}
+          {DAYS.map((day, index) => {
+            const dayStatus = getDayStatus(day);
+            const isSelected = selectedDay === day;
+            
+            // Determine the status indicator color and style
+            let statusColor;
+            let statusIcon;
+            
+            switch (dayStatus.status) {
+              case 'locked':
+                statusColor = '#94a3b8'; // slate-400
+                statusIcon = 'lock-closed';
+                break;
+              case 'error':
+                statusColor = '#ef4444'; // red-500
+                statusIcon = 'warning';
+                break;
+              case 'complete':
+                statusColor = '#22c55e'; // green-500
+                statusIcon = 'checkmark-circle';
+                break;
+              case 'partial':
+                statusColor = '#f59e0b'; // amber-500
+                statusIcon = 'time-outline';
+                break;
+              default:
+                statusColor = '#cbd5e1'; // slate-300
+                statusIcon = 'ellipse-outline';
+            }
+            
+            return (
+              <TouchableOpacity
+                key={day}
+                style={[
+                  styles.dayTab,
+                  isSelected && styles.selectedDayTab,
+                  dayStatus.status === 'locked' && styles.lockedDayTab,
+                  dayStatus.status === 'error' && styles.errorDayTab,
+                  dayStatus.status === 'complete' && styles.completeDayTab,
+                  dayStatus.status === 'partial' && styles.partialDayTab,
+                ]}
+                onPress={() => setSelectedDay(day)}
+              >
+                <View style={styles.dayTabContent}>
+                  <ThemedText style={[
+                    styles.dayTabText,
+                    isSelected && styles.selectedDayTabText
+                  ]}>
+                    {format(addDays(safeStartDate, index), 'EEE')}
+                  </ThemedText>
+                  <View style={styles.statusIndicator}>
+                    <Ionicons name={statusIcon} size={14} color={statusColor} />
+                  </View>
+                </View>
+                {dayStatus.status !== 'empty' && (
+                  <View style={[
+                    styles.statusBar,
+                    { backgroundColor: statusColor }
+                  ]} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
         
         {selectedDay && (
           <View style={styles.mobileTimeEntryContainer}>
             <View style={styles.mobileTimeEntryHeader}>
-              <ThemedText style={styles.mobileTimeEntryDay}>
-                {format(addDays(safeStartDate, DAYS.indexOf(selectedDay)), 'EEEE, MMM d')}
-              </ThemedText>
+              <View style={styles.dayHeaderInfo}>
+                <ThemedText style={styles.mobileTimeEntryDay}>
+                  {format(addDays(safeStartDate, DAYS.indexOf(selectedDay)), 'EEEE, MMM d')}
+                </ThemedText>
+                
+                {/* Show status message */}
+                <View style={styles.dayStatusContainer}>
+                  {getDayStatus(selectedDay).status === 'locked' && (
+                    <View style={styles.dayStatusBadge}>
+                      <Ionicons name="lock-closed" size={14} color="#ffffff" />
+                      <ThemedText style={styles.dayStatusText}>
+                        Future Date (Locked)
+                      </ThemedText>
+                    </View>
+                  )}
+                  {getDayStatus(selectedDay).status === 'error' && (
+                    <View style={[styles.dayStatusBadge, { backgroundColor: '#ef4444' }]}>
+                      <Ionicons name="warning" size={14} color="#ffffff" />
+                      <ThemedText style={styles.dayStatusText}>
+                        Error
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+              </View>
+              
               {DAYS.indexOf(selectedDay) > 0 && (
                 <Button
                   variant="secondary"
@@ -318,7 +431,16 @@ export function WeekTable({
                 
                 return (
                   <View key={fieldName} style={styles.mobileTimeEntryField}>
-                    <ThemedText style={styles.mobileTimeEntryLabel}>{label}</ThemedText>
+                    <View style={styles.mobileFieldHeader}>
+                      <ThemedText style={styles.mobileTimeEntryLabel}>{label}</ThemedText>
+                      {disabled && (
+                        <View style={styles.mobileLockBadge}>
+                          <Ionicons name="lock-closed" size={12} color="#94a3b8" />
+                          <ThemedText style={styles.mobileLockText}>Locked</ThemedText>
+                        </View>
+                      )}
+                    </View>
+                    
                     <View style={styles.mobileTimeInputContainer}>
                       <TimeInput
                         value={formatTimeForDisplay(data.days[selectedDay][fieldName as keyof TimeEntry])}
@@ -327,24 +449,29 @@ export function WeekTable({
                         onBlur={() => handleBlur(selectedDay)}
                         hasError={hasError}
                       />
-                      {disabled && (
-                        <View style={styles.mobileLockIconContainer}>
-                          <Ionicons name="lock-closed" size={16} color="#94a3b8" />
-                        </View>
-                      )}
-                      {hasError && tooltipMessage && (
-                        <View style={styles.mobileErrorIconContainer}>
-                          <Ionicons name="warning" size={16} color="#ef4444" />
-                          <ThemedText style={styles.mobileErrorText}>{tooltipMessage}</ThemedText>
-                        </View>
-                      )}
                     </View>
+                    
+                    {hasError && tooltipMessage && (
+                      <View style={styles.mobileErrorContainer}>
+                        <Ionicons name="warning" size={14} color="#ef4444" />
+                        <ThemedText style={styles.mobileErrorText}>{tooltipMessage}</ThemedText>
+                      </View>
+                    )}
                   </View>
                 );
               })}
               
               <View style={styles.mobileTimeEntryField}>
-                <ThemedText style={styles.mobileTimeEntryLabel}>Day Type</ThemedText>
+                <View style={styles.mobileFieldHeader}>
+                  <ThemedText style={styles.mobileTimeEntryLabel}>Day Type</ThemedText>
+                  {isFutureDate(addDays(safeStartDate, DAYS.indexOf(selectedDay))) && (
+                    <View style={styles.mobileLockBadge}>
+                      <Ionicons name="lock-closed" size={12} color="#94a3b8" />
+                      <ThemedText style={styles.mobileLockText}>Locked</ThemedText>
+                    </View>
+                  )}
+                </View>
+                
                 <View style={styles.mobileTimeInputContainer}>
                   <DayTypeSelect
                     value={data.days[selectedDay].dayType}
@@ -356,12 +483,20 @@ export function WeekTable({
               
               <View style={styles.mobileTimeEntryField}>
                 <ThemedText style={styles.mobileTimeEntryLabel}>Total Hours</ThemedText>
-                <View style={styles.mobileTimeInputContainer}>
+                <View style={styles.mobileTotalHoursContainer}>
                   <ThemedText style={styles.totalHours}>
                     {(data.days[selectedDay].totalHours !== undefined && data.days[selectedDay].totalHours !== null) 
                       ? data.days[selectedDay].totalHours.toFixed(2) 
                       : '0.00'}
                   </ThemedText>
+                  {hasFieldError(selectedDay, 'totalHours') && (
+                    <View style={styles.mobileErrorBadge}>
+                      <Ionicons name="warning" size={14} color="#ffffff" />
+                      <ThemedText style={styles.mobileErrorBadgeText}>
+                        {getFieldTooltipMessage(selectedDay, 'totalHours')}
+                      </ThemedText>
+                    </View>
+                  )}
                 </View>
               </View>
             </View>
@@ -380,14 +515,25 @@ export function WeekTable({
         </View>
         
         <View style={styles.mobileTotalContainer}>
-          <ThemedText style={styles.mobileTimeEntryLabel}>Weekly Total</ThemedText>
+          <View style={styles.mobileTotalHeader}>
+            <ThemedText style={styles.mobileTimeEntryLabel}>Weekly Total</ThemedText>
+            {!validateWeeklyTotal().isValid && (
+              <View style={styles.mobileErrorBadge}>
+                <Ionicons name="warning" size={14} color="#ffffff" />
+                <ThemedText style={styles.mobileErrorBadgeText}>
+                  Exceeds limit
+                </ThemedText>
+              </View>
+            )}
+          </View>
+          
           <View style={styles.mobileTotalValueContainer}>
-            <ThemedText style={[styles.totalHours, styles.weeklyTotal]}>
+            <ThemedText style={styles.weeklyTotal}>
               {weeklyTotal.toFixed(2)}
             </ThemedText>
             {!validateWeeklyTotal().isValid && validateWeeklyTotal().message && (
               <View style={styles.mobileErrorContainer}>
-                <Ionicons name="warning" size={16} color="#ef4444" />
+                <Ionicons name="warning" size={14} color="#ef4444" />
                 <ThemedText style={styles.mobileErrorText}>{validateWeeklyTotal().message}</ThemedText>
               </View>
             )}
@@ -737,13 +883,77 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  daySelectorButton: {
+  dayTab: {
     flex: 1,
     marginHorizontal: 2,
-    paddingHorizontal: 4,
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
-  daySelectorText: {
+  selectedDayTab: {
+    borderColor: '#0ea5e9',
+    backgroundColor: '#f0f9ff',
+  },
+  lockedDayTab: {
+    borderColor: '#94a3b8',
+    backgroundColor: '#f1f5f9',
+  },
+  errorDayTab: {
+    borderColor: '#ef4444',
+    backgroundColor: '#fef2f2',
+  },
+  completeDayTab: {
+    borderColor: '#22c55e',
+    backgroundColor: '#f0fdf4',
+  },
+  partialDayTab: {
+    borderColor: '#f59e0b',
+    backgroundColor: '#fffbeb',
+  },
+  dayTabContent: {
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayTabText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  selectedDayTabText: {
+    fontWeight: '600',
+    color: '#0ea5e9',
+  },
+  statusIndicator: {
+    marginTop: 4,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusBar: {
+    height: 3,
+    width: '100%',
+  },
+  dayHeaderInfo: {
+    flex: 1,
+  },
+  dayStatusContainer: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  dayStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#94a3b8',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  dayStatusText: {
+    color: '#ffffff',
     fontSize: 12,
+    marginLeft: 4,
   },
   mobileTimeEntryContainer: {
     backgroundColor: '#f8fafc',
@@ -767,28 +977,74 @@ const styles = StyleSheet.create({
   mobileTimeEntryField: {
     marginBottom: 16,
   },
+  mobileFieldHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   mobileTimeEntryLabel: {
     fontSize: 14,
-    marginBottom: 4,
+    fontWeight: '500',
   },
   mobileTimeInputContainer: {
     position: 'relative',
   },
-  mobileLockIconContainer: {
-    position: 'absolute',
-    right: 8,
-    top: '50%',
-    transform: [{ translateY: -8 }],
-  },
-  mobileErrorIconContainer: {
-    marginTop: 4,
+  mobileLockBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  mobileLockText: {
+    fontSize: 10,
+    color: '#64748b',
+    marginLeft: 2,
+  },
+  mobileErrorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    paddingHorizontal: 4,
   },
   mobileErrorText: {
     color: '#ef4444',
     fontSize: 12,
     marginLeft: 4,
+    flex: 1,
+  },
+  mobileErrorBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  mobileErrorBadgeText: {
+    fontSize: 10,
+    color: '#ffffff',
+    marginLeft: 2,
+  },
+  mobileTotalHoursContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    padding: 12,
+    borderRadius: 8,
+  },
+  mobileTotalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  mobileTotalValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   mobileExtraHoursContainer: {
     backgroundColor: '#f8fafc',
