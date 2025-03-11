@@ -240,6 +240,11 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 8,
+    ...Platform.select({
+      web: {
+        outline: 'none',
+      },
+    }),
   },
   rememberMeContainer: {
     flexDirection: 'row',

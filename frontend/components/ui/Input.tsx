@@ -1,4 +1,4 @@
-import { TextInput, View, StyleSheet, TextInputProps, StyleProp, ViewStyle, TextStyle } from 'react-native';
+import { TextInput, View, StyleSheet, TextInputProps, StyleProp, ViewStyle, TextStyle, Platform } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { useTheme } from '@/context/ThemeContext';
 import { ReactNode, useState } from 'react';
@@ -66,6 +66,7 @@ export function Input({
           placeholderTextColor="#94a3b8"
           onFocus={handleFocus}
           onBlur={handleBlur}
+          outlineStyle="none"
           {...props as any}
         />
         {rightIcon ? <View style={styles.iconRight}>{rightIcon}</View> : null}
@@ -105,6 +106,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     width: '100%', // Ensure input takes full width of container
     borderWidth: 0, // Remove default input border
+    ...Platform.select({
+      web: {
+        outline: 'none',
+        outlineStyle: 'none',
+      },
+    }),
   },
   iconLeft: {
     position: 'absolute',
