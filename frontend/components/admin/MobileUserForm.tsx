@@ -10,7 +10,9 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   SafeAreaView,
-  Text
+  Text,
+  TouchableWithoutFeedback,
+  Keyboard
 } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { Button } from '../ui/Button';
@@ -142,138 +144,141 @@ export function MobileUserForm({
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#64748b" />
-            </TouchableOpacity>
-            <Text style={styles.title}>
-              {user ? 'Edit User' : 'Add User'}
-            </Text>
-            <View style={styles.headerSpacer} />
-          </View>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.header}>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color="#64748b" />
+              </TouchableOpacity>
+              <Text style={styles.title}>
+                {user ? 'Edit User' : 'Add User'}
+              </Text>
+              <View style={styles.headerSpacer} />
+            </View>
 
-          <ScrollView 
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={true}
-          >
-            {error && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-                <TouchableOpacity onPress={() => setError(null)}>
-                  <Ionicons name="close-circle" size={20} color="#b91c1c" />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            <View style={styles.formFields}>
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholder="Enter email"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>First Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  placeholder="Enter first name"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Last Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={lastName}
-                  onChangeText={setLastName}
-                  placeholder="Enter last name"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
-
-              {!user && (
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Password</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    placeholder="Enter password"
-                    autoCapitalize="none"
-                    placeholderTextColor="#9ca3af"
-                  />
+            <ScrollView 
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={true}
+              keyboardShouldPersistTaps="handled"
+            >
+              {error && (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{error}</Text>
+                  <TouchableOpacity onPress={() => setError(null)}>
+                    <Ionicons name="close-circle" size={20} color="#b91c1c" />
+                  </TouchableOpacity>
                 </View>
               )}
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Employee ID</Text>
-                <TextInput
-                  style={styles.input}
-                  value={employeeId}
-                  onChangeText={setEmployeeId}
-                  placeholder="Auto-generated if empty"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
+              <View style={styles.formFields}>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Email</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    placeholder="Enter email"
+                    placeholderTextColor="#9ca3af"
+                  />
+                </View>
 
-              <View style={styles.switchContainer}>
-                <Text style={styles.label}>Admin User</Text>
-                <Switch
-                  value={isAdmin}
-                  onValueChange={setIsAdmin}
-                  trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
-                  thumbColor={'#ffffff'}
-                  ios_backgroundColor="#d1d5db"
-                />
-              </View>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>First Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    placeholder="Enter first name"
+                    placeholderTextColor="#9ca3af"
+                  />
+                </View>
 
-              <View style={styles.switchContainer}>
-                <Text style={styles.label}>Active</Text>
-                <Switch
-                  value={isActive}
-                  onValueChange={setIsActive}
-                  trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
-                  thumbColor={'#ffffff'}
-                  ios_backgroundColor="#d1d5db"
-                />
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Last Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={lastName}
+                    onChangeText={setLastName}
+                    placeholder="Enter last name"
+                    placeholderTextColor="#9ca3af"
+                  />
+                </View>
+
+                {!user && (
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>Password</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry
+                      placeholder="Enter password"
+                      autoCapitalize="none"
+                      placeholderTextColor="#9ca3af"
+                    />
+                  </View>
+                )}
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Employee ID</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={employeeId}
+                    onChangeText={setEmployeeId}
+                    placeholder="Auto-generated if empty"
+                    placeholderTextColor="#9ca3af"
+                  />
+                </View>
+
+                <View style={styles.switchContainer}>
+                  <Text style={styles.label}>Admin User</Text>
+                  <Switch
+                    value={isAdmin}
+                    onValueChange={setIsAdmin}
+                    trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
+                    thumbColor={'#ffffff'}
+                    ios_backgroundColor="#d1d5db"
+                  />
+                </View>
+
+                <View style={styles.switchContainer}>
+                  <Text style={styles.label}>Active</Text>
+                  <Switch
+                    value={isActive}
+                    onValueChange={setIsActive}
+                    trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
+                    thumbColor={'#ffffff'}
+                    ios_backgroundColor="#d1d5db"
+                  />
+                </View>
               </View>
+            </ScrollView>
+
+            <View style={styles.footer}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={onClose}
+                disabled={isLoading}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.saveButton, isLoading && styles.disabledButton]}
+                onPress={handleSubmit}
+                disabled={isLoading}
+              >
+                <Text style={styles.saveButtonText}>
+                  {isLoading ? 'Saving...' : 'Save'}
+                </Text>
+              </TouchableOpacity>
             </View>
-          </ScrollView>
-
-          <View style={styles.footer}>
-            <TouchableOpacity 
-              style={styles.cancelButton}
-              onPress={onClose}
-              disabled={isLoading}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.saveButton, isLoading && styles.disabledButton]}
-              onPress={handleSubmit}
-              disabled={isLoading}
-            >
-              <Text style={styles.saveButtonText}>
-                {isLoading ? 'Saving...' : 'Save'}
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
@@ -344,10 +349,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
-    padding: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     fontSize: 16,
     backgroundColor: '#ffffff',
-    height: 54,
+    height: 44,
     color: '#1e293b',
   },
   switchContainer: {
