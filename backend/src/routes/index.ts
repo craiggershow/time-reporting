@@ -7,6 +7,7 @@ import userRouter from './user';
 import { adminRouter } from './admin';
 import timesheetRouter from './timesheet';
 import settingsRouter from './settings';
+import { payPeriodRouter } from './payPeriod';
 
 const router = express.Router();
 
@@ -18,6 +19,7 @@ router.use('/users', userRouter); // This will handle /users/me and other user-s
 router.use('/admin', adminRouter); // This will handle /admin/users for admin management
 router.use('/timesheets', timesheetRouter);
 router.use('/settings', settingsRouter);
+router.use('/pay-periods', payPeriodRouter);
 
 console.log('✓ Routes initialized');
 
