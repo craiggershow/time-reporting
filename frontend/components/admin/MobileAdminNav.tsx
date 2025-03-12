@@ -30,6 +30,11 @@ const navItems: NavItem[] = [
     icon: 'bar-chart-outline',
     route: '/(app)/admin/reports',
   },
+  {
+    label: 'Settings',
+    icon: 'settings-outline',
+    route: '/(app)/admin/settings',
+  },
 ];
 
 export function MobileAdminNav() {

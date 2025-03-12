@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, StyleSheet, Text, useWindowDimensions, TextInput } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, useWindowDimensions, TextInput, TouchableOpacity } from 'react-native';
 import { useState, useEffect } from 'react';
 import { ThemedText } from '@/components/ThemedText';
 import { Header } from '@/components/layout/Header';
@@ -350,6 +350,7 @@ export default function AdminSettings() {
           <View style={styles.mobileHeader}>
             <ThemedText type="title" style={styles.mobileHeaderTitle}>Settings</ThemedText>
           </View>
+          
           <ScrollView style={styles.mobileContent}>
             <View style={styles.section}>
               <ThemedText type="subtitle">Pay Period Settings</ThemedText>

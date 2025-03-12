@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Text } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { buildApiUrl } from '@/constants/Config';
 import { UserForm } from './UserForm';
@@ -11,6 +11,7 @@ import { MobileActionBar } from './MobileActionBar';
 import { MobilePagination } from './MobilePagination';
 import { MobileUserForm } from './MobileUserForm';
 import { MobileConfirmDialog } from '../ui/MobileConfirmDialog';
+import { colors } from '@/styles/common';
 
 interface User {
   id: string;
