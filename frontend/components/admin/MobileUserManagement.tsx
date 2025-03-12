@@ -9,6 +9,8 @@ import { MobileUserFilters } from './MobileUserFilters';
 import { UserCard } from './UserCard';
 import { MobileActionBar } from './MobileActionBar';
 import { MobilePagination } from './MobilePagination';
+import { MobileUserForm } from './MobileUserForm';
+import { MobileConfirmDialog } from '../ui/MobileConfirmDialog';
 
 interface User {
   id: string;
@@ -273,23 +275,23 @@ export function MobileUserManagement() {
         onClearSelection={() => setSelectedUserIds([])}
       />
 
-      {(showAddUser || selectedUser) && (
-        <UserForm
-          user={selectedUser}
-          onClose={() => {
-            setShowAddUser(false);
-            setSelectedUser(null);
-          }}
-          onSave={() => {
-            setShowAddUser(false);
-            setSelectedUser(null);
-          }}
-          fetchUsers={fetchUsers}
-        />
-      )}
+      <MobileUserForm
+        user={selectedUser}
+        visible={showAddUser || !!selectedUser}
+        onClose={() => {
+          setShowAddUser(false);
+          setSelectedUser(null);
+        }}
+        onSave={() => {
+          setShowAddUser(false);
+          setSelectedUser(null);
+        }}
+        fetchUsers={fetchUsers}
+      />
 
       {showConfirmDialog && userToDeactivate && (
-        <ConfirmDialog
+        <MobileConfirmDialog
+          visible={showConfirmDialog}
           title={userToDeactivate.isActive ? "Deactivate User" : "Activate User"}
           message={`Are you sure you want to ${userToDeactivate.isActive ? 'deactivate' : 'activate'} ${userToDeactivate.firstName} ${userToDeactivate.lastName}?`}
           confirmText={userToDeactivate.isActive ? "Deactivate" : "Activate"}
@@ -303,7 +305,8 @@ export function MobileUserManagement() {
       )}
 
       {showBulkActionDialog && (
-        <ConfirmDialog
+        <MobileConfirmDialog
+          visible={showBulkActionDialog}
           title={`${bulkAction === 'activate' ? 'Activate' : 'Deactivate'} Users`}
           message={`Are you sure you want to ${bulkAction} ${selectedUserIds.length} users?`}
           confirmText={bulkAction === 'activate' ? 'Activate' : 'Deactivate'}
