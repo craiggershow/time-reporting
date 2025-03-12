@@ -1,4 +1,4 @@
-import { TouchableOpacity, StyleSheet, Text, ViewStyle, TextStyle } from 'react-native';
+import { TouchableOpacity, StyleSheet, Text, ViewStyle, TextStyle, View } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { useContext } from 'react';
 import { createContext } from 'react';
@@ -13,12 +13,16 @@ const defaultColors = {
 };
 
 interface ButtonProps {
-  children: string;
+  children: React.ReactNode;
   onPress: () => void;
   variant?: 'primary' | 'secondary';
   style?: ViewStyle;
   textStyle?: TextStyle;
   disabled?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  size?: 'small' | 'medium' | 'large';
+  testID?: string;
 }
 
 export function Button({ 
@@ -28,6 +32,10 @@ export function Button({
   style,
   textStyle,
   disabled = false,
+  leftIcon,
+  rightIcon,
+  size = 'medium',
+  testID,
 }: ButtonProps) {
   // Try to use ThemeContext, but fall back to default colors if not available
   let themeColors = defaultColors;
@@ -46,10 +54,26 @@ export function Button({
   const textColor = variant === 'primary' ? '#fff' : themeColors.text;
   const borderColor = variant === 'secondary' ? themeColors.border : backgroundColor;
 
+  // Determine button size styles
+  const buttonSizeStyle = {
+    small: { height: 32, paddingHorizontal: 12 },
+    medium: { height: 44, paddingHorizontal: 16 },
+    large: { height: 52, paddingHorizontal: 20 },
+  }[size];
+
+  // Determine text size based on button size
+  const textSizeStyle = {
+    small: { fontSize: 14 },
+    medium: { fontSize: 16 },
+    large: { fontSize: 18 },
+  }[size];
+
   return (
     <TouchableOpacity
+      testID={testID}
       style={[
         styles.button,
+        buttonSizeStyle,
         { 
           backgroundColor,
           borderColor,
@@ -61,23 +85,39 @@ export function Button({
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.7}>
-      <Text style={[styles.text, { color: textColor }, textStyle]}>
-        {children}
-      </Text>
+      <View style={styles.buttonContent}>
+        {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
+        {typeof children === 'string' ? (
+          <Text style={[styles.text, textSizeStyle, { color: textColor }, textStyle]}>
+            {children}
+          </Text>
+        ) : (
+          children
+        )}
+        {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
+      </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    height: 44,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 16,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   text: {
-    fontSize: 16,
     fontWeight: '600',
+  },
+  iconLeft: {
+    marginRight: 8,
+  },
+  iconRight: {
+    marginLeft: 8,
   },
 }); 

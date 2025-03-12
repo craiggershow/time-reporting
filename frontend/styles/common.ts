@@ -279,7 +279,7 @@ export const commonStyles = StyleSheet.create({
     },
   },
 
-  // Admin Filter Components
+  // Admin Search Components
   adminSearch: {
     container: {
       flexDirection: 'row',
@@ -288,7 +288,7 @@ export const commonStyles = StyleSheet.create({
     },
     input: {
       flex: 1,
-      maxWidth: 300,
+      maxWidth: 300, // This will be overridden on mobile
       backgroundColor: '#ffffff',
       borderWidth: 1,
       borderColor: colors.input.border,
@@ -298,7 +298,6 @@ export const commonStyles = StyleSheet.create({
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05,
       shadowRadius: 2,
-      elevation: 1,
     },
   },
   adminFilterGroup: {

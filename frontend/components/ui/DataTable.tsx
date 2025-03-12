@@ -1,8 +1,8 @@
-import { View, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { View, ScrollView, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { ActivityIndicator } from 'react-native';
 import { commonStyles, spacing, colors} from '@/styles/common';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Checkbox } from './Checkbox';
 
@@ -12,6 +12,7 @@ interface Column<T> {
   sortable?: boolean;
   render?: (value: any, item: T) => React.ReactNode;
   width?: number;
+  hideOnMobile?: boolean;
 }
 
 interface DataTableProps<T> {
@@ -35,6 +36,8 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   const handleSort = (key: keyof T) => {
     if (sortKey === key) {
@@ -73,41 +76,48 @@ export function DataTable<T>({
       : (bValue < aValue ? -1 : 1);
   });
 
-  const columnsWithSelection = [
-    ...(selectedIds ? [{
-      key: 'select',
-      title: (
-        <View style={styles.checkboxCell}>
-          <Checkbox
-            value={data.length > 0 && selectedIds.length === data.length}
-            onValueChange={(checked) => {
-              if (onSelectionChange) {
-                onSelectionChange(checked ? data.map(item => getItemId(item)) : []);
-              }
-            }}
-          />
-        </View>
-      ),
-      width: 60,
-      render: (_: any, item: T) => (
-        <View style={styles.checkboxCell}>
-          <Checkbox
-            value={selectedIds.includes(getItemId(item))}
-            onValueChange={(checked) => {
-              if (onSelectionChange) {
-                onSelectionChange(
-                  checked 
-                    ? [...selectedIds, getItemId(item)]
-                    : selectedIds.filter(id => id !== getItemId(item))
-                );
-              }
-            }}
-          />
-        </View>
-      ),
-    }] : []),
-    ...columns,
-  ];
+  const columnsWithSelection = useMemo(() => {
+    // Filter out columns that should be hidden on mobile
+    const filteredColumns = isMobile 
+      ? columns.filter(col => !col.hideOnMobile)
+      : columns;
+
+    return [
+      ...(selectedIds && !isMobile ? [{
+        key: 'select',
+        title: (
+          <View style={styles.checkboxCell}>
+            <Checkbox
+              checked={data.length > 0 && selectedIds.length === data.length}
+              onValueChange={(checked) => {
+                if (onSelectionChange) {
+                  onSelectionChange(checked ? data.map(item => getItemId(item)) : []);
+                }
+              }}
+            />
+          </View>
+        ),
+        width: 60,
+        render: (_: any, item: T) => (
+          <View style={styles.checkboxCell}>
+            <Checkbox
+              checked={selectedIds.includes(getItemId(item))}
+              onValueChange={(checked) => {
+                if (onSelectionChange) {
+                  onSelectionChange(
+                    checked 
+                      ? [...selectedIds, getItemId(item)]
+                      : selectedIds.filter(id => id !== getItemId(item))
+                  );
+                }
+              }}
+            />
+          </View>
+        ),
+      }] : []),
+      ...filteredColumns,
+    ];
+  }, [columns, selectedIds, data, onSelectionChange, getItemId, isMobile]);
 
   if (isLoading) {
     return (
@@ -118,9 +128,13 @@ export function DataTable<T>({
   }
 
   return (
-    <ScrollView horizontal testID="data-table-scroll-container">
+    <ScrollView 
+      horizontal 
+      testID="data-table-scroll-container"
+      showsHorizontalScrollIndicator={true}
+    >
       <View testID="data-table-container">
-        <View style={commonStyles.adminTable.header}>
+        <View style={[commonStyles.adminTable.header, isMobile && styles.mobileHeader]}>
           {columnsWithSelection.map((column) => (
             <Pressable
               key={column.key as string}
@@ -131,7 +145,8 @@ export function DataTable<T>({
                 column.key === 'select' && {
                   width: 60,
                   minWidth: 60,
-                }
+                },
+                isMobile && styles.mobileHeaderCell
               ]}
               onPress={() => column.sortable && handleSort(column.key as keyof T)}
             >
@@ -139,13 +154,16 @@ export function DataTable<T>({
                 commonStyles.adminTable.headerContent,
                 { width: '100%' }
               ]}>
-                <ThemedText style={commonStyles.adminTable.headerText}>
+                <ThemedText style={[
+                  commonStyles.adminTable.headerText,
+                  isMobile && styles.mobileHeaderText
+                ]}>
                   {column.title}
                 </ThemedText>
                 {column.sortable && sortKey === column.key && (
                   <Ionicons 
                     name={sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'} 
-                    size={16} 
+                    size={isMobile ? 12 : 16} 
                     color={colors.text.light}
                   />
                 )}
@@ -155,7 +173,7 @@ export function DataTable<T>({
         </View>
         
         {sortedData.map((item) => (
-          <View key={getItemId(item)} style={commonStyles.adminTable.row}>
+          <View key={getItemId(item)} style={[commonStyles.adminTable.row, isMobile && styles.mobileRow]}>
             {columnsWithSelection.map((column) => (
               <View 
                 key={column.key as string}
@@ -167,12 +185,17 @@ export function DataTable<T>({
                     minWidth: 60,
                     alignItems: 'center',
                     justifyContent: 'center',
-                  }
+                  },
+                  isMobile && styles.mobileCell
                 ]}
               >
                 {column.render 
                   ? column.render(item[column.key], item)
-                  : <ThemedText style={{ textAlign: 'center', width: '100%' }}>{String(item[column.key])}</ThemedText>
+                  : <ThemedText style={{ 
+                      textAlign: 'center', 
+                      width: '100%',
+                      ...(isMobile && { fontSize: 12 })
+                    }}>{String(item[column.key])}</ThemedText>
                 }
               </View>
             ))}
@@ -195,5 +218,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xs,
+  },
+  mobileHeader: {
+    padding: 4,
+  },
+  mobileHeaderCell: {
+    padding: 6,
+  },
+  mobileHeaderText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  mobileRow: {
+    padding: 4,
+  },
+  mobileCell: {
+    padding: 6,
   },
 }); 

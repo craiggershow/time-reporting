@@ -12,6 +12,7 @@ interface InputProps {
   style?: StyleProp<ViewStyle>;
   onFocus?: (e: any) => void;
   onBlur?: (e: any) => void;
+  onKeyPress?: (e: any) => void;
   value?: string;
   onChangeText?: (text: string) => void;
   placeholder?: string;
@@ -20,8 +21,11 @@ interface InputProps {
   keyboardType?: TextInputProps['keyboardType'];
   secureTextEntry?: boolean;
   autoCapitalize?: TextInputProps['autoCapitalize'];
+  autoComplete?: TextInputProps['autoComplete'];
+  textContentType?: TextInputProps['textContentType'];
   autoCorrect?: boolean;
   tabIndex?: number;
+  passwordRules?: string; // For iOS password rules
 }
 
 export function Input({ 
@@ -32,6 +36,7 @@ export function Input({
   error,
   onFocus,
   onBlur,
+  onKeyPress,
   ...props 
 }: InputProps) {
   const { colors } = useTheme();
@@ -67,6 +72,7 @@ export function Input({
           onFocus={handleFocus}
           onBlur={handleBlur}
           outlineStyle="none"
+          onKeyPress={onKeyPress}
           {...props as any}
         />
         {rightIcon ? <View style={styles.iconRight}>{rightIcon}</View> : null}

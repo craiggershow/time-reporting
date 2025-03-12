@@ -1,4 +1,4 @@
-import { View, StyleSheet, TextInput, Switch } from 'react-native';
+import { View, StyleSheet, TextInput, Switch, Platform, useWindowDimensions } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { useState } from 'react';
 import { Button } from '../ui/Button';
@@ -7,6 +7,7 @@ import { buildApiUrl } from '@/constants/Config';
 import { Modal } from '../ui/Modal';
 import { commonStyles } from '@/styles/common';
 import { ErrorMessage } from '../ui/ErrorMessage';
+import { KeyboardAvoidingView, ScrollView } from 'react-native';
 
 interface User {
   id: string;
@@ -35,6 +36,8 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [employeeId, setEmployeeId] = useState(user?.employeeId || '');
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   const validateForm = (): string | null => {
     if (!email) return 'Email is required';
@@ -100,125 +103,137 @@ export function UserForm({ user, onClose, onSave, fetchUsers }: UserFormProps) {
 
   return (
     <Modal onClose={onClose}>
-      <View 
-        testID="user-form-container" 
-        style={commonStyles.contentCard}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
       >
-        <ThemedText type="subtitle">
-          {user ? 'Edit User' : 'Add User'}
-        </ThemedText>
-
-        {error && (
-          <ErrorMessage
-            message={error}
-            onDismiss={() => setError(null)}
-          />
-        )}
-
-        <View 
-          testID="user-form-fields" 
-          style={commonStyles.formInputWrapper}
-        >
+        <ScrollView>
           <View 
-            testID="email-input-container" 
-            style={commonStyles.formInputWrapper}
+            testID="user-form-container" 
+            style={[commonStyles.contentCard, isMobile && styles.mobileContainer]}
           >
-            <ThemedText style={commonStyles.formLabel}>Email</ThemedText>
-            <TextInput
-              testID="email-input"
-              style={commonStyles.formInput}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholder="Enter email"
-            />
-          </View>
+            <ThemedText type="subtitle">
+              {user ? 'Edit User' : 'Add User'}
+            </ThemedText>
 
-          <View style={commonStyles.formInputWrapper}>
-            <ThemedText style={commonStyles.formLabel}>First Name</ThemedText>
-            <TextInput
-              style={commonStyles.formInput}
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="Enter first name"
-            />
-          </View>
-
-          <View style={commonStyles.formInputWrapper}>
-            <ThemedText style={commonStyles.formLabel}>Last Name</ThemedText>
-            <TextInput
-              style={commonStyles.formInput}
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder="Enter last name"
-            />
-          </View>
-
-          {!user && (
-            <View style={commonStyles.formInputWrapper}>
-              <ThemedText style={commonStyles.formLabel}>Password</ThemedText>
-              <TextInput
-                style={commonStyles.formInput}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                placeholder="Enter password"
+            {error && (
+              <ErrorMessage
+                message={error}
+                onDismiss={() => setError(null)}
               />
+            )}
+
+            <View 
+              testID="user-form-fields" 
+              style={commonStyles.formInputWrapper}
+            >
+              <View 
+                testID="email-input-container" 
+                style={commonStyles.formInputWrapper}
+              >
+                <ThemedText style={commonStyles.formLabel}>Email</ThemedText>
+                <TextInput
+                  testID="email-input"
+                  style={[commonStyles.formInput, isMobile && styles.mobileInput]}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholder="Enter email"
+                  autoComplete="email"
+                />
+              </View>
+
+              <View style={commonStyles.formInputWrapper}>
+                <ThemedText style={commonStyles.formLabel}>First Name</ThemedText>
+                <TextInput
+                  style={[commonStyles.formInput, isMobile && styles.mobileInput]}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="Enter first name"
+                />
+              </View>
+
+              <View style={commonStyles.formInputWrapper}>
+                <ThemedText style={commonStyles.formLabel}>Last Name</ThemedText>
+                <TextInput
+                  style={[commonStyles.formInput, isMobile && styles.mobileInput]}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Enter last name"
+                />
+              </View>
+
+              {!user && (
+                <View style={commonStyles.formInputWrapper}>
+                  <ThemedText style={commonStyles.formLabel}>Password</ThemedText>
+                  <TextInput
+                    style={[commonStyles.formInput, isMobile && styles.mobileInput]}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    placeholder="Enter password"
+                    autoCapitalize="none"
+                    textContentType="password"
+                  />
+                </View>
+              )}
+
+              <View style={commonStyles.formInputWrapper}>
+                <ThemedText style={commonStyles.formLabel}>Employee ID</ThemedText>
+                <TextInput
+                  style={[commonStyles.formInput, isMobile && styles.mobileInput]}
+                  value={employeeId}
+                  onChangeText={setEmployeeId}
+                  placeholder="Auto-generated if empty"
+                />
+              </View>
+
+              <View style={styles.switchContainer}>
+                <ThemedText style={commonStyles.formLabel}>Admin User</ThemedText>
+                <Switch
+                  value={isAdmin}
+                  onValueChange={setIsAdmin}
+                  trackColor={{ false: '#767577', true: '#81b0ff' }}
+                  thumbColor={isAdmin ? '#f5dd4b' : '#f4f3f4'}
+                />
+              </View>
+
+              <View style={styles.switchContainer}>
+                <ThemedText style={commonStyles.formLabel}>Active</ThemedText>
+                <Switch
+                  value={isActive}
+                  onValueChange={setIsActive}
+                  trackColor={{ false: '#767577', true: '#81b0ff' }}
+                  thumbColor={isActive ? '#f5dd4b' : '#f4f3f4'}
+                />
+              </View>
             </View>
-          )}
 
-          <View style={commonStyles.formInputWrapper}>
-            <ThemedText style={commonStyles.formLabel}>Employee ID</ThemedText>
-            <TextInput
-              style={commonStyles.formInput}
-              value={employeeId}
-              onChangeText={setEmployeeId}
-              placeholder="Auto-generated if empty"
-            />
+            <View 
+              testID="form-actions" 
+              style={[commonStyles.buttonContainer, isMobile && styles.mobileButtonContainer]}
+            >
+              <Button 
+                testID="cancel-button"
+                variant="secondary" 
+                onPress={onClose}
+                size={isMobile ? "small" : undefined}
+              >
+                Cancel
+              </Button>
+              <Button 
+                testID="save-button"
+                onPress={handleSubmit} 
+                disabled={isLoading}
+                size={isMobile ? "small" : undefined}
+              >
+                {isLoading ? 'Saving...' : 'Save'}
+              </Button>
+            </View>
           </View>
-
-          <View style={commonStyles.formInputWrapper}>
-            <ThemedText style={commonStyles.formLabel}>Admin User</ThemedText>
-            <Switch
-              value={isAdmin}
-              onValueChange={setIsAdmin}
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={isAdmin ? '#f5dd4b' : '#f4f3f4'}
-            />
-          </View>
-
-          <View style={commonStyles.formInputWrapper}>
-            <ThemedText style={commonStyles.formLabel}>Active</ThemedText>
-            <Switch
-              value={isActive}
-              onValueChange={setIsActive}
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={isActive ? '#f5dd4b' : '#f4f3f4'}
-            />
-          </View>
-        </View>
-
-        <View 
-          testID="form-actions" 
-          style={commonStyles.buttonContainer}
-        >
-          <Button 
-            testID="cancel-button"
-            variant="secondary" 
-            onPress={onClose}
-          >
-            Cancel
-          </Button>
-          <Button 
-            testID="save-button"
-            onPress={handleSubmit} 
-            isLoading={isLoading}
-          >
-            Save
-          </Button>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -228,6 +243,10 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 500,
+  },
+  mobileContainer: {
+    padding: 16,
+    width: '100%',
   },
   form: {
     gap: 16,
@@ -249,6 +268,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#ffffff',
   },
+  mobileInput: {
+    padding: 8,
+    fontSize: 14,
+  },
   switchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -260,6 +283,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 12,
     marginTop: 24,
+  },
+  mobileButtonContainer: {
+    marginTop: 16,
   },
   error: {
     backgroundColor: '#fee2e2',

@@ -1,4 +1,4 @@
-import { View, StyleSheet, Image, Pressable, Platform } from 'react-native';
+import { View, StyleSheet, Image, Pressable, Platform, KeyboardAvoidingView } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
@@ -104,13 +104,26 @@ export default function LoginScreen() {
   }
 
   /**
+   * Handles key press events in the input fields
+   * Triggers login when Enter key is pressed
+   */
+  const handleKeyPress = (e: any) => {
+    if (e.key === 'Enter') {
+      handleLogin();
+    }
+  };
+
+  /**
    * Main render method
    * Displays login form with email/password inputs, remember me checkbox,
    * and login button. Shows error message if login fails.
    */
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
         <View style={styles.content}>
           <View style={styles.logoContainer}>
             <Image 
@@ -131,6 +144,9 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 keyboardType="email-address"
                 style={styles.input}
+                onKeyPress={handleKeyPress}
+                autoComplete="email"
+                textContentType="emailAddress"
               />
 
               <Input
@@ -139,6 +155,11 @@ export default function LoginScreen() {
                 onChangeText={setPassword}
                 secureTextEntry
                 style={styles.input}
+                onKeyPress={handleKeyPress}
+                autoCapitalize="none"
+                autoComplete="password"
+                textContentType="password"
+                passwordRules="minlength: 6;"
               />
 
               <View style={styles.rememberMeContainer}>
@@ -168,7 +189,7 @@ export default function LoginScreen() {
             </View>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
