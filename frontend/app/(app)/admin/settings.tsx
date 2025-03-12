@@ -1,4 +1,4 @@
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, Text } from 'react-native';
 import { useState, useEffect } from 'react';
 import { ThemedText } from '@/components/ThemedText';
 import { Header } from '@/components/layout/Header';
@@ -12,9 +12,17 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { HolidayManagementModal } from '@/components/admin/HolidayManagementModal';
 import { convertTo12Hour, minutesToTime, timeToMinutes, convertTo24Hour } from '@/utils/timeUtils';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+// Define Holiday interface to match the one in HolidayManagementModal
+interface Holiday {
+  date: Date;
+  name: string;
+  payRate: number;
+}
 
 interface Settings {
-  payPeriodStartDate: Date;
+  payPeriodStartDate: Date | string;  // Allow both Date and string types
   payPeriodLength: number;
 
   maxDailyHours: number;
@@ -50,11 +58,7 @@ interface Settings {
   }[];
   
   // Holiday Settings
-  holidays: {
-    date: Date;
-    name: string;
-    payRate: number;
-  }[];
+  holidays: Holiday[];
   holidayHoursDefault: number;
   holidayPayMultiplier: number;
 
@@ -76,6 +80,8 @@ export default function AdminSettings() {
     allowFutureTimeEntry: true,
     allowPastTimeEntry: true,
     pastTimeEntryLimit: 14,
+    reminderDaysBefore: 2,  // Add missing properties
+    reminderDaysAfter: 2,   // Add missing properties
     enableEmailReminders: true,
     reminderEmailTemplate: 'Please submit your timesheet for the period ending {endDate}.',
     ccAddresses: [],
@@ -145,7 +151,7 @@ export default function AdminSettings() {
     }
   };
 
-  const handleHolidayUpdate = (updatedHolidays: Settings['holidays']) => {
+  const handleHolidayUpdate = (updatedHolidays: Holiday[]) => {
     setSettings(s => ({ ...s, holidays: updatedHolidays }));
   };
 
@@ -171,13 +177,32 @@ export default function AdminSettings() {
     setSettings(s => ({ ...s, payPeriodStartDate: dateString }));
   };
 
+  // Convert string dates to Date objects for holidays when loading from API
+  useEffect(() => {
+    if (settings.holidays && settings.holidays.length > 0) {
+      const processedHolidays = settings.holidays.map(holiday => {
+        if (typeof holiday.date === 'string') {
+          return {
+            ...holiday,
+            date: new Date(holiday.date)
+          };
+        }
+        return holiday;
+      });
+      
+      if (JSON.stringify(processedHolidays) !== JSON.stringify(settings.holidays)) {
+        setSettings(s => ({ ...s, holidays: processedHolidays }));
+      }
+    }
+  }, [settings.holidays]);
+
   if (isLoading) {
     return <LoadingSpinner message="Loading settings..." />;
   }
 
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Header />
       <ScrollView style={styles.content}>
         <View style={styles.section}>
@@ -259,8 +284,6 @@ export default function AdminSettings() {
               label="Reminder Email Template"
               value={settings.reminderEmailTemplate}
               onChangeText={(value) => setSettings(s => ({ ...s, reminderEmailTemplate: value }))}
-              multiline
-              numberOfLines={3}
               placeholder="Use {startDate} and {endDate} as placeholders"
             />
             <Input
@@ -290,7 +313,7 @@ export default function AdminSettings() {
               value={settings.autoApprovalMaxHours?.toString()}
               onChangeText={(value) => setSettings(s => ({ ...s, autoApprovalMaxHours: parseInt(value) || 40 }))}
               keyboardType="numeric"
-              disabled={!settings.autoApprovalEnabled}
+              editable={settings.autoApprovalEnabled}
             />
             <Input
               label="Required Approvers"
@@ -302,7 +325,7 @@ export default function AdminSettings() {
               onPress={() => {/* Open approval chain modal */}}
               variant="secondary"
             >
-              Configure Approval Chain
+              <Text>Configure Approval Chain</Text>
             </Button>
           </View>
         </View>
@@ -326,7 +349,7 @@ export default function AdminSettings() {
               onPress={() => setShowHolidayModal(true)}
               variant="secondary"
             >
-              Manage Holidays ({settings.holidays?.length || 0})
+              <Text>Manage Holidays ({settings.holidays?.length || 0})</Text>
             </Button>
           </View>
         </View>
@@ -368,7 +391,7 @@ export default function AdminSettings() {
           disabled={isSaving}
           style={styles.saveButton}
         >
-          {isSaving ? 'Saving...' : 'Save Settings'}
+          <Text>{isSaving ? 'Saving...' : 'Save Settings'}</Text>
         </Button>
       </ScrollView>
 
@@ -379,7 +402,7 @@ export default function AdminSettings() {
           onSave={handleHolidayUpdate}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
