@@ -12,12 +12,39 @@ import { Ionicons } from '@expo/vector-icons';
 import { DateRangeType } from './ReportFilters';
 import { DataTable } from '@/components/ui/DataTable';
 import { buildApiUrl } from '@/constants/Config';
+import { MobileReportFilterSheet } from './MobileReportFilterSheet';
 
 interface PayPeriod {
   id: string;
   startDate: string;
   endDate: string;
   name: string;
+}
+
+// Define interfaces for report data types
+interface SummaryReportItem {
+  id: string;
+  employeeName: string;
+  regularHours: number;
+  overtimeHours: number;
+  totalHours: number;
+}
+
+interface DetailedReportItem {
+  id: string;
+  date: string;
+  employeeName: string;
+  totalHours: number;
+}
+
+// Define Column interface locally to match DataTable's expected type
+interface Column<T> {
+  key: keyof T | 'actions' | 'select';
+  title: string;
+  sortable?: boolean;
+  render?: (value: any, item: T) => React.ReactNode;
+  width?: number;
+  hideOnMobile?: boolean;
 }
 
 export function MobileReportingTool() {
@@ -28,12 +55,15 @@ export function MobileReportingTool() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasGeneratedReport, setHasGeneratedReport] = useState(false);
-  const [showFilters, setShowFilters] = useState(true);
-  const [dateRangeType, setDateRangeType] = useState<DateRangeType>('custom');
+  const [showFilters, setShowFilters] = useState(false);
+  const [dateRangeType, setDateRangeType] = useState<DateRangeType>('payPeriod');
   const [payPeriods, setPayPeriods] = useState<PayPeriod[]>([]);
   const [selectedPayPeriodId, setSelectedPayPeriodId] = useState<string>('');
   const [isLoadingPayPeriods, setIsLoadingPayPeriods] = useState(false);
   const [payPeriodsError, setPayPeriodsError] = useState<string | null>(null);
+  const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
 
   // Mock data for employees - in a real app, this would come from an API
   const employees = [
@@ -43,6 +73,15 @@ export function MobileReportingTool() {
   ];
 
   useEffect(() => {
+    // Set selected employees to all active employees
+    const activeEmployeeIds = employees
+      .filter(employee => employee.isActive)
+      .map(employee => employee.id);
+    
+    setSelectedEmployees(activeEmployeeIds);
+  }, []);
+
+  useEffect(() => {
     fetchPayPeriods();
   }, []);
 
@@ -50,6 +89,38 @@ export function MobileReportingTool() {
     // Update date range based on selected type
     updateDateRange(dateRangeType);
   }, [dateRangeType, selectedPayPeriodId]);
+
+  useEffect(() => {
+    // Calculate the number of active filters
+    let count = 0;
+    
+    // Date range filter
+    if (dateRangeType !== 'custom') {
+      count++;
+    }
+    
+    // Employee filter - only count if not all active employees are selected
+    const activeEmployeeIds = employees
+      .filter(employee => employee.isActive)
+      .map(employee => employee.id);
+    
+    if (selectedEmployees.length !== activeEmployeeIds.length || 
+        !selectedEmployees.every(id => activeEmployeeIds.includes(id))) {
+      count++;
+    }
+    
+    // Include inactive filter
+    if (includeInactive) {
+      count++;
+    }
+    
+    // Report type filter (only count if not the default)
+    if (reportType !== 'summary') {
+      count++;
+    }
+    
+    setActiveFiltersCount(count);
+  }, [dateRangeType, selectedEmployees, includeInactive, reportType, employees]);
 
   const fetchPayPeriods = async () => {
     try {
@@ -90,7 +161,7 @@ export function MobileReportingTool() {
       });
       
       // Sort by startDate in descending order to get most recent first
-      formattedPayPeriods.sort((a, b) => 
+      formattedPayPeriods.sort((a: PayPeriod, b: PayPeriod) => 
         new Date(`${b.startDate}T12:00:00`).getTime() - new Date(`${a.startDate}T12:00:00`).getTime()
       );
       
@@ -99,9 +170,26 @@ export function MobileReportingTool() {
       
       setPayPeriods(recentPayPeriods);
       
-      // Set the most recent pay period as default
-      if (recentPayPeriods.length > 0) {
+      // Set the previous pay period (second most recent) as default
+      if (recentPayPeriods.length > 1) {
+        setSelectedPayPeriodId(recentPayPeriods[1].id);
+        
+        // Update date range based on the selected pay period
+        const selectedPeriod = recentPayPeriods[1];
+        const start = new Date(`${selectedPeriod.startDate}T12:00:00`);
+        const end = new Date(`${selectedPeriod.endDate}T12:00:00`);
+        setStartDate(start);
+        setEndDate(end);
+      } else if (recentPayPeriods.length === 1) {
+        // If only one pay period exists, use that one
         setSelectedPayPeriodId(recentPayPeriods[0].id);
+        
+        // Update date range based on the selected pay period
+        const selectedPeriod = recentPayPeriods[0];
+        const start = new Date(`${selectedPeriod.startDate}T12:00:00`);
+        const end = new Date(`${selectedPeriod.endDate}T12:00:00`);
+        setStartDate(start);
+        setEndDate(end);
       }
     } catch (error) {
       console.error('Failed to fetch pay periods:', error);
@@ -110,8 +198,26 @@ export function MobileReportingTool() {
       // Fallback to mock data if API fails
       const mockPayPeriods = generateMockPayPeriods();
       setPayPeriods(mockPayPeriods);
-      if (mockPayPeriods.length > 0) {
+      
+      // Set the previous pay period (second most recent) as default
+      if (mockPayPeriods.length > 1) {
+        setSelectedPayPeriodId(mockPayPeriods[1].id);
+        
+        // Update date range based on the selected pay period
+        const selectedPeriod = mockPayPeriods[1];
+        const start = new Date(`${selectedPeriod.startDate}T12:00:00`);
+        const end = new Date(`${selectedPeriod.endDate}T12:00:00`);
+        setStartDate(start);
+        setEndDate(end);
+      } else if (mockPayPeriods.length === 1) {
         setSelectedPayPeriodId(mockPayPeriods[0].id);
+        
+        // Update date range based on the selected pay period
+        const selectedPeriod = mockPayPeriods[0];
+        const start = new Date(`${selectedPeriod.startDate}T12:00:00`);
+        const end = new Date(`${selectedPeriod.endDate}T12:00:00`);
+        setStartDate(start);
+        setEndDate(end);
       }
     } finally {
       setIsLoadingPayPeriods(false);
@@ -201,8 +307,6 @@ export function MobileReportingTool() {
     setEndDate(end);
   };
 
-  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
-
   const handleEmployeeToggle = (employeeId: string) => {
     setSelectedEmployees(prev => 
       prev.includes(employeeId) 
@@ -229,7 +333,6 @@ export function MobileReportingTool() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setHasGeneratedReport(true);
-      setShowFilters(false);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to generate report');
     } finally {
@@ -238,13 +341,44 @@ export function MobileReportingTool() {
   };
 
   const handleResetFilters = () => {
-    setStartDate(new Date());
-    setEndDate(new Date());
+    // Reset to previous pay period instead of custom date range
+    setDateRangeType('payPeriod');
+    
+    // If pay periods are available, select the previous pay period
+    if (payPeriods.length > 1) {
+      setSelectedPayPeriodId(payPeriods[1].id);
+      
+      // Update date range based on the selected pay period
+      const selectedPeriod = payPeriods[1];
+      const start = new Date(`${selectedPeriod.startDate}T12:00:00`);
+      const end = new Date(`${selectedPeriod.endDate}T12:00:00`);
+      setStartDate(start);
+      setEndDate(end);
+    } else if (payPeriods.length === 1) {
+      setSelectedPayPeriodId(payPeriods[0].id);
+      
+      // Update date range based on the selected pay period
+      const selectedPeriod = payPeriods[0];
+      const start = new Date(`${selectedPeriod.startDate}T12:00:00`);
+      const end = new Date(`${selectedPeriod.endDate}T12:00:00`);
+      setStartDate(start);
+      setEndDate(end);
+    } else {
+      // Fallback to current date range if no pay periods are available
+      setStartDate(new Date());
+      setEndDate(new Date());
+    }
+    
     setReportType('summary');
-    setSelectedEmployees([]);
+    
+    // Reset to all active employees
+    const activeEmployeeIds = employees
+      .filter(employee => employee.isActive)
+      .map(employee => employee.id);
+    setSelectedEmployees(activeEmployeeIds);
+    
     setIncludeInactive(false);
     setHasGeneratedReport(false);
-    setDateRangeType('custom');
     setError(null);
   };
 
@@ -257,7 +391,7 @@ export function MobileReportingTool() {
   };
 
   // Summary columns for the data table
-  const summaryColumns = [
+  const summaryColumns: Column<SummaryReportItem>[] = [
     { 
       key: 'employeeName', 
       title: 'Employee',
@@ -285,7 +419,7 @@ export function MobileReportingTool() {
   ];
 
   // Detailed columns for the data table
-  const detailedColumns = [
+  const detailedColumns: Column<DetailedReportItem>[] = [
     { 
       key: 'date', 
       title: 'Date',
@@ -307,7 +441,7 @@ export function MobileReportingTool() {
   ];
 
   // Mock data for summary report
-  const summaryData = [
+  const summaryData: SummaryReportItem[] = [
     {
       id: '1',
       employeeName: 'John Doe',
@@ -325,7 +459,7 @@ export function MobileReportingTool() {
   ];
 
   // Mock data for detailed report
-  const detailedData = [
+  const detailedData: DetailedReportItem[] = [
     {
       id: '1',
       date: '2023-05-01',
@@ -346,277 +480,132 @@ export function MobileReportingTool() {
     },
   ];
 
-  const renderDateRangeSelector = () => {
+  const renderReportHeader = () => {
     return (
-      <View style={styles.dateRangeSelector}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <TouchableOpacity 
-            style={[styles.dateRangeOption, dateRangeType === 'payPeriod' && styles.dateRangeOptionActive]}
-            onPress={() => setDateRangeType('payPeriod')}
-          >
-            <ThemedText style={[styles.dateRangeText, dateRangeType === 'payPeriod' && styles.dateRangeTextActive]}>
-              Pay Period
-            </ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.dateRangeOption, dateRangeType === 'currentMonth' && styles.dateRangeOptionActive]}
-            onPress={() => setDateRangeType('currentMonth')}
-          >
-            <ThemedText style={[styles.dateRangeText, dateRangeType === 'currentMonth' && styles.dateRangeTextActive]}>
-              Current Month
-            </ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.dateRangeOption, dateRangeType === 'previousMonth' && styles.dateRangeOptionActive]}
-            onPress={() => setDateRangeType('previousMonth')}
-          >
-            <ThemedText style={[styles.dateRangeText, dateRangeType === 'previousMonth' && styles.dateRangeTextActive]}>
-              Previous Month
-            </ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.dateRangeOption, dateRangeType === 'ytd' && styles.dateRangeOptionActive]}
-            onPress={() => setDateRangeType('ytd')}
-          >
-            <ThemedText style={[styles.dateRangeText, dateRangeType === 'ytd' && styles.dateRangeTextActive]}>
-              Year to Date
-            </ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.dateRangeOption, dateRangeType === 'custom' && styles.dateRangeOptionActive]}
-            onPress={() => setDateRangeType('custom')}
-          >
-            <ThemedText style={[styles.dateRangeText, dateRangeType === 'custom' && styles.dateRangeTextActive]}>
-              Custom
-            </ThemedText>
-          </TouchableOpacity>
-        </ScrollView>
+      <View style={styles.reportHeader}>
+        <View>
+          <ThemedText type="subtitle">Report Results</ThemedText>
+          <ThemedText style={styles.dateRange}>
+            {formatDate(startDate)} - {formatDate(endDate)}
+          </ThemedText>
+        </View>
+        <TouchableOpacity 
+          style={styles.filterButton}
+          onPress={() => setShowFilterSheet(true)}
+        >
+          <Ionicons name="options-outline" size={20} color={colors.primary} />
+          <ThemedText style={styles.filterButtonText}>Filters</ThemedText>
+          {activeFiltersCount > 0 && (
+            <View style={styles.filterBadge}>
+              <ThemedText style={styles.filterBadgeText}>{activeFiltersCount}</ThemedText>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
     );
   };
 
-  const renderPayPeriodSelector = () => {
-    if (dateRangeType !== 'payPeriod') return null;
-
+  const renderEmptyState = () => {
     return (
-      <View style={styles.payPeriodSelector}>
-        <ThemedText style={styles.sectionSubtitle}>Select Pay Period:</ThemedText>
-        
-        {isLoadingPayPeriods ? (
-          <View style={styles.loadingContainer}>
-            <LoadingSpinner size="small" />
-            <ThemedText style={styles.loadingText}>Loading pay periods...</ThemedText>
-          </View>
-        ) : payPeriodsError ? (
-          <View style={styles.errorContainer}>
-            <ThemedText style={styles.errorText}>{payPeriodsError}</ThemedText>
-            <TouchableOpacity onPress={fetchPayPeriods} style={styles.retryButton}>
-              <ThemedText style={styles.retryText}>Retry</ThemedText>
-            </TouchableOpacity>
-          </View>
-        ) : payPeriods.length === 0 ? (
-          <ThemedText style={styles.noDataText}>No pay periods available</ThemedText>
-        ) : (
-          <View style={styles.payPeriodList}>
-            {payPeriods.map(period => (
-              <TouchableOpacity
-                key={period.id}
-                style={[
-                  styles.payPeriodOption,
-                  selectedPayPeriodId === period.id && styles.payPeriodOptionActive
-                ]}
-                onPress={() => setSelectedPayPeriodId(period.id)}
-              >
-                <ThemedText style={[
-                  styles.payPeriodText,
-                  selectedPayPeriodId === period.id && styles.payPeriodTextActive
-                ]}>
-                  {period.name}
-                </ThemedText>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+      <View style={styles.emptyStateContainer}>
+        <Ionicons name="analytics-outline" size={64} color={colors.text.secondary} />
+        <ThemedText style={styles.emptyStateTitle}>No Report Generated</ThemedText>
+        <ThemedText style={styles.emptyStateText}>
+          Set your filters and generate a report to see results here.
+        </ThemedText>
+        <Button 
+          label="Set Filters" 
+          onPress={() => setShowFilterSheet(true)}
+          style={styles.emptyStateButton}
+          leftIcon="options-outline"
+        />
       </View>
     );
   };
 
-  const renderCustomDateRange = () => {
-    if (dateRangeType !== 'custom') return null;
+  const renderReportResults = () => {
+    if (!hasGeneratedReport && !isLoading) {
+      return renderEmptyState();
+    }
 
     return (
       <>
-        <View style={styles.dateField}>
-          <SafeDateTimePicker
-            label="Start Date"
-            value={startDate}
-            onChange={setStartDate}
-            mode="date"
-          />
-        </View>
-        <View style={styles.dateField}>
-          <SafeDateTimePicker
-            label="End Date"
-            value={endDate}
-            onChange={setEndDate}
-            mode="date"
-          />
-        </View>
+        {renderReportHeader()}
+
+        {isLoading ? (
+          <LoadingSpinner message="Generating report..." />
+        ) : error ? (
+          <ErrorMessage message={error} />
+        ) : (
+          <>
+            <ScrollView horizontal style={styles.tableContainer}>
+              {reportType === 'summary' ? (
+                <DataTable
+                  columns={summaryColumns}
+                  data={summaryData}
+                  isLoading={false}
+                  selectedIds={[]}
+                />
+              ) : (
+                <DataTable
+                  columns={detailedColumns}
+                  data={detailedData}
+                  isLoading={false}
+                  selectedIds={[]}
+                />
+              )}
+            </ScrollView>
+
+            <View style={styles.exportContainer}>
+              <Button
+                variant="secondary"
+                size="small"
+                leftIcon="download-outline"
+                label="Export Report"
+                onPress={() => console.log('Export')}
+                style={styles.exportButton}
+              />
+            </View>
+          </>
+        )}
       </>
     );
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        {showFilters ? (
-          <>
-            <View style={styles.filterSection}>
-              <ThemedText style={styles.sectionTitle}>Date Range</ThemedText>
-              {renderDateRangeSelector()}
-              {renderPayPeriodSelector()}
-              {renderCustomDateRange()}
-              
-              <View style={styles.selectedDateRange}>
-                <ThemedText style={styles.selectedDateRangeLabel}>Selected Range:</ThemedText>
-                <ThemedText style={styles.selectedDateRangeText}>
-                  {formatDate(startDate)} - {formatDate(endDate)}
-                </ThemedText>
-              </View>
-            </View>
+    <>
+      <ScrollView style={styles.container}>
+        <View style={styles.content}>
+          {renderReportResults()}
+        </View>
+      </ScrollView>
 
-            <View style={styles.filterSection}>
-              <ThemedText style={styles.sectionTitle}>Report Type</ThemedText>
-              <View style={styles.reportTypeContainer}>
-                <TouchableOpacity 
-                  style={[
-                    styles.reportTypeButton, 
-                    reportType === 'summary' && styles.reportTypeButtonActive
-                  ]}
-                  onPress={() => setReportType('summary')}
-                >
-                  <ThemedText 
-                    style={[
-                      styles.reportTypeText, 
-                      reportType === 'summary' && styles.reportTypeTextActive
-                    ]}
-                  >
-                    Summary
-                  </ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[
-                    styles.reportTypeButton, 
-                    reportType === 'detailed' && styles.reportTypeButtonActive
-                  ]}
-                  onPress={() => setReportType('detailed')}
-                >
-                  <ThemedText 
-                    style={[
-                      styles.reportTypeText, 
-                      reportType === 'detailed' && styles.reportTypeTextActive
-                    ]}
-                  >
-                    Detailed
-                  </ThemedText>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.filterSection}>
-              <ThemedText style={styles.sectionTitle}>Employees</ThemedText>
-              <Checkbox
-                label="Include Inactive Employees"
-                value={includeInactive}
-                onValueChange={setIncludeInactive}
-              />
-              <Checkbox
-                label="Select All Employees"
-                value={selectedEmployees.length === employees.length && employees.length > 0}
-                onValueChange={handleSelectAllEmployees}
-              />
-              
-              {employees
-                .filter(employee => includeInactive || employee.isActive)
-                .map(employee => (
-                  <View key={employee.id} style={styles.employeeItem}>
-                    <Checkbox
-                      label={employee.name}
-                      value={selectedEmployees.includes(employee.id)}
-                      onValueChange={() => handleEmployeeToggle(employee.id)}
-                    />
-                    {!employee.isActive && (
-                      <ThemedText style={styles.inactiveLabel}>(Inactive)</ThemedText>
-                    )}
-                  </View>
-                ))
-              }
-            </View>
-
-            <View style={styles.buttonContainer}>
-              <Button 
-                label="Generate Report" 
-                onPress={handleGenerateReport} 
-                style={styles.generateButton}
-              />
-              <Button 
-                label="Reset" 
-                variant="secondary"
-                onPress={handleResetFilters} 
-                style={styles.resetButton}
-              />
-            </View>
-          </>
-        ) : (
-          <>
-            <View style={styles.reportHeader}>
-              <View>
-                <ThemedText type="subtitle">Report Results</ThemedText>
-                <ThemedText style={styles.dateRange}>
-                  {formatDate(startDate)} - {formatDate(endDate)}
-                </ThemedText>
-              </View>
-              <TouchableOpacity 
-                style={styles.filterButton}
-                onPress={() => setShowFilters(true)}
-              >
-                <Ionicons name="options-outline" size={20} color={colors.primary} />
-                <ThemedText style={styles.filterButtonText}>Filters</ThemedText>
-              </TouchableOpacity>
-            </View>
-
-            {isLoading ? (
-              <LoadingSpinner message="Generating report..." />
-            ) : error ? (
-              <ErrorMessage message={error} />
-            ) : (
-              <>
-                <ScrollView horizontal style={styles.tableContainer}>
-                  <DataTable
-                    columns={reportType === 'summary' ? summaryColumns : detailedColumns}
-                    data={reportType === 'summary' ? summaryData : detailedData}
-                    isLoading={false}
-                    onRowSelect={() => {}}
-                    selectedIds={[]}
-                  />
-                </ScrollView>
-
-                <View style={styles.exportContainer}>
-                  <Button
-                    variant="secondary"
-                    size="small"
-                    leftIcon="download-outline"
-                    label="Export"
-                    onPress={() => console.log('Export')}
-                    style={styles.exportButton}
-                  />
-                </View>
-              </>
-            )}
-          </>
-        )}
-      </View>
-    </ScrollView>
+      <MobileReportFilterSheet
+        visible={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        onApplyFilters={handleGenerateReport}
+        onResetFilters={handleResetFilters}
+        startDate={startDate}
+        endDate={endDate}
+        setStartDate={setStartDate}
+        setEndDate={setEndDate}
+        reportType={reportType}
+        setReportType={setReportType}
+        selectedEmployees={selectedEmployees}
+        setSelectedEmployees={setSelectedEmployees}
+        includeInactive={includeInactive}
+        setIncludeInactive={setIncludeInactive}
+        dateRangeType={dateRangeType}
+        setDateRangeType={setDateRangeType}
+        payPeriods={payPeriods}
+        selectedPayPeriodId={selectedPayPeriodId}
+        setSelectedPayPeriodId={setSelectedPayPeriodId}
+        isLoadingPayPeriods={isLoadingPayPeriods}
+        payPeriodsError={payPeriodsError}
+        fetchPayPeriods={fetchPayPeriods}
+        employees={employees}
+      />
+    </>
   );
 }
 
@@ -628,135 +617,6 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.md,
     flex: 1,
-  },
-  filterSection: {
-    marginBottom: spacing.lg,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  sectionTitle: {
-    fontWeight: '600',
-    marginBottom: spacing.sm,
-    fontSize: 16,
-  },
-  sectionSubtitle: {
-    marginBottom: spacing.sm,
-    fontSize: 14,
-  },
-  dateRangeSelector: {
-    marginBottom: spacing.md,
-  },
-  dateRangeOption: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 4,
-    marginRight: spacing.sm,
-    backgroundColor: '#f1f5f9',
-  },
-  dateRangeOptionActive: {
-    backgroundColor: colors.primary,
-  },
-  dateRangeText: {
-    fontSize: 14,
-    color: colors.text.primary,
-  },
-  dateRangeTextActive: {
-    color: '#ffffff',
-    fontWeight: '500',
-  },
-  payPeriodSelector: {
-    marginBottom: spacing.md,
-  },
-  payPeriodList: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 4,
-    maxHeight: 150,
-  },
-  payPeriodOption: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  payPeriodOptionActive: {
-    backgroundColor: '#f1f5f9',
-  },
-  payPeriodText: {
-    fontSize: 14,
-  },
-  payPeriodTextActive: {
-    fontWeight: '500',
-    color: colors.primary,
-  },
-  dateField: {
-    marginBottom: spacing.sm,
-  },
-  selectedDateRange: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f1f5f9',
-    padding: spacing.sm,
-    borderRadius: 4,
-    marginTop: spacing.sm,
-  },
-  selectedDateRangeLabel: {
-    fontWeight: '500',
-    marginRight: spacing.sm,
-    fontSize: 14,
-  },
-  selectedDateRangeText: {
-    color: colors.text.secondary,
-    fontSize: 14,
-  },
-  reportTypeContainer: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginTop: spacing.sm,
-  },
-  reportTypeButton: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-  },
-  reportTypeButtonActive: {
-    backgroundColor: colors.primary,
-  },
-  reportTypeText: {
-    color: colors.text.primary,
-  },
-  reportTypeTextActive: {
-    color: '#ffffff',
-    fontWeight: '500',
-  },
-  employeeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  inactiveLabel: {
-    color: colors.text.secondary,
-    marginLeft: spacing.sm,
-    fontSize: 12,
-  },
-  buttonContainer: {
-    marginTop: spacing.md,
-    marginBottom: spacing.xl,
-  },
-  generateButton: {
-    marginBottom: spacing.sm,
-  },
-  resetButton: {
   },
   reportHeader: {
     flexDirection: 'row',
@@ -781,11 +641,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.sm,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 4,
+    position: 'relative',
   },
   filterButtonText: {
     color: colors.primary,
     marginLeft: 4,
     fontWeight: '500',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   tableContainer: {
     backgroundColor: '#ffffff',
@@ -804,48 +683,32 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   exportButton: {
-    width: '50%',
+    width: '80%',
   },
-  loadingContainer: {
-    flexDirection: 'row',
+  emptyStateContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.md,
-    backgroundColor: '#f8fafc',
-    borderRadius: 4,
-  },
-  loadingText: {
-    marginLeft: spacing.sm,
-    color: colors.text.secondary,
-  },
-  errorContainer: {
-    padding: spacing.md,
-    backgroundColor: '#fee2e2',
-    borderRadius: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  errorText: {
-    color: '#b91c1c',
-    flex: 1,
-  },
-  retryButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    padding: spacing.xl * 2,
     backgroundColor: '#ffffff',
-    borderRadius: 4,
-    marginLeft: spacing.md,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  retryText: {
-    color: colors.primary,
-    fontWeight: '500',
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
-  noDataText: {
-    padding: spacing.md,
-    color: colors.text.secondary,
+  emptyStateText: {
     textAlign: 'center',
-    backgroundColor: '#f8fafc',
-    borderRadius: 4,
+    color: colors.text.secondary,
+    marginBottom: spacing.lg,
+  },
+  emptyStateButton: {
+    minWidth: 150,
   },
 }); 

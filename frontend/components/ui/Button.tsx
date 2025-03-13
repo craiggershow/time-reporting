@@ -2,6 +2,7 @@ import { TouchableOpacity, StyleSheet, Text, ViewStyle, TextStyle, View } from '
 import { useTheme } from '@/context/ThemeContext';
 import { useContext } from 'react';
 import { createContext } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
 // Default colors to use when ThemeContext is not available
 const defaultColors = {
@@ -13,20 +14,23 @@ const defaultColors = {
 };
 
 interface ButtonProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  label?: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary';
   style?: ViewStyle;
   textStyle?: TextStyle;
   disabled?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  leftIcon?: React.ReactNode | string;
+  rightIcon?: React.ReactNode | string;
   size?: 'small' | 'medium' | 'large';
   testID?: string;
+  isLoading?: boolean;
 }
 
 export function Button({ 
   children, 
+  label,
   onPress, 
   variant = 'primary',
   style,
@@ -36,6 +40,7 @@ export function Button({
   rightIcon,
   size = 'medium',
   testID,
+  isLoading = false,
 }: ButtonProps) {
   // Try to use ThemeContext, but fall back to default colors if not available
   let themeColors = defaultColors;
@@ -68,6 +73,23 @@ export function Button({
     large: { fontSize: 18 },
   }[size];
 
+  // Render icon based on string or ReactNode
+  const renderIcon = (icon: React.ReactNode | string) => {
+    if (typeof icon === 'string') {
+      return (
+        <Ionicons 
+          name={icon as any} 
+          size={size === 'small' ? 16 : size === 'medium' ? 20 : 24} 
+          color={variant === 'primary' ? '#fff' : themeColors.text} 
+        />
+      );
+    }
+    return icon;
+  };
+
+  // Use label if provided, otherwise use children
+  const buttonText = label || (typeof children === 'string' ? children : null);
+
   return (
     <TouchableOpacity
       testID={testID}
@@ -78,23 +100,31 @@ export function Button({
           backgroundColor,
           borderColor,
           borderWidth: variant === 'secondary' ? 1 : 0,
-          opacity: disabled ? 0.7 : 1,
+          opacity: disabled || isLoading ? 0.7 : 1,
         },
         style,
       ]}
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || isLoading}
       activeOpacity={0.7}>
       <View style={styles.buttonContent}>
-        {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
-        {typeof children === 'string' ? (
+        {isLoading ? (
           <Text style={[styles.text, textSizeStyle, { color: textColor }, textStyle]}>
-            {children}
+            Loading...
           </Text>
         ) : (
-          children
+          <>
+            {leftIcon && <View style={styles.iconLeft}>{renderIcon(leftIcon)}</View>}
+            {buttonText ? (
+              <Text style={[styles.text, textSizeStyle, { color: textColor }, textStyle]}>
+                {buttonText}
+              </Text>
+            ) : (
+              children
+            )}
+            {rightIcon && <View style={styles.iconRight}>{renderIcon(rightIcon)}</View>}
+          </>
         )}
-        {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
       </View>
     </TouchableOpacity>
   );

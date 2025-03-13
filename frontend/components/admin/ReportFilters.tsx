@@ -42,7 +42,7 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
   const [includeInactive, setIncludeInactive] = useState(false);
   const [showEmployeeSelector, setShowEmployeeSelector] = useState(false);
   const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
-  const [dateRangeType, setDateRangeType] = useState<DateRangeType>('custom');
+  const [dateRangeType, setDateRangeType] = useState<DateRangeType>('payPeriod');
   const [payPeriods, setPayPeriods] = useState<PayPeriod[]>([]);
   const [selectedPayPeriodId, setSelectedPayPeriodId] = useState<string>('');
   const [isLoadingPayPeriods, setIsLoadingPayPeriods] = useState(false);
@@ -54,6 +54,16 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
     { id: '2', name: 'Jane Smith', email: 'jane@example.com', isActive: true },
     { id: '3', name: 'Bob Johnson', email: 'bob@example.com', isActive: false },
   ];
+
+  // Initialize with all active employees
+  useEffect(() => {
+    // Set selected employees to all active employees
+    const activeEmployeeIds = employees
+      .filter(employee => employee.isActive)
+      .map(employee => employee.id);
+    
+    setSelectedEmployees(activeEmployeeIds);
+  }, []);
 
   useEffect(() => {
     fetchPayPeriods();
@@ -69,63 +79,36 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
       setIsLoadingPayPeriods(true);
       setPayPeriodsError(null);
       
-      // Fetch pay periods from the API
-      const response = await fetch(buildApiUrl('PAY_PERIODS'), {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch pay periods');
-      }
-
-      const data = await response.json();
-      
-      // Transform the data to match our PayPeriod interface
-      const formattedPayPeriods = data.map((period: any) => {
-        // Create date objects that ignore time/timezone by using YYYY-MM-DD format
-        const startDateStr = period.startDate.split('T')[0];
-        const endDateStr = period.endDate.split('T')[0];
-        
-        // Create date objects with time set to noon to avoid timezone issues
-        const startDate = new Date(`${startDateStr}T12:00:00`);
-        const endDate = new Date(`${endDateStr}T12:00:00`);
-        
-        return {
-          id: period.id,
-          startDate: startDateStr,
-          endDate: endDateStr,
-          name: formatPayPeriodName(startDate, endDate),
-        };
-      });
-      
-      // Sort by startDate in descending order to get most recent first
-      formattedPayPeriods.sort((a, b) => 
-        new Date(`${b.startDate}T12:00:00`).getTime() - new Date(`${a.startDate}T12:00:00`).getTime()
-      );
-      
-      // Limit to 10 most recent pay periods
-      const recentPayPeriods = formattedPayPeriods.slice(0, 10);
-      
-      setPayPeriods(recentPayPeriods);
-      
-      // Set the most recent pay period as default
-      if (recentPayPeriods.length > 0) {
-        setSelectedPayPeriodId(recentPayPeriods[0].id);
-      }
-    } catch (error) {
-      console.error('Failed to fetch pay periods:', error);
-      setPayPeriodsError('Failed to load pay periods. Please try again.');
-      
-      // Fallback to mock data if API fails
+      // Using mock data since the API endpoint is not available
+      console.log('Using mock pay periods data');
       const mockPayPeriods = generateMockPayPeriods();
       setPayPeriods(mockPayPeriods);
-      if (mockPayPeriods.length > 0) {
+      
+      // Set the previous pay period (second most recent) as default
+      if (mockPayPeriods.length > 1) {
+        setSelectedPayPeriodId(mockPayPeriods[1].id);
+        
+        // Update date range based on the selected pay period
+        const selectedPeriod = mockPayPeriods[1];
+        const start = new Date(`${selectedPeriod.startDate}T12:00:00`);
+        const end = new Date(`${selectedPeriod.endDate}T12:00:00`);
+        setStartDate(start);
+        setEndDate(end);
+      } else if (mockPayPeriods.length === 1) {
         setSelectedPayPeriodId(mockPayPeriods[0].id);
+        
+        // Update date range based on the selected pay period
+        const selectedPeriod = mockPayPeriods[0];
+        const start = new Date(`${selectedPeriod.startDate}T12:00:00`);
+        const end = new Date(`${selectedPeriod.endDate}T12:00:00`);
+        setStartDate(start);
+        setEndDate(end);
       }
+      
+      setPayPeriodsError(null);
+    } catch (error) {
+      console.error('Failed to generate mock pay periods:', error);
+      setPayPeriodsError('Failed to load pay periods. Please try again.');
     } finally {
       setIsLoadingPayPeriods(false);
     }
@@ -247,6 +230,47 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
       payPeriodId: dateRangeType === 'payPeriod' ? selectedPayPeriodId : undefined,
       dateRangeType,
     });
+  };
+
+  const handleResetFilters = () => {
+    // Reset to previous pay period instead of custom date range
+    setDateRangeType('payPeriod');
+    
+    // If pay periods are available, select the previous pay period
+    if (payPeriods.length > 1) {
+      setSelectedPayPeriodId(payPeriods[1].id);
+      
+      // Update date range based on the selected pay period
+      const selectedPeriod = payPeriods[1];
+      const start = new Date(`${selectedPeriod.startDate}T12:00:00`);
+      const end = new Date(`${selectedPeriod.endDate}T12:00:00`);
+      setStartDate(start);
+      setEndDate(end);
+    } else if (payPeriods.length === 1) {
+      setSelectedPayPeriodId(payPeriods[0].id);
+      
+      // Update date range based on the selected pay period
+      const selectedPeriod = payPeriods[0];
+      const start = new Date(`${selectedPeriod.startDate}T12:00:00`);
+      const end = new Date(`${selectedPeriod.endDate}T12:00:00`);
+      setStartDate(start);
+      setEndDate(end);
+    } else {
+      // Fallback to current date range if no pay periods are available
+      setStartDate(new Date());
+      setEndDate(new Date());
+    }
+    
+    setReportType('summary');
+    
+    // Reset to all active employees
+    const activeEmployeeIds = employees
+      .filter(employee => employee.isActive)
+      .map(employee => employee.id);
+    setSelectedEmployees(activeEmployeeIds);
+    
+    setIncludeInactive(false);
+    setEmployeeSearchQuery('');
   };
 
   const renderDateRangeSelector = () => {
@@ -379,7 +403,7 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
     <View style={styles.container}>
       <View style={styles.header}>
         <ThemedText type="subtitle">Report Filters</ThemedText>
-        <TouchableOpacity onPress={onResetFilters}>
+        <TouchableOpacity onPress={handleResetFilters}>
           <ThemedText style={styles.resetText}>Reset</ThemedText>
         </TouchableOpacity>
       </View>
