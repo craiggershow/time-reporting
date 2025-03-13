@@ -661,6 +661,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#ffffff',
     marginTop: spacing.xs,
+    zIndex: 10,
+    position: 'relative',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+      },
+    }),
   },
   payPeriodList: {
     maxHeight: 200,

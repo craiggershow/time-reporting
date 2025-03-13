@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -559,6 +559,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    position: 'relative',
+    zIndex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -572,6 +574,8 @@ const styles = StyleSheet.create({
   },
   filterSection: {
     marginBottom: spacing.lg,
+    position: 'relative',
+    zIndex: 1,
   },
   sectionTitle: {
     fontWeight: '500',
@@ -603,6 +607,8 @@ const styles = StyleSheet.create({
   },
   payPeriodSelector: {
     marginBottom: spacing.md,
+    position: 'relative',
+    zIndex: 5,
   },
   payPeriodLabel: {
     marginBottom: spacing.sm,
@@ -612,6 +618,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 4,
     maxHeight: 200,
+    backgroundColor: '#ffffff',
+    zIndex: 10,
+    position: 'relative',
+    overflow: 'auto',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+        overflowY: 'auto',
+        overscrollBehavior: 'contain',
+      },
+    }),
   },
   payPeriodOption: {
     paddingVertical: spacing.sm,
