@@ -763,18 +763,17 @@ const styles = StyleSheet.create({
     paddingBottom: 70, // Add padding for the bottom navigation
   },
   mobileHeader: {
-    backgroundColor: colors.background.card,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    backgroundColor: '#ffffff',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: '#e2e8f0',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   mobileHeaderTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
   },
   section: {
     marginBottom: spacing.lg,

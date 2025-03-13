@@ -1,4 +1,4 @@
-import { View, StyleSheet, Pressable, Image } from 'react-native';
+import { View, StyleSheet, Pressable, Image, useWindowDimensions } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,8 @@ import { colors } from '@/styles/common';
 export function Header() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   const adminLinks = [
     { label: 'Dashboard', href: '/(app)/admin' },
@@ -37,45 +39,47 @@ export function Header() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
-        <View style={styles.leftSection}>
-          <ThemedText style={styles.userName}>{user?.name}</ThemedText>
-        </View>
-        <View style={styles.rightSection}>
-          {user?.isAdmin && (
-            <Pressable 
-              style={styles.adminButton}
-              onPress={handleAdminNavigation}
-            >
-              <Ionicons name="settings-outline" size={20} color="#000000" />
-              <ThemedText style={styles.adminText}>Admin Portal</ThemedText>
-            </Pressable>
-          )}
-          <Pressable 
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
-            <Ionicons name="log-out-outline" size={20} color="#000000" />
-            <ThemedText style={styles.logoutText}>Logout</ThemedText>
-          </Pressable>
-        </View>
-      </View>
-      <View style={styles.logoSection}>
+      <View style={styles.headerContent}>
+        {/* Logo section - now smaller and on the left */}
         <View style={styles.logoContainer}>
           <Image
             source={require('@/assets/images/logo.png')}
-            style={styles.logo}
+            style={isMobile ? styles.logoMobile : styles.logo}
             resizeMode="contain"
           />
         </View>
-      </View>
-      {user && (
-        <View style={styles.userInfo}>
-          <ThemedText style={styles.userInfoText}>
-            Hello, {user.firstName} {user.lastName}
-          </ThemedText>
+        
+        <View style={styles.rightContent}>
+          {/* User greeting */}
+          {user && (
+            <View style={styles.userInfo}>
+              <ThemedText style={styles.userInfoText}>
+                Hello, {user.firstName} {user.lastName}
+              </ThemedText>
+            </View>
+          )}
+          
+          {/* Admin and logout buttons */}
+          <View style={styles.buttonsContainer}>
+            {user?.isAdmin && (
+              <Pressable 
+                style={styles.adminButton}
+                onPress={handleAdminNavigation}
+              >
+                <Ionicons name="settings-outline" size={18} color="#000000" />
+                {!isMobile && <ThemedText style={styles.adminText}>Admin</ThemedText>}
+              </Pressable>
+            )}
+            <Pressable 
+              style={styles.logoutButton}
+              onPress={handleLogout}
+            >
+              <Ionicons name="log-out-outline" size={18} color="#000000" />
+              {!isMobile && <ThemedText style={styles.logoutText}>Logout</ThemedText>}
+            </Pressable>
+          </View>
         </View>
-      )}
+      </View>
     </View>
   );
 }
@@ -85,39 +89,46 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  topBar: {
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-  },
-  logoSection: {
-    paddingTop: 0,
-    paddingBottom: 0,
-    justifyContent: 'center',
+    padding: 8,
   },
   logoContainer: {
-    alignItems: 'center',
+    justifyContent: 'center',
   },
   logo: {
-    width: 400,
-    height: 69,
+    width: 200,
+    height: 40,
   },
-  leftSection: {
+  logoMobile: {
+    width: 150,
+    height: 30,
+  },
+  rightContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
-  rightSection: {
+  userInfo: {
+    marginRight: 8,
+  },
+  userInfoText: {
+    color: '#000000',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  buttonsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 8,
   },
   adminButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    padding: 8,
+    gap: 4,
+    padding: 6,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.border,
@@ -125,32 +136,16 @@ const styles = StyleSheet.create({
   adminText: {
     color: '#000000',
     fontWeight: '500',
+    fontSize: 13,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    padding: 8,
+    gap: 4,
+    padding: 6,
   },
   logoutText: {
     color: '#000000',
-  },
-  userInfo: {
-    padding: 16,
-    backgroundColor: '#f8fafc',
-  },
-  userInfoText: {
-    color: '#000000',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  employeeIdText: {
-    color: '#64748b',
-    fontSize: 14,
-    marginTop: 4,
-  },
-  userName: {
-    color: '#000000',
-    fontWeight: '500',
+    fontSize: 13,
   },
 }); 

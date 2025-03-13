@@ -38,8 +38,8 @@ const styles = StyleSheet.create({
   },
   mobileHeader: {
     backgroundColor: '#ffffff',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
     flexDirection: 'row',
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   mobileHeaderTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
   },
 }); 

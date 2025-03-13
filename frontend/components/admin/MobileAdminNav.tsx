@@ -53,7 +53,7 @@ export function MobileAdminNav() {
           >
             <Ionicons
               name={item.icon}
-              size={24}
+              size={20}
               color={isActive ? '#2563eb' : '#64748b'}
             />
             <Text
@@ -77,17 +77,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
-    height: 60,
-    paddingBottom: 5,
+    height: 50,
+    paddingBottom: 4,
   },
   tabButton: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 6,
   },
   tabLabel: {
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 10,
+    marginTop: 1,
   },
 }); 
