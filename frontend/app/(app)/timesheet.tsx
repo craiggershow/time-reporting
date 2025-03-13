@@ -1184,8 +1184,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     ...Platform.select({
       web: {
-        outline: 'none',
-        outlineStyle: 'none',
+        outlineWidth: 0,
       },
     }),
   },

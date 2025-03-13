@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Input } from '@/components/ui/Input';
@@ -47,6 +47,29 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
   const [selectedPayPeriodId, setSelectedPayPeriodId] = useState<string>('');
   const [isLoadingPayPeriods, setIsLoadingPayPeriods] = useState(false);
   const [payPeriodsError, setPayPeriodsError] = useState<string | null>(null);
+  const [isInitialSetupComplete, setIsInitialSetupComplete] = useState(false);
+  
+  // Define handleApplyFilters as a useCallback to avoid dependency issues
+  const handleApplyFilters = useCallback(() => {
+    onApplyFilters({
+      startDate,
+      endDate,
+      employeeIds: selectedEmployees,
+      reportType,
+      includeInactive,
+      payPeriodId: dateRangeType === 'payPeriod' ? selectedPayPeriodId : undefined,
+      dateRangeType,
+    });
+  }, [
+    startDate, 
+    endDate, 
+    selectedEmployees, 
+    reportType, 
+    includeInactive, 
+    dateRangeType, 
+    selectedPayPeriodId, 
+    onApplyFilters
+  ]);
   
   // Mock data for employees - in a real app, this would come from an API
   const employees = [
@@ -73,6 +96,18 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
     // Update date range based on selected type
     updateDateRange(dateRangeType);
   }, [dateRangeType, selectedPayPeriodId]);
+
+  // Auto-apply filters when initial setup is complete
+  useEffect(() => {
+    // Check if we have the necessary data to generate a report
+    if (payPeriods.length > 0 && selectedPayPeriodId && !isInitialSetupComplete) {
+      // Mark setup as complete to prevent multiple report generations
+      setIsInitialSetupComplete(true);
+      
+      // Apply filters with default parameters
+      handleApplyFilters();
+    }
+  }, [payPeriods, selectedPayPeriodId, isInitialSetupComplete, handleApplyFilters]);
 
   const fetchPayPeriods = async () => {
     try {
@@ -218,18 +253,6 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
     } else {
       setSelectedEmployees(filteredEmployees.map(emp => emp.id));
     }
-  };
-
-  const handleApplyFilters = () => {
-    onApplyFilters({
-      startDate,
-      endDate,
-      employeeIds: selectedEmployees,
-      reportType,
-      includeInactive,
-      payPeriodId: dateRangeType === 'payPeriod' ? selectedPayPeriodId : undefined,
-      dateRangeType,
-    });
   };
 
   const handleResetFilters = () => {

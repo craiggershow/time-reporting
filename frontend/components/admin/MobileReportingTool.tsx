@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Button } from '@/components/ui/Button';
@@ -65,6 +65,27 @@ export function MobileReportingTool() {
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
 
+  // Track if initial setup is complete
+  const [isInitialSetupComplete, setIsInitialSetupComplete] = useState(false);
+
+  // Define handleGenerateReport as a useCallback to avoid dependency issues
+  const handleGenerateReport = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // In a real app, this would be an API call to fetch report data
+      // For now, we'll simulate a delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setHasGeneratedReport(true);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to generate report');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   // Mock data for employees - in a real app, this would come from an API
   const employees = [
     { id: '1', name: 'John Doe', email: 'john@example.com', isActive: true },
@@ -82,6 +103,7 @@ export function MobileReportingTool() {
   }, []);
 
   useEffect(() => {
+    // Fetch pay periods on initial load
     fetchPayPeriods();
   }, []);
 
@@ -89,6 +111,18 @@ export function MobileReportingTool() {
     // Update date range based on selected type
     updateDateRange(dateRangeType);
   }, [dateRangeType, selectedPayPeriodId]);
+
+  // Auto-generate report when initial setup is complete
+  useEffect(() => {
+    // Check if we have the necessary data to generate a report
+    if (payPeriods.length > 0 && selectedPayPeriodId && !isInitialSetupComplete) {
+      // Mark setup as complete to prevent multiple report generations
+      setIsInitialSetupComplete(true);
+      
+      // Generate the report with default parameters
+      handleGenerateReport();
+    }
+  }, [payPeriods, selectedPayPeriodId, isInitialSetupComplete, handleGenerateReport]);
 
   useEffect(() => {
     // Calculate the number of active filters
@@ -320,23 +354,6 @@ export function MobileReportingTool() {
       setSelectedEmployees([]);
     } else {
       setSelectedEmployees(employees.map(emp => emp.id));
-    }
-  };
-
-  const handleGenerateReport = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // In a real app, this would be an API call to fetch report data
-      // For now, we'll simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setHasGeneratedReport(true);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to generate report');
-    } finally {
-      setIsLoading(false);
     }
   };
 

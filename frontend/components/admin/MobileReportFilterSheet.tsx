@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Dispatch, SetStateAction } from 'react';
 import { 
   View, 
   StyleSheet, 
@@ -39,7 +39,7 @@ interface MobileReportFilterSheetProps {
   reportType: 'summary' | 'detailed';
   setReportType: (type: 'summary' | 'detailed') => void;
   selectedEmployees: string[];
-  setSelectedEmployees: (ids: string[]) => void;
+  setSelectedEmployees: Dispatch<SetStateAction<string[]>>;
   includeInactive: boolean;
   setIncludeInactive: (include: boolean) => void;
   dateRangeType: DateRangeType;
@@ -100,11 +100,13 @@ export function MobileReportFilterSheet({
   }, [visible, slideAnim]);
 
   const handleEmployeeToggle = (employeeId: string) => {
-    setSelectedEmployees((prev: string[]) => 
-      prev.includes(employeeId) 
-        ? prev.filter((id: string) => id !== employeeId) 
-        : [...prev, employeeId]
-    );
+    setSelectedEmployees(prev => {
+      if (prev.includes(employeeId)) {
+        return prev.filter(id => id !== employeeId);
+      } else {
+        return [...prev, employeeId];
+      }
+    });
   };
 
   const handleSelectAllEmployees = () => {
@@ -354,6 +356,7 @@ export function MobileReportFilterSheet({
         {showEmployeeSelector && (
           <View style={styles.employeeListContainer}>
             <Input
+              label="Search"
               placeholder="Search employees..."
               value={employeeSearchQuery}
               onChangeText={setEmployeeSearchQuery}
@@ -364,12 +367,12 @@ export function MobileReportFilterSheet({
             <View style={styles.selectAllContainer}>
               <Checkbox
                 label="Select All"
-                value={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+                checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
                 onValueChange={handleSelectAllEmployees}
               />
               <Checkbox
                 label="Include Inactive"
-                value={includeInactive}
+                checked={includeInactive}
                 onValueChange={setIncludeInactive}
               />
             </View>
@@ -380,7 +383,7 @@ export function MobileReportFilterSheet({
                   <View key={employee.id} style={styles.employeeItem}>
                     <Checkbox
                       label={employee.name}
-                      value={selectedEmployees.includes(employee.id)}
+                      checked={selectedEmployees.includes(employee.id)}
                       onValueChange={() => handleEmployeeToggle(employee.id)}
                     />
                     {!employee.isActive && (

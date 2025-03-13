@@ -129,8 +129,7 @@ export function DayTypeSelect({ value = 'regular', onChange, disabled }: DayType
               styles.picker, 
               { 
                 color: '#1e293b',
-                // Remove default focus styling
-                outline: 'none',
+                outlineWidth: 0,
               }
             ]} 
             dropdownIconColor="#1e293b" // Dark icon

@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     ...Platform.select({
       web: {
-        outline: 'none',
+        outlineWidth: 0,
       },
     }),
   },

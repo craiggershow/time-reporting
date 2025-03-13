@@ -448,8 +448,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     ...Platform.select({
       web: {
-        outline: 'none',
-        outlineStyle: 'none',
+        outlineWidth: 0,
       },
     }),
   },

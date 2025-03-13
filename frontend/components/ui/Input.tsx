@@ -71,7 +71,6 @@ export function Input({
           placeholderTextColor="#94a3b8"
           onFocus={handleFocus}
           onBlur={handleBlur}
-          outlineStyle="none"
           onKeyPress={onKeyPress}
           {...props as any}
         />
@@ -114,8 +113,7 @@ const styles = StyleSheet.create({
     borderWidth: 0, // Remove default input border
     ...Platform.select({
       web: {
-        outline: 'none',
-        outlineStyle: 'none',
+        outlineWidth: 0,
       },
     }),
   },

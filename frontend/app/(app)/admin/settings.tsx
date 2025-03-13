@@ -545,197 +545,197 @@ export default function AdminSettings() {
         </>
       ) : (
         <>
-          <Header />
-          <ScrollView style={styles.content}>
-            <View style={styles.section}>
-              <ThemedText type="title">Pay Period Settings</ThemedText>
-              <View style={styles.settingGroup}>
+      <Header />
+      <ScrollView style={styles.content}>
+        <View style={styles.section}>
+          <ThemedText type="title">Pay Period Settings</ThemedText>
+          <View style={styles.settingGroup}>
                 <DateInput
-                  label="Pay Period Start Date"
+              label="Pay Period Start Date"
                   value={settings.payPeriodStartDate}
-                  onChange={handleDateChange}
-                />
-                <Input
-                  label="Pay Period Length (days)"
-                  value={settings.payPeriodLength?.toString()}
-                  onChangeText={(value) => setSettings(s => ({ ...s, payPeriodLength: parseInt(value) }))}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
+              onChange={handleDateChange}
+            />
+            <Input
+              label="Pay Period Length (days)"
+              value={settings.payPeriodLength?.toString()}
+              onChangeText={(value) => setSettings(s => ({ ...s, payPeriodLength: parseInt(value) }))}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
 
-            <View style={styles.section}>
-              <ThemedText type="title">Time Validation Settings</ThemedText>
-              <View style={styles.settingGroup}>
-                <Input
-                  label="Maximum Daily Hours"
-                  value={settings.maxDailyHours?.toString()}
-                  onChangeText={(value) => setSettings(s => ({ ...s, maxDailyHours: parseInt(value) || 15 }))}
-                  keyboardType="numeric"
-                />
-                <Input
-                  label="Maximum Weekly Hours"
-                  value={settings.maxWeeklyHours?.toString()}
-                  onChangeText={(value) => setSettings(s => ({ ...s, maxWeeklyHours: parseInt(value) || 50 }))}
-                  keyboardType="numeric"
-                />
-                <Input
-                  label="Minimum Lunch Duration (minutes)"
-                  value={settings.minLunchDuration?.toString()}
-                  onChangeText={(value) => setSettings(s => ({ ...s, minLunchDuration: parseInt(value) || 30 }))}
-                  keyboardType="numeric"
-                />
-                <Input
-                  label="Maximum Lunch Duration (minutes)"
-                  value={settings.maxLunchDuration?.toString()}
-                  onChangeText={(value) => setSettings(s => ({ ...s, maxLunchDuration: parseInt(value) || 60 }))}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
+        <View style={styles.section}>
+          <ThemedText type="title">Time Validation Settings</ThemedText>
+          <View style={styles.settingGroup}>
+            <Input
+              label="Maximum Daily Hours"
+              value={settings.maxDailyHours?.toString()}
+              onChangeText={(value) => setSettings(s => ({ ...s, maxDailyHours: parseInt(value) || 15 }))}
+              keyboardType="numeric"
+            />
+            <Input
+              label="Maximum Weekly Hours"
+              value={settings.maxWeeklyHours?.toString()}
+              onChangeText={(value) => setSettings(s => ({ ...s, maxWeeklyHours: parseInt(value) || 50 }))}
+              keyboardType="numeric"
+            />
+            <Input
+              label="Minimum Lunch Duration (minutes)"
+              value={settings.minLunchDuration?.toString()}
+              onChangeText={(value) => setSettings(s => ({ ...s, minLunchDuration: parseInt(value) || 30 }))}
+              keyboardType="numeric"
+            />
+            <Input
+              label="Maximum Lunch Duration (minutes)"
+              value={settings.maxLunchDuration?.toString()}
+              onChangeText={(value) => setSettings(s => ({ ...s, maxLunchDuration: parseInt(value) || 60 }))}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
 
-            <View style={styles.section}>
-              <ThemedText type="title">Overtime Settings</ThemedText>
-              <View style={styles.settingGroup}>
-                <Input
-                  label="Overtime Threshold (hours/week)"
-                  value={settings.overtimeThreshold?.toString()}
-                  onChangeText={(value) => setSettings(s => ({ ...s, overtimeThreshold: parseInt(value) || 40 }))}
-                  keyboardType="numeric"
-                />
-                <Input
-                  label="Double Time Threshold (hours/week)"
-                  value={settings.doubleTimeThreshold?.toString()}
-                  onChangeText={(value) => setSettings(s => ({ ...s, doubleTimeThreshold: parseInt(value) || 60 }))}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
+        <View style={styles.section}>
+          <ThemedText type="title">Overtime Settings</ThemedText>
+          <View style={styles.settingGroup}>
+            <Input
+              label="Overtime Threshold (hours/week)"
+              value={settings.overtimeThreshold?.toString()}
+              onChangeText={(value) => setSettings(s => ({ ...s, overtimeThreshold: parseInt(value) || 40 }))}
+              keyboardType="numeric"
+            />
+            <Input
+              label="Double Time Threshold (hours/week)"
+              value={settings.doubleTimeThreshold?.toString()}
+              onChangeText={(value) => setSettings(s => ({ ...s, doubleTimeThreshold: parseInt(value) || 60 }))}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
 
-            <View style={styles.section}>
-              <ThemedText type="title">Email Notification Settings</ThemedText>
-              <View style={styles.settingGroup}>
-                <View style={styles.checkboxContainer}>
-                  <Checkbox
-                    checked={settings.enableEmailReminders}
-                    onValueChange={(value) => setSettings(s => ({ ...s, enableEmailReminders: value }))}
-                    label="Enable Email Reminders"
-                  />
-                </View>
-                <Input
-                  label="Reminder Email Template"
-                  value={settings.reminderEmailTemplate}
-                  onChangeText={(value) => setSettings(s => ({ ...s, reminderEmailTemplate: value }))}
-                  placeholder="Use {startDate} and {endDate} as placeholders"
-                />
-                <Input
-                  label="CC Email Addresses (comma-separated)"
-                  value={settings.ccAddresses?.join(', ') || ''}
-                  onChangeText={(value) => setSettings(s => ({ 
-                    ...s, 
-                    ccAddresses: value.split(',').map(email => email.trim()).filter(Boolean)
-                  }))}
-                  placeholder="email1@example.com, email2@example.com"
-                />
-              </View>
+        <View style={styles.section}>
+          <ThemedText type="title">Email Notification Settings</ThemedText>
+          <View style={styles.settingGroup}>
+            <View style={styles.checkboxContainer}>
+              <Checkbox
+                checked={settings.enableEmailReminders}
+                onValueChange={(value) => setSettings(s => ({ ...s, enableEmailReminders: value }))}
+                label="Enable Email Reminders"
+              />
             </View>
+            <Input
+              label="Reminder Email Template"
+              value={settings.reminderEmailTemplate}
+              onChangeText={(value) => setSettings(s => ({ ...s, reminderEmailTemplate: value }))}
+              placeholder="Use {startDate} and {endDate} as placeholders"
+            />
+            <Input
+              label="CC Email Addresses (comma-separated)"
+              value={settings.ccAddresses?.join(', ') || ''}
+              onChangeText={(value) => setSettings(s => ({ 
+                ...s, 
+                ccAddresses: value.split(',').map(email => email.trim()).filter(Boolean)
+              }))}
+              placeholder="email1@example.com, email2@example.com"
+            />
+          </View>
+        </View>
 
-            <View style={styles.section}>
-              <ThemedText type="title">Approval Settings</ThemedText>
-              <View style={styles.settingGroup}>
-                <View style={styles.checkboxContainer}>
-                  <Checkbox
-                    checked={settings.autoApprovalEnabled}
-                    onValueChange={(value) => setSettings(s => ({ ...s, autoApprovalEnabled: value }))}
-                    label="Enable Auto-Approval"
-                  />
-                </View>
-                <Input
-                  label="Auto-Approval Maximum Hours"
-                  value={settings.autoApprovalMaxHours?.toString()}
-                  onChangeText={(value) => setSettings(s => ({ ...s, autoApprovalMaxHours: parseInt(value) || 40 }))}
-                  keyboardType="numeric"
+        <View style={styles.section}>
+          <ThemedText type="title">Approval Settings</ThemedText>
+          <View style={styles.settingGroup}>
+            <View style={styles.checkboxContainer}>
+              <Checkbox
+                checked={settings.autoApprovalEnabled}
+                onValueChange={(value) => setSettings(s => ({ ...s, autoApprovalEnabled: value }))}
+                label="Enable Auto-Approval"
+              />
+            </View>
+            <Input
+              label="Auto-Approval Maximum Hours"
+              value={settings.autoApprovalMaxHours?.toString()}
+              onChangeText={(value) => setSettings(s => ({ ...s, autoApprovalMaxHours: parseInt(value) || 40 }))}
+              keyboardType="numeric"
                   editable={settings.autoApprovalEnabled}
-                />
-                <Input
-                  label="Required Approvers"
-                  value={settings.requiredApprovers?.toString()}
-                  onChangeText={(value) => setSettings(s => ({ ...s, requiredApprovers: parseInt(value) || 1 }))}
-                  keyboardType="numeric"
-                />
-                <Button
-                  onPress={() => {/* Open approval chain modal */}}
-                  variant="secondary"
-                >
-                  <Text>Configure Approval Chain</Text>
-                </Button>
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <ThemedText type="title">Holiday Settings</ThemedText>
-              <View style={styles.settingGroup}>
-                <Input
-                  label="Default Holiday Hours"
-                  value={settings.holidayHoursDefault?.toString()}
-                  onChangeText={(value) => setSettings(s => ({ ...s, holidayHoursDefault: parseInt(value) || 8 }))}
-                  keyboardType="numeric"
-                />
-                <Input
-                  label="Holiday Pay Multiplier"
-                  value={settings.holidayPayMultiplier?.toString()}
-                  onChangeText={(value) => setSettings(s => ({ ...s, holidayPayMultiplier: parseFloat(value) || 1.5 }))}
-                  keyboardType="decimal-pad"
-                />
-                <Button
-                  onPress={() => setShowHolidayModal(true)}
-                  variant="secondary"
-                >
-                  <Text>Manage Holidays ({settings.holidays?.length || 0})</Text>
-                </Button>
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <ThemedText style={styles.sectionTitle}>Time Restrictions</ThemedText>
-              <View style={styles.inputGroup}>
-                <Input
-                  label="Earliest Start Time"
-                  value={convertTo12Hour(minutesToTime(settings.minStartTime))}
-                  onChangeText={(value) => {
-                    // Only update if it's a valid 12-hour time
-                    if (value.match(/^(1[0-2]|0?[1-9]):[0-5][0-9] (AM|PM)$/)) {
-                      const minutes = timeToMinutes(value);
-                      setSettings(s => ({ ...s, minStartTime: minutes }));
-                    }
-                  }}
-                  placeholder="7:00 AM"
-                />
-                <Input
-                  label="Latest End Time"
-                  value={convertTo12Hour(minutesToTime(settings.maxEndTime))}
-                  onChangeText={(value) => {
-                    // Only update if it's a valid 12-hour time
-                    if (value.match(/^(1[0-2]|0?[1-9]):[0-5][0-9] (AM|PM)$/)) {
-                      const minutes = timeToMinutes(value);
-                      setSettings(s => ({ ...s, maxEndTime: minutes }));
-                    }
-                  }}
-                  placeholder="8:00 PM"
-                />
-              </View>
-            </View>
-
-            {error && <ErrorMessage message={error} />}
-
+            />
+            <Input
+              label="Required Approvers"
+              value={settings.requiredApprovers?.toString()}
+              onChangeText={(value) => setSettings(s => ({ ...s, requiredApprovers: parseInt(value) || 1 }))}
+              keyboardType="numeric"
+            />
             <Button
-              onPress={handleSave}
-              disabled={isSaving}
-              style={styles.saveButton}
+              onPress={() => {/* Open approval chain modal */}}
+              variant="secondary"
             >
-              <Text>{isSaving ? 'Saving...' : 'Save Settings'}</Text>
+                  <Text>Configure Approval Chain</Text>
             </Button>
-          </ScrollView>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <ThemedText type="title">Holiday Settings</ThemedText>
+          <View style={styles.settingGroup}>
+            <Input
+              label="Default Holiday Hours"
+              value={settings.holidayHoursDefault?.toString()}
+              onChangeText={(value) => setSettings(s => ({ ...s, holidayHoursDefault: parseInt(value) || 8 }))}
+              keyboardType="numeric"
+            />
+            <Input
+              label="Holiday Pay Multiplier"
+              value={settings.holidayPayMultiplier?.toString()}
+              onChangeText={(value) => setSettings(s => ({ ...s, holidayPayMultiplier: parseFloat(value) || 1.5 }))}
+              keyboardType="decimal-pad"
+            />
+            <Button
+              onPress={() => setShowHolidayModal(true)}
+              variant="secondary"
+            >
+                  <Text>Manage Holidays ({settings.holidays?.length || 0})</Text>
+            </Button>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Time Restrictions</ThemedText>
+          <View style={styles.inputGroup}>
+            <Input
+              label="Earliest Start Time"
+              value={convertTo12Hour(minutesToTime(settings.minStartTime))}
+              onChangeText={(value) => {
+                // Only update if it's a valid 12-hour time
+                if (value.match(/^(1[0-2]|0?[1-9]):[0-5][0-9] (AM|PM)$/)) {
+                  const minutes = timeToMinutes(value);
+                  setSettings(s => ({ ...s, minStartTime: minutes }));
+                }
+              }}
+              placeholder="7:00 AM"
+            />
+            <Input
+              label="Latest End Time"
+              value={convertTo12Hour(minutesToTime(settings.maxEndTime))}
+              onChangeText={(value) => {
+                // Only update if it's a valid 12-hour time
+                if (value.match(/^(1[0-2]|0?[1-9]):[0-5][0-9] (AM|PM)$/)) {
+                  const minutes = timeToMinutes(value);
+                  setSettings(s => ({ ...s, maxEndTime: minutes }));
+                }
+              }}
+              placeholder="8:00 PM"
+            />
+          </View>
+        </View>
+
+        {error && <ErrorMessage message={error} />}
+
+        <Button
+          onPress={handleSave}
+          disabled={isSaving}
+          style={styles.saveButton}
+        >
+              <Text>{isSaving ? 'Saving...' : 'Save Settings'}</Text>
+        </Button>
+      </ScrollView>
         </>
       )}
 
@@ -801,4 +801,4 @@ const styles = StyleSheet.create({
   inputGroup: {
     gap: spacing.md,
   },
-});
+}); 
