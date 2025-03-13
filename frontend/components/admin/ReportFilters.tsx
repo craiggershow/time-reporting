@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -35,6 +35,9 @@ interface PayPeriod {
 }
 
 export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersProps) {
+  const { width } = useWindowDimensions();
+  const isWeb = Platform.OS === 'web';
+  const isWideScreen = width > 1200;
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
@@ -300,7 +303,11 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
     return (
       <View style={styles.dateRangeSelector}>
         <TouchableOpacity 
-          style={[styles.dateRangeOption, dateRangeType === 'payPeriod' && styles.dateRangeOptionActive]}
+          style={[
+            styles.dateRangeOption, 
+            dateRangeType === 'payPeriod' && styles.dateRangeOptionActive,
+            isWeb && styles.webDateRangeOption
+          ]}
           onPress={() => setDateRangeType('payPeriod')}
         >
           <ThemedText style={[styles.dateRangeText, dateRangeType === 'payPeriod' && styles.dateRangeTextActive]}>
@@ -308,7 +315,11 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
           </ThemedText>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.dateRangeOption, dateRangeType === 'currentMonth' && styles.dateRangeOptionActive]}
+          style={[
+            styles.dateRangeOption, 
+            dateRangeType === 'currentMonth' && styles.dateRangeOptionActive,
+            isWeb && styles.webDateRangeOption
+          ]}
           onPress={() => setDateRangeType('currentMonth')}
         >
           <ThemedText style={[styles.dateRangeText, dateRangeType === 'currentMonth' && styles.dateRangeTextActive]}>
@@ -316,7 +327,11 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
           </ThemedText>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.dateRangeOption, dateRangeType === 'previousMonth' && styles.dateRangeOptionActive]}
+          style={[
+            styles.dateRangeOption, 
+            dateRangeType === 'previousMonth' && styles.dateRangeOptionActive,
+            isWeb && styles.webDateRangeOption
+          ]}
           onPress={() => setDateRangeType('previousMonth')}
         >
           <ThemedText style={[styles.dateRangeText, dateRangeType === 'previousMonth' && styles.dateRangeTextActive]}>
@@ -324,7 +339,11 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
           </ThemedText>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.dateRangeOption, dateRangeType === 'ytd' && styles.dateRangeOptionActive]}
+          style={[
+            styles.dateRangeOption, 
+            dateRangeType === 'ytd' && styles.dateRangeOptionActive,
+            isWeb && styles.webDateRangeOption
+          ]}
           onPress={() => setDateRangeType('ytd')}
         >
           <ThemedText style={[styles.dateRangeText, dateRangeType === 'ytd' && styles.dateRangeTextActive]}>
@@ -332,7 +351,11 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
           </ThemedText>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.dateRangeOption, dateRangeType === 'custom' && styles.dateRangeOptionActive]}
+          style={[
+            styles.dateRangeOption, 
+            dateRangeType === 'custom' && styles.dateRangeOptionActive,
+            isWeb && styles.webDateRangeOption
+          ]}
           onPress={() => setDateRangeType('custom')}
         >
           <ThemedText style={[styles.dateRangeText, dateRangeType === 'custom' && styles.dateRangeTextActive]}>
@@ -422,31 +445,59 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
     });
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <ThemedText type="subtitle">Report Filters</ThemedText>
-        <TouchableOpacity onPress={handleResetFilters}>
-          <ThemedText style={styles.resetText}>Reset</ThemedText>
+  const renderSelectedDateRange = () => {
+    return (
+      <View style={styles.selectedDateRange}>
+        <ThemedText style={styles.selectedDateRangeLabel}>Selected Range:</ThemedText>
+        <ThemedText style={styles.selectedDateRangeText}>
+          {formatDate(startDate)} - {formatDate(endDate)}
+        </ThemedText>
+      </View>
+    );
+  };
+
+  const renderReportTypeSelector = () => {
+    return (
+      <View style={styles.reportTypeContainer}>
+        <TouchableOpacity 
+          style={[
+            styles.reportTypeButton, 
+            reportType === 'summary' && styles.reportTypeButtonActive
+          ]}
+          onPress={() => setReportType('summary')}
+        >
+          <ThemedText 
+            style={[
+              styles.reportTypeText, 
+              reportType === 'summary' && styles.reportTypeTextActive
+            ]}
+          >
+            Summary
+          </ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[
+            styles.reportTypeButton, 
+            reportType === 'detailed' && styles.reportTypeButtonActive
+          ]}
+          onPress={() => setReportType('detailed')}
+        >
+          <ThemedText 
+            style={[
+              styles.reportTypeText, 
+              reportType === 'detailed' && styles.reportTypeTextActive
+            ]}
+          >
+            Detailed
+          </ThemedText>
         </TouchableOpacity>
       </View>
+    );
+  };
 
-      <View style={styles.filterSection}>
-        <ThemedText style={styles.sectionTitle}>Date Range</ThemedText>
-        {renderDateRangeSelector()}
-        {renderPayPeriodSelector()}
-        {renderCustomDateRange()}
-        
-        <View style={styles.selectedDateRange}>
-          <ThemedText style={styles.selectedDateRangeLabel}>Selected Range:</ThemedText>
-          <ThemedText style={styles.selectedDateRangeText}>
-            {formatDate(startDate)} - {formatDate(endDate)}
-          </ThemedText>
-        </View>
-      </View>
-
-      <View style={styles.filterSection}>
-        <ThemedText style={styles.sectionTitle}>Employees</ThemedText>
+  const renderEmployeeSelector = () => {
+    return (
+      <View style={styles.employeeSelector}>
         <TouchableOpacity 
           style={styles.employeeSelector}
           onPress={() => setShowEmployeeSelector(!showEmployeeSelector)}
@@ -470,6 +521,7 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
               value={employeeSearchQuery}
               onChangeText={setEmployeeSearchQuery}
               leftIcon="search"
+              label="Search"
             />
             
             <View style={styles.selectAllContainer}>
@@ -500,50 +552,83 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
           </View>
         )}
       </View>
+    );
+  };
 
-      <View style={styles.filterSection}>
-        <ThemedText style={styles.sectionTitle}>Report Type</ThemedText>
-        <View style={styles.reportTypeContainer}>
-          <TouchableOpacity 
-            style={[
-              styles.reportTypeButton, 
-              reportType === 'summary' && styles.reportTypeButtonActive
-            ]}
-            onPress={() => setReportType('summary')}
-          >
-            <ThemedText 
-              style={[
-                styles.reportTypeText, 
-                reportType === 'summary' && styles.reportTypeTextActive
-              ]}
-            >
-              Summary
-            </ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[
-              styles.reportTypeButton, 
-              reportType === 'detailed' && styles.reportTypeButtonActive
-            ]}
-            onPress={() => setReportType('detailed')}
-          >
-            <ThemedText 
-              style={[
-                styles.reportTypeText, 
-                reportType === 'detailed' && styles.reportTypeTextActive
-              ]}
-            >
-              Detailed
-            </ThemedText>
-          </TouchableOpacity>
-        </View>
+  return (
+    <View style={[styles.container, isWeb && styles.webContainer]}>
+      <View style={[styles.header, isWeb && styles.webHeader]}>
+        <ThemedText type="subtitle">Report Filters</ThemedText>
+        <TouchableOpacity onPress={handleResetFilters}>
+          <ThemedText style={styles.resetText}>Reset</ThemedText>
+        </TouchableOpacity>
       </View>
 
-      <Button 
-        label="Apply Filters" 
-        onPress={handleApplyFilters} 
-        style={styles.applyButton}
-      />
+      {isWeb && isWideScreen ? (
+        // Wide screen web layout - horizontal arrangement
+        <View style={styles.webFilterLayout}>
+          <View style={styles.webFilterColumn}>
+            <View style={[styles.filterSection, styles.webFilterSection]}>
+              <ThemedText style={styles.sectionTitle}>Date Range</ThemedText>
+              {renderDateRangeSelector()}
+              {renderPayPeriodSelector()}
+              {renderCustomDateRange()}
+              {renderSelectedDateRange()}
+            </View>
+          </View>
+          
+          <View style={styles.webFilterColumn}>
+            <View style={[styles.filterSection, styles.webFilterSection]}>
+              <ThemedText style={styles.sectionTitle}>Report Type</ThemedText>
+              {renderReportTypeSelector()}
+            </View>
+            
+            <View style={[styles.filterSection, styles.webFilterSection]}>
+              <ThemedText style={styles.sectionTitle}>Employees</ThemedText>
+              {renderEmployeeSelector()}
+            </View>
+          </View>
+          
+          <View style={styles.webButtonColumn}>
+            <Button
+              onPress={handleApplyFilters}
+              style={styles.applyButton}
+              leftIcon="analytics-outline"
+            >
+              Apply Filters
+            </Button>
+          </View>
+        </View>
+      ) : (
+        // Standard layout - vertical arrangement
+        <>
+          <View style={styles.filterSection}>
+            <ThemedText style={styles.sectionTitle}>Date Range</ThemedText>
+            {renderDateRangeSelector()}
+            {renderPayPeriodSelector()}
+            {renderCustomDateRange()}
+            {renderSelectedDateRange()}
+          </View>
+
+          <View style={styles.filterSection}>
+            <ThemedText style={styles.sectionTitle}>Report Type</ThemedText>
+            {renderReportTypeSelector()}
+          </View>
+
+          <View style={styles.filterSection}>
+            <ThemedText style={styles.sectionTitle}>Employees</ThemedText>
+            {renderEmployeeSelector()}
+          </View>
+
+          <Button
+            onPress={handleApplyFilters}
+            style={styles.applyButton}
+            leftIcon="analytics-outline"
+          >
+            Apply Filters
+          </Button>
+        </>
+      )}
     </View>
   );
 }
@@ -562,11 +647,18 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 1,
   },
+  webContainer: {
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.md,
+  },
+  webHeader: {
+    marginBottom: spacing.sm,
   },
   resetText: {
     color: colors.primary,
@@ -576,6 +668,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     position: 'relative',
     zIndex: 1,
+  },
+  webFilterSection: {
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     fontWeight: '500',
@@ -594,6 +689,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     backgroundColor: '#f1f5f9',
   },
+  webDateRangeOption: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    marginRight: spacing.xs,
+    marginBottom: spacing.xs,
+  },
   dateRangeOptionActive: {
     backgroundColor: colors.primary,
   },
@@ -604,6 +705,21 @@ const styles = StyleSheet.create({
   dateRangeTextActive: {
     color: '#ffffff',
     fontWeight: '500',
+  },
+  // Web-specific layout styles
+  webFilterLayout: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  webFilterColumn: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  webButtonColumn: {
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
+    paddingTop: 20,
   },
   payPeriodSelector: {
     marginBottom: spacing.md,

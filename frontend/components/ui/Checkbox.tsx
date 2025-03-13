@@ -4,26 +4,37 @@ import { colors } from '@/styles/common';
 import { ThemedText } from '../ThemedText';
 
 interface CheckboxProps {
-  checked: boolean;
+  checked?: boolean;
+  value?: boolean;
   onValueChange: (value: boolean) => void;
   label?: string;
   disabled?: boolean;
   labelStyle?: object;
 }
 
-export function Checkbox({ checked, onValueChange, label, disabled, labelStyle }: CheckboxProps) {
+export function Checkbox({ 
+  checked, 
+  value, 
+  onValueChange, 
+  label, 
+  disabled, 
+  labelStyle 
+}: CheckboxProps) {
+  // Use checked prop if provided, otherwise use value prop
+  const isChecked = checked !== undefined ? checked : value !== undefined ? value : false;
+
   return (
     <View style={styles.container}>
       <Pressable
-        onPress={() => onValueChange(!checked)}
+        onPress={() => onValueChange(!isChecked)}
         disabled={disabled}
         style={({ pressed }) => [
           styles.checkbox,
-          checked && styles.checked,
+          isChecked && styles.checked,
           (pressed || disabled) && styles.pressed,
         ]}
       >
-        {checked && (
+        {isChecked && (
           <Ionicons 
             name="checkmark-sharp" 
             size={16} 
@@ -33,7 +44,7 @@ export function Checkbox({ checked, onValueChange, label, disabled, labelStyle }
         )}
       </Pressable>
       {label && (
-        <Pressable onPress={() => onValueChange(!checked)}>
+        <Pressable onPress={() => onValueChange(!isChecked)}>
           <ThemedText style={[styles.label, labelStyle]}>{label}</ThemedText>
         </Pressable>
       )}

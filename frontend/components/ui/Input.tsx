@@ -2,12 +2,13 @@ import { TextInput, View, StyleSheet, TextInputProps, StyleProp, ViewStyle, Text
 import { ThemedText } from '../ThemedText';
 import { useTheme } from '@/context/ThemeContext';
 import { ReactNode, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
 // Create a custom interface that doesn't extend TextInputProps to avoid style type conflicts
 interface InputProps {
-  label: string;
-  leftIcon?: ReactNode;
-  rightIcon?: ReactNode;
+  label?: string;
+  leftIcon?: ReactNode | string;
+  rightIcon?: ReactNode | string;
   error?: string;
   style?: StyleProp<ViewStyle>;
   onFocus?: (e: any) => void;
@@ -52,6 +53,17 @@ export function Input({
     if (onBlur) onBlur(e);
   };
 
+  // Render icon based on type (string or ReactNode)
+  const renderIcon = (icon: ReactNode | string | undefined) => {
+    if (!icon) return null;
+    
+    if (typeof icon === 'string') {
+      return <Ionicons name={icon as any} size={20} color={colors.text.primary} />;
+    }
+    
+    return icon;
+  };
+
   return (
     <View style={styles.container}>
       {label ? <ThemedText style={styles.label}>{label}</ThemedText> : null}
@@ -61,7 +73,7 @@ export function Input({
         error && styles.errorContainer,
         style
       ]}>
-        {leftIcon ? <View style={styles.iconLeft}>{leftIcon}</View> : null}
+        {leftIcon ? <View style={styles.iconLeft}>{renderIcon(leftIcon)}</View> : null}
         <TextInput
           style={[
             styles.input,
@@ -74,7 +86,7 @@ export function Input({
           onKeyPress={onKeyPress}
           {...props as any}
         />
-        {rightIcon ? <View style={styles.iconRight}>{rightIcon}</View> : null}
+        {rightIcon ? <View style={styles.iconRight}>{renderIcon(rightIcon)}</View> : null}
       </View>
       {error ? (
         <ThemedText style={styles.errorText}>{error}</ThemedText>

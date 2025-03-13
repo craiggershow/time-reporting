@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Platform, useWindowDimensions } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ReportFilters, ReportFilters as ReportFiltersType } from './ReportFilters';
 import { ReportResults } from './ReportResults';
@@ -9,6 +9,9 @@ import { colors, spacing } from '@/styles/common';
 import { buildApiUrl } from '@/constants/Config';
 
 export function ReportingTool() {
+  const { width } = useWindowDimensions();
+  const isWeb = Platform.OS === 'web';
+  
   const [filters, setFilters] = useState<ReportFiltersType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +47,10 @@ export function ReportingTool() {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <ThemedText type="title">Time Reporting Tool</ThemedText>
-          <ThemedText style={styles.subtitle}>
+      <View style={[styles.content, isWeb && styles.webContent]}>
+        <View style={[styles.header, isWeb && styles.webHeader]}>
+          <ThemedText type={isWeb ? "subtitle" : "title"}>Time Reporting Tool</ThemedText>
+          <ThemedText style={[styles.subtitle, isWeb && styles.webSubtitle]}>
             Generate reports on employee time entries
           </ThemedText>
         </View>
@@ -76,7 +79,7 @@ export function ReportingTool() {
         )}
 
         {!hasGeneratedReport && !isLoading && (
-          <View style={styles.emptyState}>
+          <View style={[styles.emptyState, isWeb && styles.webEmptyState]}>
             <ThemedText style={styles.emptyStateText}>
               Select filters and click "Apply Filters" to generate a report
             </ThemedText>
@@ -96,24 +99,26 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     flex: 1,
   },
+  webContent: {
+    padding: spacing.md,
+  },
   header: {
     marginBottom: spacing.lg,
+  },
+  webHeader: {
+    marginBottom: spacing.sm,
   },
   subtitle: {
     color: colors.text.secondary,
     marginTop: spacing.xs,
   },
+  webSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
   loadingContainer: {
-    padding: spacing.xl,
+    padding: spacing.lg,
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   emptyState: {
     padding: spacing.xl,
@@ -121,11 +126,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#ffffff',
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: spacing.lg,
+  },
+  webEmptyState: {
+    padding: spacing.lg,
+    marginTop: spacing.md,
   },
   emptyStateText: {
     color: colors.text.secondary,
