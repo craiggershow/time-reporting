@@ -19,6 +19,8 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { colors, spacing } from '@/styles/common';
 import { Ionicons } from '@expo/vector-icons';
 import { DateRangeType } from './ReportFilters';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { ErrorMessage } from '../ui/ErrorMessage';
 
 interface PayPeriod {
   id: string;
@@ -51,6 +53,8 @@ interface MobileReportFilterSheetProps {
   payPeriodsError: string | null;
   fetchPayPeriods: () => void;
   employees: { id: string; name: string; email: string; isActive: boolean }[];
+  isLoadingEmployees: boolean;
+  employeesError: string | null;
 }
 
 export function MobileReportFilterSheet({
@@ -76,7 +80,9 @@ export function MobileReportFilterSheet({
   isLoadingPayPeriods,
   payPeriodsError,
   fetchPayPeriods,
-  employees
+  employees,
+  isLoadingEmployees,
+  employeesError
 }: MobileReportFilterSheetProps) {
   const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
   const [showEmployeeSelector, setShowEmployeeSelector] = useState(false);
@@ -334,15 +340,15 @@ export function MobileReportFilterSheet({
 
   const renderEmployeeSelector = () => {
     return (
-      <>
+      <View style={styles.tabContent}>
         <View style={styles.employeeSelectorHeader}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.employeeSelector}
             onPress={() => setShowEmployeeSelector(!showEmployeeSelector)}
           >
             <ThemedText>
-              {selectedEmployees.length === 0 
-                ? 'All Employees' 
+              {selectedEmployees.length === 0
+                ? 'All Employees'
                 : `${selectedEmployees.length} Selected`}
             </ThemedText>
             <Ionicons 
@@ -354,50 +360,55 @@ export function MobileReportFilterSheet({
         </View>
 
         {showEmployeeSelector && (
-          <View style={styles.employeeListContainer}>
+          <View style={styles.employeeList}>
             <Input
-              label="Search"
               placeholder="Search employees..."
               value={employeeSearchQuery}
               onChangeText={setEmployeeSearchQuery}
               leftIcon="search"
-              style={styles.searchInput}
+              label="Search"
             />
             
             <View style={styles.selectAllContainer}>
               <Checkbox
-                label="Select All"
                 checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
                 onValueChange={handleSelectAllEmployees}
+                label="Select All"
               />
               <Checkbox
-                label="Include Inactive"
                 checked={includeInactive}
                 onValueChange={setIncludeInactive}
+                label="Include Inactive"
               />
             </View>
 
-            <ScrollView style={styles.employeeList}>
-              {filteredEmployees.length > 0 ? (
-                filteredEmployees.map(employee => (
-                  <View key={employee.id} style={styles.employeeItem}>
-                    <Checkbox
-                      label={employee.name}
-                      checked={selectedEmployees.includes(employee.id)}
-                      onValueChange={() => handleEmployeeToggle(employee.id)}
-                    />
-                    {!employee.isActive && (
-                      <ThemedText style={styles.inactiveLabel}>(Inactive)</ThemedText>
-                    )}
-                  </View>
-                ))
-              ) : (
-                <ThemedText style={styles.noResultsText}>No employees found</ThemedText>
-              )}
-            </ScrollView>
+            {employeesError ? (
+              <ErrorMessage 
+                message={employeesError} 
+              />
+            ) : filteredEmployees.length > 0 ? (
+              filteredEmployees.map(employee => (
+                <View key={employee.id} style={styles.employeeItem}>
+                  <Checkbox
+                    checked={selectedEmployees.includes(employee.id)}
+                    onValueChange={() => handleEmployeeToggle(employee.id)}
+                    label={`${employee.name} (${employee.email})`}
+                  />
+                  {!employee.isActive && (
+                    <ThemedText style={styles.inactiveLabel}>(Inactive)</ThemedText>
+                  )}
+                </View>
+              ))
+            ) : isLoadingEmployees ? (
+              <View style={styles.loadingContainer}>
+                <LoadingSpinner message="Loading employees..." />
+              </View>
+            ) : (
+              <ThemedText style={styles.noResultsText}>No employees found</ThemedText>
+            )}
           </View>
         )}
-      </>
+      </View>
     );
   };
 
@@ -779,7 +790,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     padding: spacing.md,
   },
-  employeeListContainer: {
+  employeeList: {
     marginTop: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -787,16 +798,10 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     backgroundColor: '#ffffff',
   },
-  searchInput: {
-    marginBottom: spacing.sm,
-  },
   selectAllContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
-  },
-  employeeList: {
-    maxHeight: 200,
   },
   employeeItem: {
     flexDirection: 'row',

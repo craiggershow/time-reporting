@@ -166,34 +166,34 @@ export function UserManagement() {
 
   const columns = useMemo(() => {
     const baseColumns = [
-      { 
-        key: 'employeeId',
-        title: 'Id',
-        sortable: true,
+    { 
+      key: 'employeeId',
+      title: 'Id',
+      sortable: true,
         width: isMobile ? 60 : 100,
-        render: (id: string) => (
-          <ThemedText style={styles.text.cell}>
-            {id}
-          </ThemedText>
-        ),
-      },
-      { 
-        key: 'name',
-        title: 'Name',
-        sortable: true,
+      render: (id: string) => (
+        <ThemedText style={styles.text.cell}>
+          {id}
+        </ThemedText>
+      ),
+    },
+    { 
+      key: 'name',
+      title: 'Name',
+      sortable: true,
         width: isMobile ? 120 : 200,
-        render: (_, user: User) => (
-          <ThemedText style={styles.text.cell}>
-            {`${user.firstName} ${user.lastName}`}
-          </ThemedText>
-        ),
-      },
-      { 
-        key: 'email',
-        title: 'Email',
-        sortable: true,
+      render: (_, user: User) => (
+        <ThemedText style={styles.text.cell}>
+          {`${user.firstName} ${user.lastName}`}
+        </ThemedText>
+      ),
+    },
+    { 
+      key: 'email',
+      title: 'Email',
+      sortable: true,
         width: isMobile ? 150 : 400,
-        render: (email: string) => (
+      render: (email: string) => (
           <View style={{ width: isMobile ? 150 : 400 }}>
             <ThemedText style={{
               ...styles.text.cell, 
@@ -201,39 +201,39 @@ export function UserManagement() {
               textAlign: 'center',
               ...(isMobile && { fontSize: 12 })
             }}>
-              {email}
-            </ThemedText>
-          </View>
-        ),
-      },
+            {email}
+          </ThemedText>
+        </View>
+      ),
+    },
     ];
 
     if (!isMobile) {
       baseColumns.push(
-        { 
-          key: 'role', 
-          title: 'Admin',
-          sortable: true,
-          render: (role: string) => (
-            <ThemedText style={styles.text.cell}>
-              {role === 'ADMIN' ? 'Yes' : 'No'}
-            </ThemedText>
-          ),
-        },
-        { 
-          key: 'isActive', 
-          title: 'Status',
-          sortable: true,
-          render: (value: boolean) => (
+    { 
+      key: 'role', 
+      title: 'Admin',
+      sortable: true,
+      render: (role: string) => (
+        <ThemedText style={styles.text.cell}>
+          {role === 'ADMIN' ? 'Yes' : 'No'}
+        </ThemedText>
+      ),
+    },
+    { 
+      key: 'isActive', 
+      title: 'Status',
+      sortable: true,
+      render: (value: boolean) => (
             <View style={{
               ...styles.status.badge,
               ...(value ? styles.status.active : styles.status.inactive)
             }}>
-              <ThemedText style={value ? styles.status.active : styles.status.inactive}>
-                {value ? 'Active' : 'Inactive'}
-              </ThemedText>
-            </View>
-          ),
+          <ThemedText style={value ? styles.status.active : styles.status.inactive}>
+            {value ? 'Active' : 'Inactive'}
+          </ThemedText>
+        </View>
+      ),
         }
       );
     }
@@ -252,12 +252,12 @@ export function UserManagement() {
             {isMobile ? <Ionicons name="create-outline" size={16} color="#64748b" /> : "Edit"}
           </Button>
           {!isMobile && (
-            <Button 
-              variant={user.isActive ? "secondary" : "primary"}
-              onPress={() => handleToggleUserStatus(user)}
-            >
-              {user.isActive ? 'Deactivate' : 'Activate'}
-            </Button>
+          <Button 
+            variant={user.isActive ? "secondary" : "primary"}
+            onPress={() => handleToggleUserStatus(user)}
+          >
+            {user.isActive ? 'Deactivate' : 'Activate'}
+          </Button>
           )}
           {isMobile && (
             <Button 
@@ -332,35 +332,35 @@ export function UserManagement() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View 
+    <View 
         style={{
           ...styles.container,
           ...(Platform.OS === 'web' ? { backgroundColor: colors.adminBackground } : {})
         }}
-      >
-        <Header />
-        <ScrollView 
+    >
+      <Header />
+      <ScrollView 
           style={{
             ...styles.content,
             backgroundColor: colors.adminBackground
           }}
           contentContainerStyle={styles.scrollContent}
-        >
-          <View 
+      >
+        <View 
             style={{
               ...styles.section,
               backgroundColor: colors.adminBackground
             }}
           >
             <View style={isMobile ? styles.mobileHeader : styles.header}>
-              <View style={styles.headerInfo}>
-                <ThemedText type="title">User Management</ThemedText>
+            <View style={styles.headerInfo}>
+              <ThemedText type="title">User Management</ThemedText>
                 {!isMobile && (
-                  <ThemedText style={styles.text.subtitle}>
-                    Manage user accounts and permissions
-                  </ThemedText>
+              <ThemedText style={styles.text.subtitle}>
+                Manage user accounts and permissions
+              </ThemedText>
                 )}
-              </View>
+            </View>
               <View style={isMobile ? styles.mobileHeaderActions : styles.headerActions}>
                 {isMobile && (
                   <Button 
@@ -382,64 +382,64 @@ export function UserManagement() {
                   </Button>
                 )}
                 {selectedUserIds.length > 0 && !isMobile && (
-                  <View style={styles.bulkActions}>
-                    <View style={styles.selectedBadge}>
-                      <ThemedText style={styles.text.count}>
-                        {selectedUserIds.length} selected
-                      </ThemedText>
-                    </View>
-                    <Button 
-                      variant="secondary"
-                      onPress={handleBulkActivate}
-                      leftIcon={<Ionicons name="checkmark-circle" size={20} />}
-                    >
-                      Activate
-                    </Button>
-                    <Button 
-                      variant="secondary"
-                      onPress={handleBulkDeactivate}
-                      leftIcon={<Ionicons name="close-circle" size={20} />}
-                    >
-                      Deactivate
-                    </Button>
+                <View style={styles.bulkActions}>
+                  <View style={styles.selectedBadge}>
+                    <ThemedText style={styles.text.count}>
+                      {selectedUserIds.length} selected
+                    </ThemedText>
                   </View>
-                )}
-                {!isMobile && (
                   <Button 
                     variant="secondary"
-                    onPress={handleExportCSV}
-                    leftIcon={<Ionicons name="download-outline" size={20} />}
+                    onPress={handleBulkActivate}
+                    leftIcon={<Ionicons name="checkmark-circle" size={20} />}
                   >
-                    Export
+                    Activate
                   </Button>
+                  <Button 
+                    variant="secondary"
+                    onPress={handleBulkDeactivate}
+                    leftIcon={<Ionicons name="close-circle" size={20} />}
+                  >
+                    Deactivate
+                  </Button>
+                </View>
+              )}
+                {!isMobile && (
+              <Button 
+                variant="secondary"
+                onPress={handleExportCSV}
+                leftIcon={<Ionicons name="download-outline" size={20} />}
+              >
+                Export
+              </Button>
                 )}
                 {!isMobile && (
-                  <Button
-                    onPress={() => setShowAddUser(true)}
-                    leftIcon={<Ionicons name="add" size={20} />}
-                  >
-                    Add User
-                  </Button>
+              <Button
+                onPress={() => setShowAddUser(true)}
+                leftIcon={<Ionicons name="add" size={20} />}
+              >
+                Add User
+              </Button>
                 )}
               </View>
-            </View>
+          </View>
 
             <View style={isMobile ? styles.mobileFilters : styles.filters}>
               <View style={[styles.searchContainer, isMobile && styles.mobileSearchContainer]}>
-                <Input
-                  label=""
-                  placeholder="Search users..."
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
+              <Input
+                label=""
+                placeholder="Search users..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
                   style={[styles.searchInput, isMobile && styles.mobileSearchInput]}
-                  leftIcon={<Ionicons name="search" size={20} color={colors.text.secondary} />}
-                />
+                leftIcon={<Ionicons name="search" size={20} color={colors.text.secondary} />}
+              />
                 {!isMobile && (
-                  <ThemedText style={styles.text.count}>
-                    {filteredUsers.length} users found
-                  </ThemedText>
+              <ThemedText style={styles.text.count}>
+                {filteredUsers.length} users found
+              </ThemedText>
                 )}
-              </View>
+            </View>
               {isMobile && (
                 <ThemedText style={[styles.text.count, { color: colors.text.secondary }]}>
                   {filteredUsers.length} users found
@@ -447,60 +447,60 @@ export function UserManagement() {
               )}
 
               {!isMobile && (
-                <View style={styles.filterSection}>
-                  <View style={styles.filterGroup}>
-                    <ThemedText style={styles.text.cell}>Role</ThemedText>
-                    <View style={styles.filterButtons}>
-                      <Button
-                        variant={roleFilter === 'ALL' ? 'primary' : 'secondary'}
-                        onPress={() => setRoleFilter('ALL')}
-                        size="small"
-                      >
-                        All
-                      </Button>
-                      <Button
-                        variant={roleFilter === 'ADMIN' ? 'primary' : 'secondary'}
-                        onPress={() => setRoleFilter('ADMIN')}
-                        size="small"
-                      >
-                        Admins
-                      </Button>
-                      <Button
-                        variant={roleFilter === 'EMPLOYEE' ? 'primary' : 'secondary'}
-                        onPress={() => setRoleFilter('EMPLOYEE')}
-                        size="small"
-                      >
-                        Employees
-                      </Button>
-                    </View>
-                  </View>
+            <View style={styles.filterSection}>
+              <View style={styles.filterGroup}>
+                <ThemedText style={styles.text.cell}>Role</ThemedText>
+                <View style={styles.filterButtons}>
+                  <Button
+                    variant={roleFilter === 'ALL' ? 'primary' : 'secondary'}
+                    onPress={() => setRoleFilter('ALL')}
+                    size="small"
+                  >
+                    All
+                  </Button>
+                  <Button
+                    variant={roleFilter === 'ADMIN' ? 'primary' : 'secondary'}
+                    onPress={() => setRoleFilter('ADMIN')}
+                    size="small"
+                  >
+                    Admins
+                  </Button>
+                  <Button
+                    variant={roleFilter === 'EMPLOYEE' ? 'primary' : 'secondary'}
+                    onPress={() => setRoleFilter('EMPLOYEE')}
+                    size="small"
+                  >
+                    Employees
+                  </Button>
+                </View>
+              </View>
 
-                  <View style={styles.filterGroup}>
-                    <ThemedText style={styles.text.cell}>Status</ThemedText>
-                    <View style={styles.filterButtons}>
-                      <Button
-                        variant={statusFilter === 'ALL' ? 'primary' : 'secondary'}
-                        onPress={() => setStatusFilter('ALL')}
-                        size="small"
-                      >
-                        All
-                      </Button>
-                      <Button
-                        variant={statusFilter === 'ACTIVE' ? 'primary' : 'secondary'}
-                        onPress={() => setStatusFilter('ACTIVE')}
-                        size="small"
-                      >
-                        Active
-                      </Button>
-                      <Button
-                        variant={statusFilter === 'INACTIVE' ? 'primary' : 'secondary'}
-                        onPress={() => setStatusFilter('INACTIVE')}
-                        size="small"
-                      >
-                        Inactive
-                      </Button>
-                    </View>
-                  </View>
+              <View style={styles.filterGroup}>
+                <ThemedText style={styles.text.cell}>Status</ThemedText>
+                <View style={styles.filterButtons}>
+                  <Button
+                    variant={statusFilter === 'ALL' ? 'primary' : 'secondary'}
+                    onPress={() => setStatusFilter('ALL')}
+                    size="small"
+                  >
+                    All
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'ACTIVE' ? 'primary' : 'secondary'}
+                    onPress={() => setStatusFilter('ACTIVE')}
+                    size="small"
+                  >
+                    Active
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'INACTIVE' ? 'primary' : 'secondary'}
+                    onPress={() => setStatusFilter('INACTIVE')}
+                    size="small"
+                  >
+                    Inactive
+                  </Button>
+                </View>
+              </View>
                 </View>
               )}
 
@@ -530,7 +530,7 @@ export function UserManagement() {
                       >
                         Emp
                       </Button>
-                    </View>
+            </View>
                   </View>
                   
                   <View style={styles.mobileFilterRow}>
@@ -561,53 +561,53 @@ export function UserManagement() {
                   </View>
                 </View>
               )}
-            </View>
+          </View>
 
-            {error && (
-              <ErrorMessage
-                message={error}
-                onRetry={fetchUsers}
-                onDismiss={() => setError(null)}
-              />
-            )}
+          {error && (
+            <ErrorMessage
+              message={error}
+              onRetry={fetchUsers}
+              onDismiss={() => setError(null)}
+            />
+          )}
 
-            <View style={styles.table}>
-              <DataTable
-                data={paginatedUsers}
-                columns={columns}
-                isLoading={isLoading}
-                selectedIds={selectedUserIds}
-                onSelectionChange={setSelectedUserIds}
-              />
+          <View style={styles.table}>
+            <DataTable
+              data={paginatedUsers}
+              columns={columns}
+              isLoading={isLoading}
+              selectedIds={selectedUserIds}
+              onSelectionChange={setSelectedUserIds}
+            />
 
               <View style={isMobile ? styles.mobilePagination : styles.pagination}>
-                <Button
-                  variant="secondary"
-                  onPress={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
+              <Button
+                variant="secondary"
+                onPress={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
                   size="medium"
                   style={isMobile ? styles.mobilePaginationButton : undefined}
                   leftIcon={<Ionicons name="chevron-back" size={20} color="#1e293b" />}
-                >
+              >
                   {isMobile ? "Prev" : "Previous"}
-                </Button>
-                <ThemedText style={styles.text.count}>
+              </Button>
+              <ThemedText style={styles.text.count}>
                   {page}/{totalPages}
-                </ThemedText>
-                <Button
-                  variant="secondary"
-                  onPress={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
+              </ThemedText>
+              <Button
+                variant="secondary"
+                onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
                   size="medium"
                   style={isMobile ? styles.mobilePaginationButton : undefined}
                   rightIcon={<Ionicons name="chevron-forward" size={20} color="#1e293b" />}
-                >
+              >
                   {isMobile ? "Next" : "Next"}
-                </Button>
-              </View>
+              </Button>
             </View>
           </View>
-        </ScrollView>
+        </View>
+      </ScrollView>
 
         {isMobile && (
           <TouchableOpacity 
@@ -618,49 +618,49 @@ export function UserManagement() {
           </TouchableOpacity>
         )}
 
-        {(showAddUser || selectedUser) && (
-          <UserForm
-            user={selectedUser}
-            onClose={() => {
-              setShowAddUser(false);
-              setSelectedUser(null);
-            }}
-            onSave={() => {
-              setShowAddUser(false);
-              setSelectedUser(null);
-            }}
-            fetchUsers={fetchUsers}
-          />
-        )}
+      {(showAddUser || selectedUser) && (
+        <UserForm
+          user={selectedUser}
+          onClose={() => {
+            setShowAddUser(false);
+            setSelectedUser(null);
+          }}
+          onSave={() => {
+            setShowAddUser(false);
+            setSelectedUser(null);
+          }}
+          fetchUsers={fetchUsers}
+        />
+      )}
 
-        {showConfirmDialog && userToDeactivate && (
-          <ConfirmDialog
-            title={userToDeactivate.isActive ? "Deactivate User" : "Activate User"}
-            message={`Are you sure you want to ${userToDeactivate.isActive ? 'deactivate' : 'activate'} ${userToDeactivate.firstName} ${userToDeactivate.lastName}?`}
-            confirmText={userToDeactivate.isActive ? "Deactivate" : "Activate"}
-            isDestructive={userToDeactivate.isActive}
-            onConfirm={handleConfirmStatusChange}
-            onCancel={() => {
-              setShowConfirmDialog(false);
-              setUserToDeactivate(null);
-            }}
-          />
-        )}
+      {showConfirmDialog && userToDeactivate && (
+        <ConfirmDialog
+          title={userToDeactivate.isActive ? "Deactivate User" : "Activate User"}
+          message={`Are you sure you want to ${userToDeactivate.isActive ? 'deactivate' : 'activate'} ${userToDeactivate.firstName} ${userToDeactivate.lastName}?`}
+          confirmText={userToDeactivate.isActive ? "Deactivate" : "Activate"}
+          isDestructive={userToDeactivate.isActive}
+          onConfirm={handleConfirmStatusChange}
+          onCancel={() => {
+            setShowConfirmDialog(false);
+            setUserToDeactivate(null);
+          }}
+        />
+      )}
 
-        {showBulkActionDialog && (
-          <ConfirmDialog
-            title={`${bulkAction === 'activate' ? 'Activate' : 'Deactivate'} Users`}
-            message={`Are you sure you want to ${bulkAction} ${selectedUserIds.length} users?`}
-            confirmText={bulkAction === 'activate' ? 'Activate' : 'Deactivate'}
-            isDestructive={bulkAction === 'deactivate'}
-            onConfirm={handleBulkAction}
-            onCancel={() => {
-              setShowBulkActionDialog(false);
-              setBulkAction(null);
-            }}
-          />
-        )}
-      </View>
+      {showBulkActionDialog && (
+        <ConfirmDialog
+          title={`${bulkAction === 'activate' ? 'Activate' : 'Deactivate'} Users`}
+          message={`Are you sure you want to ${bulkAction} ${selectedUserIds.length} users?`}
+          confirmText={bulkAction === 'activate' ? 'Activate' : 'Deactivate'}
+          isDestructive={bulkAction === 'deactivate'}
+          onConfirm={handleBulkAction}
+          onCancel={() => {
+            setShowBulkActionDialog(false);
+            setBulkAction(null);
+          }}
+        />
+      )}
+    </View>
     </SafeAreaView>
   );
 }

@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
-import { SafeDateTimePicker } from '@/components/ui/SafeDateTimePicker';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { colors, spacing } from '@/styles/common';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, TouchableOpacity, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { ThemedText } from '../ThemedText';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Checkbox } from '../ui/Checkbox';
+import { SafeDateTimePicker } from '../ui/SafeDateTimePicker';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { ErrorMessage } from '../ui/ErrorMessage';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing } from '@/styles/common';
 import { buildApiUrl } from '@/constants/Config';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface ReportFiltersProps {
   onApplyFilters: (filters: ReportFilters) => void;
@@ -34,6 +35,38 @@ interface PayPeriod {
   name: string;
 }
 
+interface Employee {
+  id: string;
+  name: string;
+  email: string;
+  isActive: boolean;
+}
+
+// Add these utility functions at the top of the file
+function getFirstDayOfMonth(): Date {
+  const date = new Date();
+  date.setDate(1);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function getLastDayOfMonth(): Date {
+  const date = new Date();
+  date.setMonth(date.getMonth() + 1);
+  date.setDate(0);
+  date.setHours(23, 59, 59, 999);
+  return date;
+}
+
+// Simple debounce function
+function debounce(func: Function, wait: number) {
+  let timeout: NodeJS.Timeout;
+  return function(...args: any[]) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
 export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersProps) {
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === 'web';
@@ -51,6 +84,14 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
   const [isLoadingPayPeriods, setIsLoadingPayPeriods] = useState(false);
   const [payPeriodsError, setPayPeriodsError] = useState<string | null>(null);
   const [isInitialSetupComplete, setIsInitialSetupComplete] = useState(false);
+  
+  // New state variables for employee data
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+  const [employeesError, setEmployeesError] = useState<string | null>(null);
+  const [employeePage, setEmployeePage] = useState(1);
+  const [hasMoreEmployees, setHasMoreEmployees] = useState(true);
+  const [totalEmployees, setTotalEmployees] = useState(0);
   
   // Define handleApplyFilters as a useCallback to avoid dependency issues
   const handleApplyFilters = useCallback(() => {
@@ -74,22 +115,87 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
     onApplyFilters
   ]);
   
-  // Mock data for employees - in a real app, this would come from an API
-  const employees = [
-    { id: '1', name: 'John Doe', email: 'john@example.com', isActive: true },
-    { id: '2', name: 'Jane Smith', email: 'jane@example.com', isActive: true },
-    { id: '3', name: 'Bob Johnson', email: 'bob@example.com', isActive: false },
-  ];
-
-  // Initialize with all active employees
-  useEffect(() => {
-    // Set selected employees to all active employees
-    const activeEmployeeIds = employees
-      .filter(employee => employee.isActive)
-      .map(employee => employee.id);
-    
-    setSelectedEmployees(activeEmployeeIds);
+  // Fetch employees with pagination and search
+  const fetchEmployees = useCallback(async (page = 1, search = '', includeInactive = false) => {
+    try {
+      setEmployeesError(null);
+      setIsLoadingEmployees(true);
+      
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: '50', // Fetch 50 employees at a time
+        ...(search && { search }),
+        ...(includeInactive && { includeInactive: 'true' })
+      }).toString();
+      
+      console.log(`Fetching employees: ${buildApiUrl('EMPLOYEES')}?${queryParams}`);
+      
+      const response = await fetch(`${buildApiUrl('EMPLOYEES')}?${queryParams}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch employees: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Check if the response has the expected structure
+      if (!data.employees || !data.pagination) {
+        console.error('Unexpected API response format:', data);
+        throw new Error('Unexpected API response format');
+      }
+      
+      // If it's the first page, replace the employees array
+      // Otherwise, append to the existing array
+      if (page === 1) {
+        setEmployees(data.employees);
+      } else {
+        setEmployees(prev => [...prev, ...data.employees]);
+      }
+      
+      setTotalEmployees(data.pagination.totalCount);
+      setHasMoreEmployees(page < data.pagination.totalPages);
+      setEmployeePage(page);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      setEmployeesError('Failed to load employees. Please try again.');
+    } finally {
+      setIsLoadingEmployees(false);
+    }
   }, []);
+  
+  // Create a debounced search function
+  const debouncedSearch = useCallback(
+    (search: string, includeInactive: boolean) => {
+      const debouncedFn = debounce((s: string, i: boolean) => {
+        fetchEmployees(1, s, i);
+      }, 300);
+      debouncedFn(search, includeInactive);
+    },
+    [fetchEmployees]
+  );
+  
+  // Load more employees when scrolling
+  const loadMoreEmployees = useCallback(() => {
+    if (!isLoadingEmployees && hasMoreEmployees) {
+      fetchEmployees(employeePage + 1, employeeSearchQuery, includeInactive);
+    }
+  }, [isLoadingEmployees, hasMoreEmployees, employeePage, employeeSearchQuery, includeInactive, fetchEmployees]);
+  
+  // Effect to fetch employees on initial load
+  useEffect(() => {
+    fetchEmployees(1, '', includeInactive);
+  }, [fetchEmployees]);
+  
+  // Effect to handle search and include inactive changes
+  useEffect(() => {
+    debouncedSearch(employeeSearchQuery, includeInactive);
+  }, [employeeSearchQuery, includeInactive, debouncedSearch]);
 
   useEffect(() => {
     fetchPayPeriods();
@@ -235,22 +341,19 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
     setEndDate(end);
   };
 
-  const filteredEmployees = employees.filter(
-    employee => 
-      (includeInactive || employee.isActive) && 
-      (employee.name.toLowerCase().includes(employeeSearchQuery.toLowerCase()) || 
-       employee.email.toLowerCase().includes(employeeSearchQuery.toLowerCase()))
-  );
-
   const handleEmployeeToggle = (employeeId: string) => {
-    setSelectedEmployees(prev => 
-      prev.includes(employeeId) 
-        ? prev.filter(id => id !== employeeId) 
+    setSelectedEmployees(prev =>
+      prev.includes(employeeId)
+        ? prev.filter(id => id !== employeeId)
         : [...prev, employeeId]
     );
   };
 
   const handleSelectAllEmployees = () => {
+    const filteredEmployees = employees.filter(
+      employee => includeInactive || employee.isActive
+    );
+    
     if (selectedEmployees.length === filteredEmployees.length) {
       setSelectedEmployees([]);
     } else {
@@ -259,43 +362,20 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
   };
 
   const handleResetFilters = () => {
-    // Reset to previous pay period instead of custom date range
-    setDateRangeType('payPeriod');
-    
-    // If pay periods are available, select the previous pay period
-    if (payPeriods.length > 1) {
-      setSelectedPayPeriodId(payPeriods[1].id);
-      
-      // Update date range based on the selected pay period
-      const selectedPeriod = payPeriods[1];
-      const start = new Date(`${selectedPeriod.startDate}T12:00:00`);
-      const end = new Date(`${selectedPeriod.endDate}T12:00:00`);
-      setStartDate(start);
-      setEndDate(end);
-    } else if (payPeriods.length === 1) {
-      setSelectedPayPeriodId(payPeriods[0].id);
-      
-      // Update date range based on the selected pay period
-      const selectedPeriod = payPeriods[0];
-      const start = new Date(`${selectedPeriod.startDate}T12:00:00`);
-      const end = new Date(`${selectedPeriod.endDate}T12:00:00`);
-      setStartDate(start);
-      setEndDate(end);
-    } else {
-      // Fallback to current date range if no pay periods are available
-      setStartDate(new Date());
-      setEndDate(new Date());
-    }
-    
+    setDateRangeType('currentMonth');
+    setSelectedPayPeriodId('');
+    setStartDate(getFirstDayOfMonth());
+    setEndDate(getLastDayOfMonth());
     setReportType('summary');
     
     // Reset to all active employees
     const activeEmployeeIds = employees
       .filter(employee => employee.isActive)
       .map(employee => employee.id);
-    setSelectedEmployees(activeEmployeeIds);
     
+    setSelectedEmployees(activeEmployeeIds);
     setIncludeInactive(false);
+    setShowEmployeeSelector(false);
     setEmployeeSearchQuery('');
   };
 
@@ -375,8 +455,7 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
         
         {isLoadingPayPeriods ? (
           <View style={styles.loadingContainer}>
-            <LoadingSpinner size="small" />
-            <ThemedText style={styles.loadingText}>Loading pay periods...</ThemedText>
+            <LoadingSpinner message="Loading pay periods..." />
           </View>
         ) : payPeriodsError ? (
           <View style={styles.errorContainer}>
@@ -527,7 +606,7 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
             <View style={styles.selectAllContainer}>
               <Checkbox
                 label="Select All"
-                value={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+                value={selectedEmployees.length === employees.length && employees.length > 0}
                 onValueChange={handleSelectAllEmployees}
               />
               <Checkbox
@@ -537,18 +616,47 @@ export function ReportFilters({ onApplyFilters, onResetFilters }: ReportFiltersP
               />
             </View>
 
-            {filteredEmployees.map(employee => (
-              <View key={employee.id} style={styles.employeeItem}>
-                <Checkbox
-                  label={`${employee.name} (${employee.email})`}
-                  value={selectedEmployees.includes(employee.id)}
-                  onValueChange={() => handleEmployeeToggle(employee.id)}
-                />
-                {!employee.isActive && (
-                  <ThemedText style={styles.inactiveLabel}>(Inactive)</ThemedText>
+            {employeesError ? (
+              <ErrorMessage 
+                message={employeesError} 
+                onRetry={() => fetchEmployees(1, employeeSearchQuery, includeInactive)} 
+              />
+            ) : employees.length > 0 ? (
+              <>
+                {employees.map(employee => (
+                  <View key={employee.id} style={styles.employeeItem}>
+                    <Checkbox
+                      label={`${employee.name} (${employee.email})`}
+                      value={selectedEmployees.includes(employee.id)}
+                      onValueChange={() => handleEmployeeToggle(employee.id)}
+                    />
+                    {!employee.isActive && (
+                      <ThemedText style={styles.inactiveLabel}>(Inactive)</ThemedText>
+                    )}
+                  </View>
+                ))}
+                
+                {hasMoreEmployees && (
+                  <TouchableOpacity 
+                    style={styles.loadMoreButton} 
+                    onPress={loadMoreEmployees}
+                    disabled={isLoadingEmployees}
+                  >
+                    {isLoadingEmployees ? (
+                      <LoadingSpinner message="Loading more..." />
+                    ) : (
+                      <ThemedText>Load More ({totalEmployees - employees.length} remaining)</ThemedText>
+                    )}
+                  </TouchableOpacity>
                 )}
+              </>
+            ) : isLoadingEmployees ? (
+              <View style={styles.loadingContainer}>
+                <LoadingSpinner message="Loading employees..." />
               </View>
-            ))}
+            ) : (
+              <ThemedText style={styles.noResultsText}>No employees found</ThemedText>
+            )}
           </View>
         )}
       </View>
@@ -733,16 +841,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 4,
-    maxHeight: 200,
     backgroundColor: '#ffffff',
+    maxHeight: 200,
     zIndex: 10,
     position: 'relative',
-    overflow: 'auto',
+    overflow: 'scroll',
     ...Platform.select({
       web: {
         boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
-        overflowY: 'auto',
-        overscrollBehavior: 'contain',
       },
     }),
   },
@@ -883,5 +989,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     backgroundColor: '#f8fafc',
     borderRadius: 4,
+  },
+  loadMoreButton: {
+    padding: 12,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    marginTop: 8,
+  },
+  noResultsText: {
+    padding: 16,
+    textAlign: 'center',
+    color: colors.text.secondary,
   },
 }); 

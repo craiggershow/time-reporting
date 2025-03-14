@@ -68,6 +68,10 @@ export function MobileReportingTool() {
   // Track if initial setup is complete
   const [isInitialSetupComplete, setIsInitialSetupComplete] = useState(false);
 
+  const [employees, setEmployees] = useState<{ id: string; name: string; email: string; isActive: boolean }[]>([]);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+  const [employeesError, setEmployeesError] = useState<string | null>(null);
+
   // Define handleGenerateReport as a useCallback to avoid dependency issues
   const handleGenerateReport = useCallback(async () => {
     try {
@@ -86,25 +90,10 @@ export function MobileReportingTool() {
     }
   }, []);
 
-  // Mock data for employees - in a real app, this would come from an API
-  const employees = [
-    { id: '1', name: 'John Doe', email: 'john@example.com', isActive: true },
-    { id: '2', name: 'Jane Smith', email: 'jane@example.com', isActive: true },
-    { id: '3', name: 'Bob Johnson', email: 'bob@example.com', isActive: false },
-  ];
-
+  // Fetch data on component mount
   useEffect(() => {
-    // Set selected employees to all active employees
-    const activeEmployeeIds = employees
-      .filter(employee => employee.isActive)
-      .map(employee => employee.id);
-    
-    setSelectedEmployees(activeEmployeeIds);
-  }, []);
-
-  useEffect(() => {
-    // Fetch pay periods on initial load
     fetchPayPeriods();
+    fetchEmployees();
   }, []);
 
   useEffect(() => {
@@ -589,6 +578,66 @@ export function MobileReportingTool() {
     );
   };
 
+  // Fetch employees from the API
+  const fetchEmployees = async () => {
+    try {
+      setEmployeesError(null);
+      setIsLoadingEmployees(true);
+      
+      console.log(`Fetching employees: ${buildApiUrl('EMPLOYEES')}`);
+      
+      const response = await fetch(buildApiUrl('EMPLOYEES'), {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch employees: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Check if the response has the expected structure
+      if (!data.employees) {
+        console.error('Unexpected API response format:', data);
+        throw new Error('Unexpected API response format');
+      }
+      
+      setEmployees(data.employees);
+      
+      // Set selected employees to all active employees
+      const activeEmployeeIds = data.employees
+        .filter((employee: any) => employee.isActive)
+        .map((employee: any) => employee.id);
+      
+      setSelectedEmployees(activeEmployeeIds);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      setEmployeesError('Failed to load employees. Using mock data instead.');
+      
+      // Fallback to mock data if API fails
+      const mockEmployees = [
+        { id: '1', name: 'John Doe', email: 'john@example.com', isActive: true },
+        { id: '2', name: 'Jane Smith', email: 'jane@example.com', isActive: true },
+        { id: '3', name: 'Bob Johnson', email: 'bob@example.com', isActive: false },
+      ];
+      
+      setEmployees(mockEmployees);
+      
+      // Set selected employees to all active mock employees
+      const activeEmployeeIds = mockEmployees
+        .filter(employee => employee.isActive)
+        .map(employee => employee.id);
+      
+      setSelectedEmployees(activeEmployeeIds);
+    } finally {
+      setIsLoadingEmployees(false);
+    }
+  };
+
   return (
     <>
       <ScrollView style={styles.container}>
@@ -621,6 +670,8 @@ export function MobileReportingTool() {
         payPeriodsError={payPeriodsError}
         fetchPayPeriods={fetchPayPeriods}
         employees={employees}
+        isLoadingEmployees={isLoadingEmployees}
+        employeesError={employeesError}
       />
     </>
   );

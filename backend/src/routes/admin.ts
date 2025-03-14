@@ -72,6 +72,95 @@ router.get('/users', async (req: Request, res: Response) => {
   }
 });
 
+// Employees endpoint - optimized for report filters
+router.get('/employees', async (req: Request, res: Response) => {
+  console.log('\n=== Admin Employees Route Start ===');
+  
+  try {
+    // Parse query parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 100;
+    const search = (req.query.search as string) || '';
+    const includeInactive = req.query.includeInactive === 'true';
+    
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    
+    // Build where clause
+    const where: any = {
+      role: 'EMPLOYEE', // Exclude admin users
+    };
+    
+    // Only include active users unless specifically requested
+    if (!includeInactive) {
+      where.isActive = true;
+    }
+    
+    // Add search filter if provided
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { employeeId: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    
+    // Get total count for pagination
+    const totalCount = await prisma.user.count({ where });
+    
+    // Fetch employees with pagination
+    const employees = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        employeeId: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        isActive: true,
+      },
+      orderBy: [
+        { lastName: 'asc' },
+        { firstName: 'asc' },
+      ],
+      skip,
+      take: limit,
+    });
+    
+    // Format response
+    const formattedEmployees = employees.map(emp => ({
+      id: emp.id,
+      employeeId: emp.employeeId,
+      name: `${emp.firstName} ${emp.lastName}`,
+      email: emp.email,
+      isActive: emp.isActive,
+    }));
+    
+    console.log(`✓ Fetched ${employees.length} employees (total: ${totalCount})`);
+    console.log('=== Admin Employees Route End ===\n');
+    
+    res.json({
+      employees: formattedEmployees,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      }
+    });
+  } catch (error) {
+    console.error('=== Admin Employees Route Error ===');
+    console.error('Error:', error);
+    console.error('=== Admin Employees Route End ===\n');
+    
+    res.status(500).json({ 
+      error: 'Failed to fetch employees',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 router.post('/users', createUser);
 router.put('/users/:id', updateUser);
 router.delete('/users/:id', deleteUser);
