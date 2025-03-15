@@ -13,6 +13,9 @@ import { DateRangeType } from './ReportFilters';
 import { DataTable } from '@/components/ui/DataTable';
 import { buildApiUrl } from '@/constants/Config';
 import { MobileReportFilterSheet } from './MobileReportFilterSheet';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 
 interface PayPeriod {
   id: string;
@@ -35,6 +38,7 @@ interface DetailedReportItem {
   date: string;
   employeeName: string;
   totalHours: number;
+  dayType: string;
 }
 
 // Define Column interface locally to match DataTable's expected type
@@ -72,23 +76,75 @@ export function MobileReportingTool() {
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
   const [employeesError, setEmployeesError] = useState<string | null>(null);
 
+  // Add these state variables to store the real report data
+  const [reportData, setReportData] = useState<any[]>([]);
+
   // Define handleGenerateReport as a useCallback to avoid dependency issues
   const handleGenerateReport = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // In a real app, this would be an API call to fetch report data
-      // For now, we'll simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Format the date parameters
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
       
+      // Prepare the request body
+      const requestBody = {
+        startDate: startDateStr,
+        endDate: endDateStr,
+        employeeIds: selectedEmployees.length > 0 ? selectedEmployees : undefined,
+        reportType,
+        includeInactive,
+        payPeriodId: dateRangeType === 'payPeriod' ? selectedPayPeriodId : undefined,
+        dateRangeType,
+      };
+      
+      console.log('Generating report with parameters:', requestBody);
+      
+      // Make the API call to generate the report
+      const response = await fetch(buildApiUrl('REPORTS'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to generate report: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Store the report data
+      setReportData(data.items || []);
       setHasGeneratedReport(true);
     } catch (error) {
+      console.error('Error generating report:', error);
       setError(error instanceof Error ? error.message : 'Failed to generate report');
+      
+      // Fallback to mock data if API fails
+      if (reportType === 'summary') {
+        setReportData(summaryData);
+      } else {
+        setReportData(detailedData);
+      }
+      setHasGeneratedReport(true);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [
+    startDate, 
+    endDate, 
+    selectedEmployees, 
+    reportType, 
+    includeInactive, 
+    dateRangeType, 
+    selectedPayPeriodId
+  ]);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -444,6 +500,12 @@ export function MobileReportingTool() {
       sortable: true,
       width: 70,
     },
+    { 
+      key: 'dayType', 
+      title: 'Type',
+      sortable: true,
+      width: 80,
+    },
   ];
 
   // Mock data for summary report
@@ -471,18 +533,21 @@ export function MobileReportingTool() {
       date: '2023-05-01',
       employeeName: 'John Doe',
       totalHours: 7,
+      dayType: 'Regular',
     },
     {
       id: '2',
       date: '2023-05-02',
       employeeName: 'John Doe',
       totalHours: 8,
+      dayType: 'Regular',
     },
     {
       id: '3',
       date: '2023-05-01',
       employeeName: 'Jane Smith',
       totalHours: 7,
+      dayType: 'Regular',
     },
   ];
 
@@ -529,6 +594,77 @@ export function MobileReportingTool() {
     );
   };
 
+  const handleExportCSV = async () => {
+    if (!reportData || reportData.length === 0) {
+      console.log('No data to export');
+      return;
+    }
+
+    try {
+      // Determine which columns to use based on report type
+      const columns = reportType === 'summary' ? summaryColumns : detailedColumns;
+      
+      // Create CSV header row
+      const header = columns.map(col => col.title).join(',');
+      
+      // Create CSV data rows
+      const rows = reportData.map(item => {
+        return columns.map(col => {
+          // Get the value for this column
+          const value = item[col.key as keyof typeof item];
+          
+          // Handle special cases like strings with commas
+          if (typeof value === 'string' && value.includes(',')) {
+            return `"${value}"`;
+          }
+          
+          return value;
+        }).join(',');
+      });
+      
+      // Combine header and rows
+      const csvContent = [header, ...rows].join('\n');
+      
+      // Generate filename based on report type and date
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const reportTypeLabel = reportType === 'summary' ? 'Summary' : 'Detailed';
+      const filename = `TimeReport_${reportTypeLabel}_${timestamp}.csv`;
+      
+      if (Platform.OS === 'web') {
+        // For web, create a download link
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        // For mobile, save to file and share
+        const fileUri = `${FileSystem.documentDirectory}${filename}`;
+        await FileSystem.writeAsStringAsync(fileUri, csvContent, {
+          encoding: FileSystem.EncodingType.UTF8
+        });
+        
+        // Check if sharing is available
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (isSharingAvailable) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'text/csv',
+            dialogTitle: 'Export Report',
+            UTI: 'public.comma-separated-values-text'
+          });
+        } else {
+          console.log('Sharing is not available on this device');
+        }
+      }
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+    }
+  };
+
   const renderReportResults = () => {
     if (!hasGeneratedReport && !isLoading) {
       return renderEmptyState();
@@ -548,14 +684,14 @@ export function MobileReportingTool() {
               {reportType === 'summary' ? (
                 <DataTable
                   columns={summaryColumns}
-                  data={summaryData}
+                  data={reportData}
                   isLoading={false}
                   selectedIds={[]}
                 />
               ) : (
                 <DataTable
                   columns={detailedColumns}
-                  data={detailedData}
+                  data={reportData}
                   isLoading={false}
                   selectedIds={[]}
                 />
@@ -568,7 +704,7 @@ export function MobileReportingTool() {
                 size="small"
                 leftIcon="download-outline"
                 label="Export Report"
-                onPress={() => console.log('Export')}
+                onPress={handleExportCSV}
                 style={styles.exportButton}
               />
             </View>

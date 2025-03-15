@@ -135,67 +135,6 @@ export function ReportResults({ filters, isLoading, data }: ReportResultsProps) 
     },
   ];
 
-  // Mock data for summary report
-  const summaryData = [
-    {
-      id: '1',
-      employeeName: 'John Doe',
-      regularHours: 70,
-      overtimeHours: 5,
-      vacationHours: 8,
-      sickHours: 0,
-      holidayHours: 8,
-      totalHours: 91,
-    },
-    {
-      id: '2',
-      employeeName: 'Jane Smith',
-      regularHours: 80,
-      overtimeHours: 0,
-      vacationHours: 0,
-      sickHours: 8,
-      holidayHours: 8,
-      totalHours: 96,
-    },
-  ];
-
-  // Mock data for detailed report
-  const detailedData = [
-    {
-      id: '1',
-      date: '2023-05-01',
-      employeeName: 'John Doe',
-      startTime: '9:00 AM',
-      endTime: '5:00 PM',
-      lunchStart: '12:00 PM',
-      lunchEnd: '1:00 PM',
-      dayType: 'Regular',
-      totalHours: 7,
-    },
-    {
-      id: '2',
-      date: '2023-05-02',
-      employeeName: 'John Doe',
-      startTime: '8:30 AM',
-      endTime: '5:30 PM',
-      lunchStart: '12:00 PM',
-      lunchEnd: '1:00 PM',
-      dayType: 'Regular',
-      totalHours: 8,
-    },
-    {
-      id: '3',
-      date: '2023-05-01',
-      employeeName: 'Jane Smith',
-      startTime: '9:00 AM',
-      endTime: '5:00 PM',
-      lunchStart: '12:30 PM',
-      lunchEnd: '1:30 PM',
-      dayType: 'Regular',
-      totalHours: 7,
-    },
-  ];
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -236,7 +175,7 @@ export function ReportResults({ filters, isLoading, data }: ReportResultsProps) 
       <ScrollView horizontal style={styles.tableContainer}>
         <DataTable
           columns={filters.reportType === 'summary' ? summaryColumns : detailedColumns}
-          data={filters.reportType === 'summary' ? summaryData : detailedData}
+          data={data}
           isLoading={isLoading}
           onRowSelect={() => {}}
           selectedIds={[]}
@@ -247,7 +186,7 @@ export function ReportResults({ filters, isLoading, data }: ReportResultsProps) 
         <View style={styles.totals}>
           <ThemedText style={styles.totalsLabel}>Total Hours:</ThemedText>
           <ThemedText style={styles.totalsValue}>
-            {summaryData.reduce((sum, item) => sum + item.totalHours, 0)}
+            {data.reduce((sum, item) => sum + item.totalHours, 0)}
           </ThemedText>
         </View>
       )}

@@ -27,6 +27,7 @@ export const API_ENDPOINTS = {
   APPROVE_TIMESHEET: '/api/admin/timesheets/approve',
   PAY_PERIODS: '/api/pay-periods',
   EMPLOYEES: '/api/employees',
+  REPORTS: '/api/admin/reports',
   SAVE_TIMESHEET_DRAFT: '/api/timesheet/draft',
   USERS: '/api/admin/users',
   USER_PROFILE: '/api/users/profile',
